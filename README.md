@@ -113,6 +113,10 @@ The committed `appsettings.json` ships a placeholder `Jwt:Key`
 (`REPLACE_ME_DEV_PLACEHOLDER_KEY_AT_LEAST_32_BYTES_LONG`) that's fine for local development as
 long as MyriaAuthServer's own dev config uses the same value.
 
+For a full walkthrough of deploying this realm (and its bundled MyriaAuthServer) to a real
+server — certificates, secrets, systemd, updates, running multiple realms — see
+[SETUP.md](SETUP.md).
+
 ## Configuration for Production deployment
 
 `Program.cs` actively refuses to start when `ASPNETCORE_ENVIRONMENT=Production` unless all of the
