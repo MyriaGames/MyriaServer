@@ -226,6 +226,13 @@ namespace Myria.Server.Realm.Controllers
 
             if (record is null)
             {
+                // Character.Name is a global unique constraint (see AppDbContext) - check
+                // before insert so a name collision with another account returns a friendly
+                // Conflict instead of a raw DB exception, matching how
+                // GuildService.CreateGuildAsync guards guild-name collisions.
+                if (await db.Characters.AnyAsync(c => c.Name == req.Name))
+                    return Conflict(new { message = "That character name is already taken." });
+
                 record = new Character { UserId = user, Name = req.Name };
                 db.Characters.Add(record);
             }

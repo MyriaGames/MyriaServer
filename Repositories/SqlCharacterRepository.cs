@@ -71,6 +71,12 @@ namespace Myria.Server.Realm.Repositories
 
             if (record is null)
             {
+                // In normal operation this branch shouldn't fire: GameHub only ever calls
+                // SaveAsync for a character already loaded via LoadCharacter, which requires
+                // the row to already exist. Real character creation goes through
+                // CharactersController.Save, which explicitly checks for a name collision
+                // before inserting. The DB's global unique index on Character.Name (see
+                // AppDbContext) is the backstop here if this path is ever hit unexpectedly.
                 record = new Character { UserId = username, Name = character.Name };
                 db.Characters.Add(record);
             }

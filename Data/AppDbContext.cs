@@ -54,8 +54,15 @@ namespace Myria.Server.Realm.Data
             modelBuilder.Entity<Character>(e =>
             {
                 e.Property(c => c.UserId).HasMaxLength(50);
-                e.HasIndex(c => new { c.UserId, c.Name }).IsUnique();
-                e.Property(c => c.Name).HasMaxLength(50);
+                // Character names are looked up by other players (whispers, trade
+                // proposals, party/guild invites, friend requests all resolve a target
+                // purely by name) - a case-insensitive GLOBAL unique constraint (not
+                // just per-account, which is all the old (UserId, Name) index gave us)
+                // stops one account from registering a name that collides with another
+                // player's, which would otherwise let messages/trades meant for the
+                // real owner resolve to an impersonator instead.
+                e.Property(c => c.Name).HasMaxLength(50).UseCollation("NOCASE");
+                e.HasIndex(c => c.Name).IsUnique();
             });
 
             // ── Character children — all cascade-delete when Character is removed ─

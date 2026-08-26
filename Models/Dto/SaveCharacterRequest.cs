@@ -5,7 +5,11 @@ namespace Myria.Server.Realm.Models.Dto
     /// <summary>Full player state sent by the client when saving a character.</summary>
     public class SaveCharacterRequest
     {
-        [Required, MaxLength(50)]
+        // Letters/digits/underscore/hyphen only - this name is also used as a segment of a
+        // locally-constructed save-file path on the client (see Myria.Lib's SafeFileName), so
+        // rejecting path-traversal/invalid-filename characters here (rather than relying on the
+        // client to sanitize) removes the actual root cause instead of just the symptom.
+        [Required, MaxLength(50), RegularExpression(@"^[\p{L}\p{N}_-]+$")]
         public string Name { get; set; } = string.Empty;
 
         // ── Core progression ─────────────────────────────────────────────────────
