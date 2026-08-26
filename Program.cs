@@ -51,6 +51,12 @@ if (builder.Environment.IsProduction())
     if (!File.Exists(Path.IsPathRooted(certPath) ? certPath : Path.Combine(AppContext.BaseDirectory, certPath)))
         throw new InvalidOperationException($"Kestrel:Endpoints:Https:Certificate:Path '{certPath}' does not exist.");
 }
+// Note: the dev-only Kestrel:Endpoints:Http entry deliberately lives in appsettings.Development.json,
+// not here - configuration providers merge by key, so if it lived in this file (loaded in every
+// environment) it would stay bound alongside the Https endpoint above even in Production. Verified
+// empirically (on Myria.Server.Auth, which has the identical pattern): with it in the shared file,
+// Production served plain HTTP on top of HTTPS despite the check above. Keeping it Development-only
+// is what makes "Production requires HTTPS" actually mean HTTPS-only.
 
 // Guild config — loaded from Data/guild_config.json at startup
 var guildConfigPath = Path.Combine(AppContext.BaseDirectory, "Data", "guild_config.json");
