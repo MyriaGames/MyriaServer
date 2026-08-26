@@ -6,7 +6,7 @@ together: the official release zip bundles `MyriaAuthServer` inside a realm's ow
 [Layout](#layout) below), and `run-production.sh` in this repo starts both from that single
 directory. If you're only interested in `MyriaAuthServer`'s own configuration reference (for a
 standalone deployment, or to understand what it needs), see
-[Myria.Server.Auth/SETUP.md](https://github.com/MyriaGames/MyriaAuthServer/blob/master/SETUP.md) —
+[Myria.Server.Auth/SETUP.md](https://github.com/MyriaGames/MyriaAuthServer/blob/main/SETUP.md) —
 this guide focuses on the combined, actually-used deployment path.
 
 This is written for **Linux** (systemd), which is what the production tooling in this repo
