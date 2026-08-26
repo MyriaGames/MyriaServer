@@ -223,6 +223,16 @@ namespace Myria.Server.Realm.Hubs
         {
             var username = Context.User!.Identity!.Name!;
             using var scope = scopeFactory.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+            // Verify the caller actually owns this character before touching any live session.
+            // CharacterSessionService.TryReattach (and GroupCombatService.ReassignConnection,
+            // called below) match purely by character name with no notion of ownership - the
+            // in-memory Character has no UserId - so without this check any authenticated player
+            // who knows another player's online character name could reattach that character's
+            // live session (inventory/gold/gear) onto their own connection.
+            var owns = await db.Characters.AnyAsync(c => c.UserId == username && c.Name == characterName);
+            if (!owns) return false;
 
             // Prefer reattaching an already-live session for this character (see
             // CharacterSessionService.TryReattach) over a fresh DB read - a reload here would
@@ -249,7 +259,6 @@ namespace Myria.Server.Realm.Hubs
             }
 
             // Join guild SignalR group if the character belongs to one
-            var db     = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             var charId = await GetCharacterIdByNameAsync(db, characterName);
             if (charId != 0)
             {
