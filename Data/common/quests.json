@@ -1,0 +1,2152 @@
+[
+  {
+    "Id": "co1_first_day",
+    "Name": "quest.co1_first_day.name",
+    "Description": "quest.co1_first_day.desc",
+    "GiverNpcId": "smith_default",
+    "RequiredLevel": 1,
+    "RequiredKills": {},
+    "RequiredItems": {},
+    "AcceptItems": [
+      "pickaxe",
+      "starter_mace"
+    ],
+    "RewardXp": 25,
+    "AcceptDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.co1_first_day.accept.1"
+      },
+      {
+        "Speaker": "player",
+        "Text": "quest.co1_first_day.accept.2"
+      },
+      {
+        "Speaker": "npc",
+        "Text": "quest.co1_first_day.accept.3"
+      },
+      {
+        "Speaker": "player",
+        "Text": "quest.co1_first_day.accept.4"
+      },
+      {
+        "Speaker": "npc",
+        "Text": "quest.co1_first_day.accept.5"
+      }
+    ],
+    "ReturnDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.co1_first_day.return.1"
+      }
+    ]
+  },
+  {
+    "Id": "co1_gather_ore",
+    "Name": "quest.co1_gather_ore.name",
+    "Description": "quest.co1_gather_ore.desc",
+    "GiverNpcId": "smith_default",
+    "RequiredLevel": 1,
+    "PrerequisiteQuestIds": [
+      "co1_first_day"
+    ],
+    "RequiredKills": {},
+    "RequiredItems": {
+      "iron_ore": 4
+    },
+    "RewardXp": 60,
+    "RewardGold": 20,
+    "AcceptDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.co1_gather_ore.accept.1"
+      },
+      {
+        "Speaker": "player",
+        "Text": "quest.co1_gather_ore.accept.2"
+      },
+      {
+        "Speaker": "npc",
+        "Text": "quest.co1_gather_ore.accept.3"
+      }
+    ],
+    "ReturnDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.co1_gather_ore.return.1"
+      }
+    ]
+  },
+  {
+    "Id": "co1_first_ironwork",
+    "Name": "quest.co1_first_ironwork.name",
+    "Description": "quest.co1_first_ironwork.desc",
+    "GiverNpcId": "smith_default",
+    "RequiredLevel": 1,
+    "PrerequisiteQuestIds": [
+      "co1_gather_ore"
+    ],
+    "RequiredKills": {},
+    "RequiredItems": {
+      "iron_ingot": 1
+    },
+    "RewardXp": 80,
+    "RewardGold": 30,
+    "AcceptDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.co1_first_ironwork.accept.1"
+      },
+      {
+        "Speaker": "player",
+        "Text": "quest.co1_first_ironwork.accept.2"
+      },
+      {
+        "Speaker": "npc",
+        "Text": "quest.co1_first_ironwork.accept.3"
+      }
+    ],
+    "ReturnDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.co1_first_ironwork.return.1"
+      }
+    ]
+  },
+  {
+    "Id": "co1_goblins",
+    "Name": "quest.co1_goblins.name",
+    "Description": "quest.co1_goblins.desc",
+    "GiverNpcId": "villager_lumina",
+    "RequiredLevel": 10,
+    "PrerequisiteQuestIds": [
+      "co1_first_ironwork"
+    ],
+    "RequiredKills": {
+      "1": 3
+    },
+    "RequiredItems": {},
+    "RewardXp": 120,
+    "RewardGold": 50,
+    "AcceptDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.co1_goblins.accept.1"
+      },
+      {
+        "Speaker": "player",
+        "Text": "quest.co1_goblins.accept.2"
+      },
+      {
+        "Speaker": "npc",
+        "Text": "quest.co1_goblins.accept.3"
+      },
+      {
+        "Speaker": "player",
+        "Text": "quest.co1_goblins.accept.4"
+      },
+      {
+        "Speaker": "npc",
+        "Text": "quest.co1_goblins.accept.5"
+      }
+    ],
+    "ReturnDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.co1_goblins.return.1"
+      }
+    ]
+  },
+  {
+    "Id": "co1_skill_intro",
+    "Name": "quest.co1_skill_intro.name",
+    "Description": "quest.co1_skill_intro.desc",
+    "GiverNpcId": "villager_lumina",
+    "ReturnNpcId": "skill_master_lumina",
+    "RequiredLevel": 10,
+    "PrerequisiteQuestIds": [
+      "co1_goblins"
+    ],
+    "RequiredKills": {},
+    "RequiredItems": {},
+    "RewardXp": 50,
+    "AcceptDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.co1_skill_intro.accept.1"
+      },
+      {
+        "Speaker": "player",
+        "Text": "quest.co1_skill_intro.accept.2"
+      },
+      {
+        "Speaker": "npc",
+        "Text": "quest.co1_skill_intro.accept.3"
+      }
+    ],
+    "ReturnDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.co1_skill_intro.return.1"
+      },
+      {
+        "Speaker": "player",
+        "Text": "quest.co1_skill_intro.return.2"
+      },
+      {
+        "Speaker": "npc",
+        "Text": "quest.co1_skill_intro.return.3"
+      }
+    ]
+  },
+  {
+    "Id": "co1_troll",
+    "Name": "quest.co1_troll.name",
+    "Description": "quest.co1_troll.desc",
+    "GiverNpcId": "villager_lumina",
+    "RequiredLevel": 11,
+    "PrerequisiteQuestIds": [
+      "co1_skill_intro"
+    ],
+    "RequiredKills": {
+      "2": 1
+    },
+    "RequiredItems": {},
+    "RewardXp": 200,
+    "RewardGold": 80,
+    "AcceptDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.co1_troll.accept.1"
+      },
+      {
+        "Speaker": "player",
+        "Text": "quest.co1_troll.accept.2"
+      },
+      {
+        "Speaker": "npc",
+        "Text": "quest.co1_troll.accept.3"
+      },
+      {
+        "Speaker": "player",
+        "Text": "quest.co1_troll.accept.4"
+      },
+      {
+        "Speaker": "npc",
+        "Text": "quest.co1_troll.accept.5"
+      }
+    ],
+    "ReturnDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.co1_troll.return.1"
+      }
+    ]
+  },
+  {
+    "Id": "co1_trusted",
+    "Name": "quest.co1_trusted.name",
+    "Description": "quest.co1_trusted.desc",
+    "GiverNpcId": "smith_default",
+    "RequiredLevel": 11,
+    "PrerequisiteQuestIds": [
+      "co1_troll"
+    ],
+    "RequiredKills": {},
+    "RequiredItems": {},
+    "RewardXp": 150,
+    "RewardGold": 100,
+    "RewardItems": [
+      "starter_armor"
+    ],
+    "AcceptDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.co1_trusted.accept.1"
+      },
+      {
+        "Speaker": "player",
+        "Text": "quest.co1_trusted.accept.2"
+      },
+      {
+        "Speaker": "npc",
+        "Text": "quest.co1_trusted.accept.3"
+      },
+      {
+        "Speaker": "npc",
+        "Text": "quest.co1_trusted.accept.4"
+      }
+    ],
+    "ReturnDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.co1_trusted.return.1"
+      }
+    ]
+  },
+  {
+    "Id": "forest_infestation",
+    "Name": "quest.forest_infestation.name",
+    "Description": "quest.forest_infestation.desc",
+    "GiverNpcId": "villager_lumina",
+    "RequiredLevel": 11,
+    "PrerequisiteQuestIds": [
+      "co1_trusted"
+    ],
+    "RequiredKills": {
+      "18": 8
+    },
+    "RequiredItems": {},
+    "RewardXp": 1800,
+    "RewardGold": 250,
+    "AcceptDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.forest_infestation.accept.1"
+      },
+      {
+        "Speaker": "player",
+        "Text": "quest.forest_infestation.accept.2"
+      },
+      {
+        "Speaker": "npc",
+        "Text": "quest.forest_infestation.accept.3"
+      }
+    ],
+    "ReturnDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.forest_infestation.return.1"
+      }
+    ]
+  },
+  {
+    "Id": "beetle_problem",
+    "Name": "quest.beetle_problem.name",
+    "Description": "quest.beetle_problem.desc",
+    "GiverNpcId": "villager_lumina",
+    "RequiredLevel": 13,
+    "PrerequisiteQuestIds": [
+      "forest_infestation"
+    ],
+    "RequiredKills": {
+      "29": 6
+    },
+    "RequiredItems": {},
+    "RewardXp": 2800,
+    "RewardGold": 350,
+    "AcceptDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.beetle_problem.accept.1"
+      },
+      {
+        "Speaker": "player",
+        "Text": "quest.beetle_problem.accept.2"
+      },
+      {
+        "Speaker": "npc",
+        "Text": "quest.beetle_problem.accept.3"
+      }
+    ],
+    "ReturnDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.beetle_problem.return.1"
+      }
+    ]
+  },
+  {
+    "Id": "dire_wolves",
+    "Name": "quest.dire_wolves.name",
+    "Description": "quest.dire_wolves.desc",
+    "GiverNpcId": "villager_lumina",
+    "RequiredLevel": 16,
+    "PrerequisiteQuestIds": [
+      "beetle_problem"
+    ],
+    "RequiredKills": {
+      "30": 10
+    },
+    "RequiredItems": {},
+    "RewardXp": 7500,
+    "RewardGold": 900,
+    "AcceptDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.dire_wolves.accept.1"
+      },
+      {
+        "Speaker": "player",
+        "Text": "quest.dire_wolves.accept.2"
+      },
+      {
+        "Speaker": "npc",
+        "Text": "quest.dire_wolves.accept.3"
+      }
+    ],
+    "ReturnDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.dire_wolves.return.1"
+      }
+    ]
+  },
+  {
+    "Id": "corrupted_heart",
+    "Name": "quest.corrupted_heart.name",
+    "Description": "quest.corrupted_heart.desc",
+    "GiverNpcId": "villager_lumina",
+    "RequiredLevel": 18,
+    "PrerequisiteQuestIds": [
+      "dire_wolves"
+    ],
+    "RequiredKills": {
+      "31": 4
+    },
+    "RequiredItems": {},
+    "RewardXp": 10000,
+    "RewardGold": 1300,
+    "AcceptDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.corrupted_heart.accept.1"
+      },
+      {
+        "Speaker": "player",
+        "Text": "quest.corrupted_heart.accept.2"
+      },
+      {
+        "Speaker": "npc",
+        "Text": "quest.corrupted_heart.accept.3"
+      }
+    ],
+    "ReturnDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.corrupted_heart.return.1"
+      }
+    ]
+  },
+  {
+    "Id": "witch_coven",
+    "Name": "quest.witch_coven.name",
+    "Description": "quest.witch_coven.desc",
+    "GiverNpcId": "villager_lumina",
+    "RequiredLevel": 21,
+    "PrerequisiteQuestIds": [
+      "corrupted_heart"
+    ],
+    "RequiredKills": {
+      "13": 5
+    },
+    "RequiredItems": {},
+    "RewardXp": 17000,
+    "RewardGold": 2200,
+    "AcceptDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.witch_coven.accept.1"
+      },
+      {
+        "Speaker": "player",
+        "Text": "quest.witch_coven.accept.2"
+      },
+      {
+        "Speaker": "npc",
+        "Text": "quest.witch_coven.accept.3"
+      }
+    ],
+    "ReturnDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.witch_coven.return.1"
+      }
+    ]
+  },
+  {
+    "Id": "whispering_woods_patrol",
+    "Name": "quest.whispering_woods_patrol.name",
+    "Description": "quest.whispering_woods_patrol.desc",
+    "GiverNpcId": "villager_lumina",
+    "RequiredLevel": 15,
+    "PrerequisiteQuestIds": [
+      "beetle_problem"
+    ],
+    "IsRepeatable": true,
+    "RepeatMaxLevel": 35,
+    "RepeatDailyLimit": 1,
+    "RepeatTotalLimit": 0,
+    "RequiredKills": {
+      "18": 5,
+      "11": 5
+    },
+    "RequiredItems": {},
+    "RewardXp": 7000,
+    "RewardGold": 850,
+    "AcceptDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.whispering_woods_patrol.accept.1"
+      },
+      {
+        "Speaker": "player",
+        "Text": "quest.whispering_woods_patrol.accept.2"
+      },
+      {
+        "Speaker": "npc",
+        "Text": "quest.whispering_woods_patrol.accept.3"
+      }
+    ],
+    "ReturnDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.whispering_woods_patrol.return.1"
+      }
+    ]
+  },
+  {
+    "Id": "job_smith_basics",
+    "Name": "quest.job_smith_basics.name",
+    "Description": "quest.job_smith_basics.desc",
+    "GiverNpcId": "smith_default",
+    "RequiredLevel": 1,
+    "RequiredActiveJobId": "blacksmith",
+    "RequiredKills": {},
+    "RequiredItems": {
+      "iron_ingot": 3
+    },
+    "RewardXp": 80,
+    "RewardGold": 30,
+    "JobKnowledgeRewardJobId": "blacksmith",
+    "JobKnowledgeRewardAmount": 2000,
+    "AcceptDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.job_smith_basics.accept.1"
+      },
+      {
+        "Speaker": "player",
+        "Text": "quest.job_smith_basics.accept.2"
+      },
+      {
+        "Speaker": "npc",
+        "Text": "quest.job_smith_basics.accept.3"
+      }
+    ],
+    "ReturnDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.job_smith_basics.return.1"
+      }
+    ]
+  },
+  {
+    "Id": "job_smith_forged",
+    "Name": "quest.job_smith_forged.name",
+    "Description": "quest.job_smith_forged.desc",
+    "GiverNpcId": "smith_default",
+    "RequiredLevel": 1,
+    "RequiredActiveJobId": "blacksmith",
+    "PrerequisiteQuestIds": [
+      "job_smith_basics"
+    ],
+    "RequiredKills": {},
+    "RequiredItems": {
+      "iron_sword": 2
+    },
+    "RewardXp": 120,
+    "RewardGold": 60,
+    "JobKnowledgeRewardJobId": "blacksmith",
+    "JobKnowledgeRewardAmount": 5000,
+    "AcceptDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.job_smith_forged.accept.1"
+      },
+      {
+        "Speaker": "player",
+        "Text": "quest.job_smith_forged.accept.2"
+      },
+      {
+        "Speaker": "npc",
+        "Text": "quest.job_smith_forged.accept.3"
+      }
+    ],
+    "ReturnDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.job_smith_forged.return.1"
+      }
+    ]
+  },
+  {
+    "Id": "job_smith_armored",
+    "Name": "quest.job_smith_armored.name",
+    "Description": "quest.job_smith_armored.desc",
+    "GiverNpcId": "smith_default",
+    "RequiredLevel": 5,
+    "RequiredActiveJobId": "blacksmith",
+    "PrerequisiteQuestIds": [
+      "job_smith_forged"
+    ],
+    "RequiredKills": {},
+    "RequiredItems": {
+      "chain_armor": 1
+    },
+    "RewardXp": 200,
+    "RewardGold": 100,
+    "JobKnowledgeRewardJobId": "blacksmith",
+    "JobKnowledgeRewardAmount": 12000,
+    "JobFameRewardJobId": "blacksmith",
+    "JobFameRewardAmount": 3000,
+    "AcceptDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.job_smith_armored.accept.1"
+      },
+      {
+        "Speaker": "player",
+        "Text": "quest.job_smith_armored.accept.2"
+      },
+      {
+        "Speaker": "npc",
+        "Text": "quest.job_smith_armored.accept.3"
+      }
+    ],
+    "ReturnDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.job_smith_armored.return.1"
+      }
+    ]
+  },
+  {
+    "Id": "job_smith_mastery",
+    "Name": "quest.job_smith_mastery.name",
+    "Description": "quest.job_smith_mastery.desc",
+    "GiverNpcId": "smith_default",
+    "RequiredLevel": 10,
+    "RequiredActiveJobId": "blacksmith",
+    "PrerequisiteQuestIds": [
+      "job_smith_armored"
+    ],
+    "RequiredKills": {},
+    "RequiredItems": {
+      "steel_sword": 1
+    },
+    "RewardXp": 350,
+    "RewardGold": 200,
+    "JobKnowledgeRewardJobId": "blacksmith",
+    "JobKnowledgeRewardAmount": 25000,
+    "JobFameRewardJobId": "blacksmith",
+    "JobFameRewardAmount": 8000,
+    "AcceptDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.job_smith_mastery.accept.1"
+      },
+      {
+        "Speaker": "player",
+        "Text": "quest.job_smith_mastery.accept.2"
+      },
+      {
+        "Speaker": "npc",
+        "Text": "quest.job_smith_mastery.accept.3"
+      }
+    ],
+    "ReturnDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.job_smith_mastery.return.1"
+      }
+    ]
+  },
+  {
+    "Id": "job_leather_basics",
+    "Name": "quest.job_leather_basics.name",
+    "Description": "quest.job_leather_basics.desc",
+    "GiverNpcId": "leathersmith_default",
+    "RequiredLevel": 1,
+    "RequiredActiveJobId": "leathersmith",
+    "RequiredKills": {},
+    "RequiredItems": {
+      "cured_leather": 5
+    },
+    "RewardXp": 60,
+    "RewardGold": 25,
+    "JobKnowledgeRewardJobId": "leathersmith",
+    "JobKnowledgeRewardAmount": 2000,
+    "AcceptDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.job_leather_basics.accept.1"
+      },
+      {
+        "Speaker": "player",
+        "Text": "quest.job_leather_basics.accept.2"
+      },
+      {
+        "Speaker": "npc",
+        "Text": "quest.job_leather_basics.accept.3"
+      }
+    ],
+    "ReturnDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.job_leather_basics.return.1"
+      }
+    ]
+  },
+  {
+    "Id": "job_leather_workshop",
+    "Name": "quest.job_leather_workshop.name",
+    "Description": "quest.job_leather_workshop.desc",
+    "GiverNpcId": "leathersmith_default",
+    "RequiredLevel": 1,
+    "RequiredActiveJobId": "leathersmith",
+    "PrerequisiteQuestIds": [
+      "job_leather_basics"
+    ],
+    "RequiredKills": {},
+    "RequiredItems": {
+      "leather_vest": 2
+    },
+    "RewardXp": 120,
+    "RewardGold": 60,
+    "JobKnowledgeRewardJobId": "leathersmith",
+    "JobKnowledgeRewardAmount": 5000,
+    "AcceptDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.job_leather_workshop.accept.1"
+      },
+      {
+        "Speaker": "player",
+        "Text": "quest.job_leather_workshop.accept.2"
+      },
+      {
+        "Speaker": "npc",
+        "Text": "quest.job_leather_workshop.accept.3"
+      }
+    ],
+    "ReturnDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.job_leather_workshop.return.1"
+      }
+    ]
+  },
+  {
+    "Id": "job_leather_hunter",
+    "Name": "quest.job_leather_hunter.name",
+    "Description": "quest.job_leather_hunter.desc",
+    "GiverNpcId": "leathersmith_default",
+    "RequiredLevel": 5,
+    "RequiredActiveJobId": "leathersmith",
+    "PrerequisiteQuestIds": [
+      "job_leather_workshop"
+    ],
+    "RequiredKills": {},
+    "RequiredItems": {
+      "hunter_coat": 1
+    },
+    "RewardXp": 200,
+    "RewardGold": 100,
+    "JobKnowledgeRewardJobId": "leathersmith",
+    "JobKnowledgeRewardAmount": 12000,
+    "JobFameRewardJobId": "leathersmith",
+    "JobFameRewardAmount": 3000,
+    "AcceptDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.job_leather_hunter.accept.1"
+      },
+      {
+        "Speaker": "player",
+        "Text": "quest.job_leather_hunter.accept.2"
+      },
+      {
+        "Speaker": "npc",
+        "Text": "quest.job_leather_hunter.accept.3"
+      }
+    ],
+    "ReturnDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.job_leather_hunter.return.1"
+      }
+    ]
+  },
+  {
+    "Id": "job_miner_first_haul",
+    "Name": "quest.job_miner_first_haul.name",
+    "Description": "quest.job_miner_first_haul.desc",
+    "GiverNpcId": "miner_master",
+    "RequiredLevel": 1,
+    "RequiredActiveJobId": "miner",
+    "RequiredKills": {},
+    "RequiredItems": {
+      "iron_ore": 10
+    },
+    "RewardXp": 50,
+    "RewardGold": 20,
+    "JobKnowledgeRewardJobId": "miner",
+    "JobKnowledgeRewardAmount": 2000,
+    "AcceptDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.job_miner_first_haul.accept.1"
+      },
+      {
+        "Speaker": "player",
+        "Text": "quest.job_miner_first_haul.accept.2"
+      },
+      {
+        "Speaker": "npc",
+        "Text": "quest.job_miner_first_haul.accept.3"
+      }
+    ],
+    "ReturnDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.job_miner_first_haul.return.1"
+      }
+    ]
+  },
+  {
+    "Id": "job_miner_deep_vein",
+    "Name": "quest.job_miner_deep_vein.name",
+    "Description": "quest.job_miner_deep_vein.desc",
+    "GiverNpcId": "miner_master",
+    "RequiredLevel": 3,
+    "RequiredActiveJobId": "miner",
+    "PrerequisiteQuestIds": [
+      "job_miner_first_haul"
+    ],
+    "RequiredKills": {},
+    "RequiredItems": {
+      "iron_ore": 25
+    },
+    "RewardXp": 100,
+    "RewardGold": 50,
+    "JobKnowledgeRewardJobId": "miner",
+    "JobKnowledgeRewardAmount": 5000,
+    "JobFameRewardJobId": "miner",
+    "JobFameRewardAmount": 1500,
+    "AcceptDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.job_miner_deep_vein.accept.1"
+      },
+      {
+        "Speaker": "player",
+        "Text": "quest.job_miner_deep_vein.accept.2"
+      },
+      {
+        "Speaker": "npc",
+        "Text": "quest.job_miner_deep_vein.accept.3"
+      }
+    ],
+    "ReturnDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.job_miner_deep_vein.return.1"
+      }
+    ]
+  },
+  {
+    "Id": "job_miner_motherlode",
+    "Name": "quest.job_miner_motherlode.name",
+    "Description": "quest.job_miner_motherlode.desc",
+    "GiverNpcId": "miner_master",
+    "RequiredLevel": 7,
+    "RequiredActiveJobId": "miner",
+    "PrerequisiteQuestIds": [
+      "job_miner_deep_vein"
+    ],
+    "RequiredKills": {},
+    "RequiredItems": {
+      "iron_ore": 50
+    },
+    "RewardXp": 200,
+    "RewardGold": 120,
+    "JobKnowledgeRewardJobId": "miner",
+    "JobKnowledgeRewardAmount": 12000,
+    "JobFameRewardJobId": "miner",
+    "JobFameRewardAmount": 4000,
+    "AcceptDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.job_miner_motherlode.accept.1"
+      },
+      {
+        "Speaker": "player",
+        "Text": "quest.job_miner_motherlode.accept.2"
+      },
+      {
+        "Speaker": "npc",
+        "Text": "quest.job_miner_motherlode.accept.3"
+      }
+    ],
+    "ReturnDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.job_miner_motherlode.return.1"
+      }
+    ]
+  },
+  {
+    "Id": "job_woodcutter_first_timber",
+    "Name": "quest.job_woodcutter_first_timber.name",
+    "Description": "quest.job_woodcutter_first_timber.desc",
+    "GiverNpcId": "woodcutter_master",
+    "RequiredLevel": 1,
+    "RequiredActiveJobId": "woodcutter",
+    "RequiredKills": {},
+    "RequiredItems": {
+      "wood": 10
+    },
+    "RewardXp": 50,
+    "RewardGold": 15,
+    "JobKnowledgeRewardJobId": "woodcutter",
+    "JobKnowledgeRewardAmount": 2000,
+    "AcceptDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.job_woodcutter_first_timber.accept.1"
+      },
+      {
+        "Speaker": "player",
+        "Text": "quest.job_woodcutter_first_timber.accept.2"
+      },
+      {
+        "Speaker": "npc",
+        "Text": "quest.job_woodcutter_first_timber.accept.3"
+      }
+    ],
+    "ReturnDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.job_woodcutter_first_timber.return.1"
+      }
+    ]
+  },
+  {
+    "Id": "job_woodcutter_lumber_run",
+    "Name": "quest.job_woodcutter_lumber_run.name",
+    "Description": "quest.job_woodcutter_lumber_run.desc",
+    "GiverNpcId": "woodcutter_master",
+    "RequiredLevel": 3,
+    "RequiredActiveJobId": "woodcutter",
+    "PrerequisiteQuestIds": [
+      "job_woodcutter_first_timber"
+    ],
+    "RequiredKills": {},
+    "RequiredItems": {
+      "wood": 25
+    },
+    "RewardXp": 100,
+    "RewardGold": 40,
+    "JobKnowledgeRewardJobId": "woodcutter",
+    "JobKnowledgeRewardAmount": 5000,
+    "JobFameRewardJobId": "woodcutter",
+    "JobFameRewardAmount": 1500,
+    "AcceptDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.job_woodcutter_lumber_run.accept.1"
+      },
+      {
+        "Speaker": "player",
+        "Text": "quest.job_woodcutter_lumber_run.accept.2"
+      },
+      {
+        "Speaker": "npc",
+        "Text": "quest.job_woodcutter_lumber_run.accept.3"
+      }
+    ],
+    "ReturnDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.job_woodcutter_lumber_run.return.1"
+      }
+    ]
+  },
+  {
+    "Id": "job_woodcutter_forest_supply",
+    "Name": "quest.job_woodcutter_forest_supply.name",
+    "Description": "quest.job_woodcutter_forest_supply.desc",
+    "GiverNpcId": "woodcutter_master",
+    "RequiredLevel": 7,
+    "RequiredActiveJobId": "woodcutter",
+    "PrerequisiteQuestIds": [
+      "job_woodcutter_lumber_run"
+    ],
+    "RequiredKills": {},
+    "RequiredItems": {
+      "wood": 50
+    },
+    "RewardXp": 200,
+    "RewardGold": 100,
+    "JobKnowledgeRewardJobId": "woodcutter",
+    "JobKnowledgeRewardAmount": 12000,
+    "JobFameRewardJobId": "woodcutter",
+    "JobFameRewardAmount": 4000,
+    "AcceptDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.job_woodcutter_forest_supply.accept.1"
+      },
+      {
+        "Speaker": "player",
+        "Text": "quest.job_woodcutter_forest_supply.accept.2"
+      },
+      {
+        "Speaker": "npc",
+        "Text": "quest.job_woodcutter_forest_supply.accept.3"
+      }
+    ],
+    "ReturnDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.job_woodcutter_forest_supply.return.1"
+      }
+    ]
+  },
+  {
+    "Id": "unsave_caves",
+    "Name": "quest.unsave_caves.name",
+    "Description": "quest.unsave_caves.desc",
+    "GiverNpcId": "villager_lumina",
+    "RequiredLevel": 10,
+    "RequiredKills": {
+      "1": 10,
+      "2": 10
+    },
+    "RequiredItems": {},
+    "RewardXp": 150,
+    "RewardGold": 250,
+    "AcceptDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.unsave_caves.accept.1"
+      },
+      {
+        "Speaker": "player",
+        "Text": "quest.unsave_caves.accept.2"
+      },
+      {
+        "Speaker": "npc",
+        "Text": "quest.unsave_caves.accept.3"
+      }
+    ],
+    "ReturnDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.unsave_caves.return.1"
+      }
+    ]
+  },
+  {
+    "Id": "cave_bats",
+    "Name": "quest.cave_bats.name",
+    "Description": "quest.cave_bats.desc",
+    "GiverNpcId": "villager_lumina",
+    "RequiredLevel": 10,
+    "PrerequisiteQuestIds": [
+      "unsave_caves"
+    ],
+    "RequiredKills": {
+      "15": 8
+    },
+    "RequiredItems": {},
+    "RewardXp": 300,
+    "RewardGold": 150,
+    "AcceptDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.cave_bats.accept.1"
+      },
+      {
+        "Speaker": "player",
+        "Text": "quest.cave_bats.accept.2"
+      },
+      {
+        "Speaker": "npc",
+        "Text": "quest.cave_bats.accept.3"
+      }
+    ],
+    "ReturnDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.cave_bats.return.1"
+      }
+    ]
+  },
+  {
+    "Id": "stone_imps",
+    "Name": "quest.stone_imps.name",
+    "Description": "quest.stone_imps.desc",
+    "GiverNpcId": "villager_lumina",
+    "RequiredLevel": 12,
+    "PrerequisiteQuestIds": [
+      "cave_bats"
+    ],
+    "RequiredKills": {
+      "16": 10
+    },
+    "RequiredItems": {},
+    "RewardXp": 550,
+    "RewardGold": 300,
+    "AcceptDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.stone_imps.accept.1"
+      },
+      {
+        "Speaker": "player",
+        "Text": "quest.stone_imps.accept.2"
+      },
+      {
+        "Speaker": "npc",
+        "Text": "quest.stone_imps.accept.3"
+      }
+    ],
+    "ReturnDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.stone_imps.return.1"
+      }
+    ]
+  },
+  {
+    "Id": "wraith_problem",
+    "Name": "quest.wraith_problem.name",
+    "Description": "quest.wraith_problem.desc",
+    "GiverNpcId": "villager_lumina",
+    "RequiredLevel": 14,
+    "IsRepeatable": true,
+    "RepeatMaxLevel": 20,
+    "RepeatDailyLimit": 0,
+    "RepeatTotalLimit": 0,
+    "RequiredKills": {
+      "3": 10
+    },
+    "RequiredItems": {},
+    "RewardXp": 1050,
+    "RewardGold": 500,
+    "AcceptDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.wraith_problem.accept.1"
+      },
+      {
+        "Speaker": "player",
+        "Text": "quest.wraith_problem.accept.2"
+      },
+      {
+        "Speaker": "npc",
+        "Text": "quest.wraith_problem.accept.3"
+      }
+    ],
+    "ReturnDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.wraith_problem.return.1"
+      }
+    ]
+  },
+  {
+    "Id": "bone_crawlers",
+    "Name": "quest.bone_crawlers.name",
+    "Description": "quest.bone_crawlers.desc",
+    "GiverNpcId": "villager_lumina",
+    "RequiredLevel": 13,
+    "PrerequisiteQuestIds": [
+      "stone_imps",
+      "wraith_problem"
+    ],
+    "RequiredKills": {
+      "17": 15
+    },
+    "RequiredItems": {},
+    "RewardXp": 2150,
+    "RewardGold": 450,
+    "AcceptDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.bone_crawlers.accept.1"
+      },
+      {
+        "Speaker": "npc",
+        "Text": "quest.bone_crawlers.accept.2"
+      },
+      {
+        "Speaker": "player",
+        "Text": "quest.bone_crawlers.accept.3"
+      }
+    ],
+    "ReturnDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.bone_crawlers.return.1"
+      }
+    ]
+  },
+  {
+    "Id": "lizzard_raids_1",
+    "Name": "quest.lizzard_raids_1.name",
+    "Description": "quest.lizzard_raids_1.desc",
+    "GiverNpcId": "villager_lumina",
+    "ReturnNpcId": "villager_ceralith",
+    "RequiredLevel": 10,
+    "RequiredKills": {
+      "11": 15,
+      "12": 10
+    },
+    "RequiredItems": {},
+    "RewardXp": 8320,
+    "RewardGold": 520,
+    "AcceptDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.lizzard_raids_1.accept.1"
+      },
+      {
+        "Speaker": "player",
+        "Text": "quest.lizzard_raids_1.accept.2"
+      },
+      {
+        "Speaker": "npc",
+        "Text": "quest.lizzard_raids_1.accept.3"
+      }
+    ],
+    "ReturnDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.lizzard_raids_1.return.1"
+      }
+    ]
+  },
+  {
+    "Id": "boar_hunting",
+    "Name": "quest.boar_hunting.name",
+    "Description": "quest.boar_hunting.desc",
+    "GiverNpcId": "villager_lumina",
+    "ReturnNpcId": "villager_ceralith",
+    "RequiredLevel": 15,
+    "RequiredKills": {
+      "11": 20
+    },
+    "RequiredItems": {},
+    "RewardXp": 13840,
+    "RewardGold": 1250,
+    "AcceptDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.boar_hunting.accept.1"
+      },
+      {
+        "Speaker": "player",
+        "Text": "quest.boar_hunting.accept.2"
+      },
+      {
+        "Speaker": "npc",
+        "Text": "quest.boar_hunting.accept.3"
+      }
+    ],
+    "ReturnDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.boar_hunting.return.1"
+      }
+    ]
+  },
+  {
+    "Id": "end_the_undying",
+    "Name": "quest.end_the_undying.name",
+    "Description": "quest.end_the_undying.desc",
+    "GiverNpcId": "villager_lumina",
+    "RequiredLevel": 40,
+    "RequiredKills": {
+      "7": 1
+    },
+    "RequiredItems": {},
+    "RewardXp": 25000,
+    "RewardGold": 10500,
+    "AcceptDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.end_the_undying.accept.1"
+      },
+      {
+        "Speaker": "player",
+        "Text": "quest.end_the_undying.accept.2"
+      },
+      {
+        "Speaker": "npc",
+        "Text": "quest.end_the_undying.accept.3"
+      }
+    ],
+    "ReturnDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.end_the_undying.return.1"
+      }
+    ]
+  },
+  {
+    "Id": "ceralith_spirit_hunters",
+    "Name": "quest.ceralith_spirit_hunters.name",
+    "Description": "quest.ceralith_spirit_hunters.desc",
+    "GiverNpcId": "villager_ceralith",
+    "RequiredLevel": 10,
+    "PrerequisiteQuestIds": [
+      "lizzard_raids_1"
+    ],
+    "RequiredKills": {
+      "13": 5
+    },
+    "RequiredItems": {},
+    "RewardXp": 1500,
+    "RewardGold": 220,
+    "AcceptDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.ceralith_spirit_hunters.accept.1"
+      },
+      {
+        "Speaker": "player",
+        "Text": "quest.ceralith_spirit_hunters.accept.2"
+      },
+      {
+        "Speaker": "npc",
+        "Text": "quest.ceralith_spirit_hunters.accept.3"
+      }
+    ],
+    "ReturnDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.ceralith_spirit_hunters.return.1"
+      }
+    ]
+  },
+  {
+    "Id": "valley_wolves",
+    "Name": "quest.valley_wolves.name",
+    "Description": "quest.valley_wolves.desc",
+    "GiverNpcId": "villager_ceralith",
+    "RequiredLevel": 10,
+    "PrerequisiteQuestIds": [
+      "lizzard_raids_1"
+    ],
+    "RequiredKills": {
+      "18": 8
+    },
+    "RequiredItems": {},
+    "RewardXp": 1400,
+    "RewardGold": 200,
+    "AcceptDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.valley_wolves.accept.1"
+      },
+      {
+        "Speaker": "player",
+        "Text": "quest.valley_wolves.accept.2"
+      },
+      {
+        "Speaker": "npc",
+        "Text": "quest.valley_wolves.accept.3"
+      }
+    ],
+    "ReturnDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.valley_wolves.return.1"
+      }
+    ]
+  },
+  {
+    "Id": "treant_blight",
+    "Name": "quest.treant_blight.name",
+    "Description": "quest.treant_blight.desc",
+    "GiverNpcId": "villager_ceralith",
+    "RequiredLevel": 12,
+    "PrerequisiteQuestIds": [
+      "valley_wolves"
+    ],
+    "RequiredKills": {
+      "19": 6
+    },
+    "RequiredItems": {},
+    "RewardXp": 2600,
+    "RewardGold": 320,
+    "AcceptDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.treant_blight.accept.1"
+      },
+      {
+        "Speaker": "player",
+        "Text": "quest.treant_blight.accept.2"
+      },
+      {
+        "Speaker": "npc",
+        "Text": "quest.treant_blight.accept.3"
+      }
+    ],
+    "ReturnDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.treant_blight.return.1"
+      }
+    ]
+  },
+  {
+    "Id": "bandit_pass",
+    "Name": "quest.bandit_pass.name",
+    "Description": "quest.bandit_pass.desc",
+    "GiverNpcId": "villager_ceralith",
+    "RequiredLevel": 14,
+    "PrerequisiteQuestIds": [
+      "treant_blight"
+    ],
+    "RequiredKills": {
+      "20": 10
+    },
+    "RequiredItems": {},
+    "RewardXp": 4200,
+    "RewardGold": 520,
+    "AcceptDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.bandit_pass.accept.1"
+      },
+      {
+        "Speaker": "player",
+        "Text": "quest.bandit_pass.accept.2"
+      },
+      {
+        "Speaker": "npc",
+        "Text": "quest.bandit_pass.accept.3"
+      }
+    ],
+    "ReturnDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.bandit_pass.return.1"
+      }
+    ]
+  },
+  {
+    "Id": "ceralith_cellar",
+    "Name": "quest.ceralith_cellar.name",
+    "Description": "quest.ceralith_cellar.desc",
+    "GiverNpcId": "villager_ceralith",
+    "RequiredLevel": 15,
+    "PrerequisiteQuestIds": [
+      "bandit_pass"
+    ],
+    "RequiredKills": {
+      "21": 15
+    },
+    "RequiredItems": {},
+    "RewardXp": 5500,
+    "RewardGold": 750,
+    "AcceptDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.ceralith_cellar.accept.1"
+      },
+      {
+        "Speaker": "player",
+        "Text": "quest.ceralith_cellar.accept.2"
+      },
+      {
+        "Speaker": "npc",
+        "Text": "quest.ceralith_cellar.accept.3"
+      }
+    ],
+    "ReturnDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.ceralith_cellar.return.1"
+      }
+    ]
+  },
+  {
+    "Id": "woods_rangers",
+    "Name": "quest.woods_rangers.name",
+    "Description": "quest.woods_rangers.desc",
+    "GiverNpcId": "villager_lumina",
+    "RequiredLevel": 17,
+    "PrerequisiteQuestIds": [
+      "ceralith_cellar"
+    ],
+    "RequiredKills": {
+      "22": 10
+    },
+    "RequiredItems": {},
+    "RewardXp": 9000,
+    "RewardGold": 1100,
+    "AcceptDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.woods_rangers.accept.1"
+      },
+      {
+        "Speaker": "player",
+        "Text": "quest.woods_rangers.accept.2"
+      },
+      {
+        "Speaker": "npc",
+        "Text": "quest.woods_rangers.accept.3"
+      }
+    ],
+    "ReturnDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.woods_rangers.return.1"
+      }
+    ]
+  },
+  {
+    "Id": "hollow_awakening",
+    "Name": "quest.hollow_awakening.name",
+    "Description": "quest.hollow_awakening.desc",
+    "GiverNpcId": "villager_lumina",
+    "RequiredLevel": 19,
+    "PrerequisiteQuestIds": [
+      "woods_rangers"
+    ],
+    "RequiredKills": {
+      "23": 5
+    },
+    "RequiredItems": {},
+    "RewardXp": 13000,
+    "RewardGold": 1600,
+    "AcceptDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.hollow_awakening.accept.1"
+      },
+      {
+        "Speaker": "player",
+        "Text": "quest.hollow_awakening.accept.2"
+      },
+      {
+        "Speaker": "npc",
+        "Text": "quest.hollow_awakening.accept.3"
+      }
+    ],
+    "ReturnDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.hollow_awakening.return.1"
+      }
+    ]
+  },
+  {
+    "Id": "void_tide",
+    "Name": "quest.void_tide.name",
+    "Description": "quest.void_tide.desc",
+    "GiverNpcId": "villager_default",
+    "RequiredLevel": 22,
+    "PrerequisiteQuestIds": [
+      "hollow_awakening"
+    ],
+    "RequiredKills": {
+      "24": 8
+    },
+    "RequiredItems": {},
+    "RewardXp": 22000,
+    "RewardGold": 2800,
+    "AcceptDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.void_tide.accept.1"
+      },
+      {
+        "Speaker": "player",
+        "Text": "quest.void_tide.accept.2"
+      },
+      {
+        "Speaker": "npc",
+        "Text": "quest.void_tide.accept.3"
+      }
+    ],
+    "ReturnDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.void_tide.return.1"
+      }
+    ]
+  },
+  {
+    "Id": "harpy_crossings",
+    "Name": "quest.harpy_crossings.name",
+    "Description": "quest.harpy_crossings.desc",
+    "GiverNpcId": "villager_default",
+    "RequiredLevel": 26,
+    "PrerequisiteQuestIds": [
+      "void_tide"
+    ],
+    "RequiredKills": {
+      "25": 6
+    },
+    "RequiredItems": {},
+    "RewardXp": 38000,
+    "RewardGold": 5000,
+    "AcceptDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.harpy_crossings.accept.1"
+      },
+      {
+        "Speaker": "player",
+        "Text": "quest.harpy_crossings.accept.2"
+      },
+      {
+        "Speaker": "npc",
+        "Text": "quest.harpy_crossings.accept.3"
+      }
+    ],
+    "ReturnDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.harpy_crossings.return.1"
+      }
+    ]
+  },
+  {
+    "Id": "ancient_guardians",
+    "Name": "quest.ancient_guardians.name",
+    "Description": "quest.ancient_guardians.desc",
+    "GiverNpcId": "villager_default",
+    "RequiredLevel": 31,
+    "PrerequisiteQuestIds": [
+      "harpy_crossings"
+    ],
+    "RequiredKills": {
+      "11": 10
+    },
+    "RequiredItems": {},
+    "RewardXp": 72000,
+    "RewardGold": 9000,
+    "AcceptDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.ancient_guardians.accept.1"
+      },
+      {
+        "Speaker": "player",
+        "Text": "quest.ancient_guardians.accept.2"
+      },
+      {
+        "Speaker": "npc",
+        "Text": "quest.ancient_guardians.accept.3"
+      }
+    ],
+    "ReturnDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.ancient_guardians.return.1"
+      }
+    ]
+  },
+  {
+    "Id": "crimson_hunt",
+    "Name": "quest.crimson_hunt.name",
+    "Description": "quest.crimson_hunt.desc",
+    "GiverNpcId": "villager_default",
+    "RequiredLevel": 36,
+    "PrerequisiteQuestIds": [
+      "ancient_guardians"
+    ],
+    "RequiredKills": {
+      "18": 3
+    },
+    "RequiredItems": {},
+    "RewardXp": 130000,
+    "RewardGold": 16000,
+    "AcceptDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.crimson_hunt.accept.1"
+      },
+      {
+        "Speaker": "player",
+        "Text": "quest.crimson_hunt.accept.2"
+      },
+      {
+        "Speaker": "npc",
+        "Text": "quest.crimson_hunt.accept.3"
+      }
+    ],
+    "ReturnDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.crimson_hunt.return.1"
+      }
+    ]
+  },
+  {
+    "Id": "royas_vipers",
+    "Name": "quest.royas_vipers.name",
+    "Description": "quest.royas_vipers.desc",
+    "GiverNpcId": "villager_ceralith",
+    "RequiredLevel": 1,
+    "RequiredKills": {
+      "33": 5
+    },
+    "RequiredItems": {},
+    "RewardXp": 150,
+    "RewardGold": 60,
+    "AcceptDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.royas_vipers.accept.1"
+      },
+      {
+        "Speaker": "player",
+        "Text": "quest.royas_vipers.accept.2"
+      },
+      {
+        "Speaker": "npc",
+        "Text": "quest.royas_vipers.accept.3"
+      }
+    ],
+    "ReturnDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.royas_vipers.return.1"
+      }
+    ]
+  },
+  {
+    "Id": "royas_toads",
+    "Name": "quest.royas_toads.name",
+    "Description": "quest.royas_toads.desc",
+    "GiverNpcId": "villager_ceralith",
+    "RequiredLevel": 3,
+    "PrerequisiteQuestIds": [
+      "royas_mudcrawlers"
+    ],
+    "RequiredKills": {
+      "34": 6
+    },
+    "RequiredItems": {},
+    "RewardXp": 385,
+    "RewardGold": 80,
+    "AcceptDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.royas_toads.accept.1"
+      },
+      {
+        "Speaker": "player",
+        "Text": "quest.royas_toads.accept.2"
+      },
+      {
+        "Speaker": "npc",
+        "Text": "quest.royas_toads.accept.3"
+      }
+    ],
+    "ReturnDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.royas_toads.return.1"
+      }
+    ]
+  },
+  {
+    "Id": "royas_youth_threat",
+    "Name": "quest.royas_youth_threat.name",
+    "Description": "quest.royas_youth_threat.desc",
+    "GiverNpcId": "villager_ceralith",
+    "RequiredLevel": 4,
+    "PrerequisiteQuestIds": [
+      "royas_toads"
+    ],
+    "RequiredKills": {
+      "35": 5
+    },
+    "RequiredItems": {},
+    "RewardXp": 615,
+    "RewardGold": 130,
+    "AcceptDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.royas_youth_threat.accept.1"
+      },
+      {
+        "Speaker": "player",
+        "Text": "quest.royas_youth_threat.accept.2"
+      },
+      {
+        "Speaker": "npc",
+        "Text": "quest.royas_youth_threat.accept.3"
+      }
+    ],
+    "ReturnDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.royas_youth_threat.return.1"
+      }
+    ]
+  },
+  {
+    "Id": "royas_thornhoppers",
+    "Name": "quest.royas_thornhoppers.name",
+    "Description": "quest.royas_thornhoppers.desc",
+    "GiverNpcId": "villager_ceralith",
+    "RequiredLevel": 5,
+    "PrerequisiteQuestIds": [
+      "royas_youth_threat"
+    ],
+    "RequiredKills": {
+      "8": 6
+    },
+    "RequiredItems": {},
+    "RewardXp": 1280,
+    "RewardGold": 140,
+    "AcceptDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.royas_thornhoppers.accept.1"
+      },
+      {
+        "Speaker": "player",
+        "Text": "quest.royas_thornhoppers.accept.2"
+      },
+      {
+        "Speaker": "npc",
+        "Text": "quest.royas_thornhoppers.accept.3"
+      }
+    ],
+    "ReturnDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.royas_thornhoppers.return.1"
+      }
+    ]
+  },
+  {
+    "Id": "royas_river_raptors",
+    "Name": "quest.royas_river_raptors.name",
+    "Description": "quest.royas_river_raptors.desc",
+    "GiverNpcId": "villager_ceralith",
+    "RequiredLevel": 6,
+    "PrerequisiteQuestIds": [
+      "royas_thornhoppers"
+    ],
+    "RequiredKills": {
+      "10": 5
+    },
+    "RequiredItems": {},
+    "RewardXp": 1614,
+    "RewardGold": 155,
+    "AcceptDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.royas_river_raptors.accept.1"
+      },
+      {
+        "Speaker": "player",
+        "Text": "quest.royas_river_raptors.accept.2"
+      },
+      {
+        "Speaker": "npc",
+        "Text": "quest.royas_river_raptors.accept.3"
+      }
+    ],
+    "ReturnDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.royas_river_raptors.return.1"
+      }
+    ]
+  },
+  {
+    "Id": "royas_maka_scouts",
+    "Name": "quest.royas_maka_scouts.name",
+    "Description": "quest.royas_maka_scouts.desc",
+    "GiverNpcId": "villager_ceralith",
+    "RequiredLevel": 7,
+    "PrerequisiteQuestIds": [
+      "royas_river_raptors"
+    ],
+    "RequiredKills": {
+      "12": 7
+    },
+    "RequiredItems": {},
+    "RewardXp": 1430,
+    "RewardGold": 170,
+    "AcceptDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.royas_maka_scouts.accept.1"
+      },
+      {
+        "Speaker": "player",
+        "Text": "quest.royas_maka_scouts.accept.2"
+      },
+      {
+        "Speaker": "npc",
+        "Text": "quest.royas_maka_scouts.accept.3"
+      }
+    ],
+    "ReturnDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.royas_maka_scouts.return.1"
+      }
+    ]
+  },
+  {
+    "Id": "royas_river_spirits",
+    "Name": "quest.royas_river_spirits.name",
+    "Description": "quest.royas_river_spirits.desc",
+    "GiverNpcId": "villager_ceralith",
+    "RequiredLevel": 8,
+    "PrerequisiteQuestIds": [
+      "royas_maka_scouts"
+    ],
+    "RequiredKills": {
+      "13": 4
+    },
+    "RequiredItems": {},
+    "RewardXp": 1470,
+    "RewardGold": 185,
+    "AcceptDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.royas_river_spirits.accept.1"
+      },
+      {
+        "Speaker": "player",
+        "Text": "quest.royas_river_spirits.accept.2"
+      },
+      {
+        "Speaker": "npc",
+        "Text": "quest.royas_river_spirits.accept.3"
+      }
+    ],
+    "ReturnDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.royas_river_spirits.return.1"
+      }
+    ]
+  },
+  {
+    "Id": "royas_maka_hunters",
+    "Name": "quest.royas_maka_hunters.name",
+    "Description": "quest.royas_maka_hunters.desc",
+    "GiverNpcId": "villager_ceralith",
+    "RequiredLevel": 9,
+    "PrerequisiteQuestIds": [
+      "royas_river_spirits"
+    ],
+    "RequiredKills": {
+      "11": 6
+    },
+    "RequiredItems": {},
+    "RewardXp": 1510,
+    "RewardGold": 200,
+    "AcceptDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.royas_maka_hunters.accept.1"
+      },
+      {
+        "Speaker": "player",
+        "Text": "quest.royas_maka_hunters.accept.2"
+      },
+      {
+        "Speaker": "npc",
+        "Text": "quest.royas_maka_hunters.accept.3"
+      }
+    ],
+    "ReturnDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.royas_maka_hunters.return.1"
+      }
+    ]
+  },
+  {
+    "Id": "royas_highland_patrol",
+    "Name": "quest.royas_highland_patrol.name",
+    "Description": "quest.royas_highland_patrol.desc",
+    "GiverNpcId": "villager_ceralith",
+    "RequiredLevel": 4,
+    "IsRepeatable": true,
+    "RepeatMaxLevel": 15,
+    "RepeatTotalLimit": 0,
+    "RequiredKills": {
+      "35": 3,
+      "8": 3
+    },
+    "RequiredItems": {},
+    "RewardXp": 320,
+    "RewardGold": 35,
+    "AcceptDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.royas_highland_patrol.accept.1"
+      },
+      {
+        "Speaker": "player",
+        "Text": "quest.royas_highland_patrol.accept.2"
+      },
+      {
+        "Speaker": "npc",
+        "Text": "quest.royas_highland_patrol.accept.3"
+      }
+    ],
+    "ReturnDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.royas_highland_patrol.return.1"
+      }
+    ]
+  },
+  {
+    "Id": "royas_mudcrawlers",
+    "Name": "quest.royas_mudcrawlers.name",
+    "Description": "quest.royas_mudcrawlers.desc",
+    "GiverNpcId": "villager_ceralith",
+    "RequiredLevel": 2,
+    "PrerequisiteQuestIds": [
+      "royas_vipers"
+    ],
+    "RequiredKills": {
+      "36": 5
+    },
+    "RequiredItems": {},
+    "RewardXp": 240,
+    "RewardGold": 70,
+    "AcceptDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.royas_mudcrawlers.accept.1"
+      },
+      {
+        "Speaker": "player",
+        "Text": "quest.royas_mudcrawlers.accept.2"
+      },
+      {
+        "Speaker": "npc",
+        "Text": "quest.royas_mudcrawlers.accept.3"
+      }
+    ],
+    "ReturnDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.royas_mudcrawlers.return.1"
+      }
+    ]
+  },
+  {
+    "Id": "co1_mudcrawler_remedy",
+    "Name": "quest.co1_mudcrawler_remedy.name",
+    "Description": "quest.co1_mudcrawler_remedy.desc",
+    "GiverNpcId": "healer_default",
+    "RequiredLevel": 2,
+    "RequiredKills": {
+      "36": 4
+    },
+    "RequiredItems": {},
+    "RewardXp": 200,
+    "RewardGold": 65,
+    "AcceptDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.co1_mudcrawler_remedy.accept.1"
+      },
+      {
+        "Speaker": "player",
+        "Text": "quest.co1_mudcrawler_remedy.accept.2"
+      },
+      {
+        "Speaker": "npc",
+        "Text": "quest.co1_mudcrawler_remedy.accept.3"
+      }
+    ],
+    "ReturnDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.co1_mudcrawler_remedy.return.1"
+      }
+    ]
+  },
+  {
+    "Id": "co1_leech_problem",
+    "Name": "quest.co1_leech_problem.name",
+    "Description": "quest.co1_leech_problem.desc",
+    "GiverNpcId": "healer_default",
+    "RequiredLevel": 3,
+    "RequiredKills": {
+      "37": 6
+    },
+    "RequiredItems": {},
+    "RewardXp": 300,
+    "RewardGold": 75,
+    "AcceptDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.co1_leech_problem.accept.1"
+      },
+      {
+        "Speaker": "player",
+        "Text": "quest.co1_leech_problem.accept.2"
+      },
+      {
+        "Speaker": "npc",
+        "Text": "quest.co1_leech_problem.accept.3"
+      }
+    ],
+    "ReturnDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.co1_leech_problem.return.1"
+      }
+    ]
+  },
+  {
+    "Id": "co1_hound_pack",
+    "Name": "quest.co1_hound_pack.name",
+    "Description": "quest.co1_hound_pack.desc",
+    "GiverNpcId": "villager_ceralith",
+    "RequiredLevel": 5,
+    "RequiredKills": {
+      "38": 5
+    },
+    "RequiredItems": {},
+    "RewardXp": 950,
+    "RewardGold": 120,
+    "AcceptDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.co1_hound_pack.accept.1"
+      },
+      {
+        "Speaker": "player",
+        "Text": "quest.co1_hound_pack.accept.2"
+      },
+      {
+        "Speaker": "npc",
+        "Text": "quest.co1_hound_pack.accept.3"
+      }
+    ],
+    "ReturnDialog": [
+      {
+        "Speaker": "npc",
+        "Text": "quest.co1_hound_pack.return.1"
+      }
+    ]
+  }
+]

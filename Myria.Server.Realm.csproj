@@ -1,0 +1,70 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <ApplicationIcon>App.ico</ApplicationIcon>
+    <!-- The project/solution file is Myria.Server.Realm, but the published binary keeps the
+         historic "MyriaServer" name: run-production.sh/update-production.sh (shipped inside
+         the release zip and run on the production box) hardcode ./MyriaServer. -->
+    <AssemblyName>MyriaServer</AssemblyName>
+    <Version>0.2.0</Version>
+    <AssemblyVersion>0.2.0.0</AssemblyVersion>
+    <FileVersion>0.2.0.0</FileVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Remove="Data\common\gameStatus.json" />
+    <Content Remove="Data\common\shops.json" />
+    <Content Remove="Data\common\skill_combinations.json" />
+    <Content Remove="Data\common\starting_items.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="Data\common\gameStatus.json" />
+    <None Include="Data\common\shops.json" />
+    <None Include="Data\common\skill_combinations.json" />
+    <None Include="Data\common\starting_items.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.11" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.11">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.11" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Myria.Lib\Myria.Lib.Core\Myria.Lib.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Update="Data\common\rooms.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Update="Data\guild_config.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <None Include="run-production.sh">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="update-production.sh">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <!-- appsettings.Production.json holds real secrets on this dev machine (gitignored) —
+         the Web SDK publishes appsettings.*.json to the output by default, which would ship
+         it inside the release zip. Keep it usable for local `dotnet run`/`dotnet build`
+         (CopyToOutputDirectory, untouched) but exclude it specifically from `dotnet publish`
+         output. Real production config must come from environment variables at deploy time. -->
+    <Content Update="appsettings.Production.json">
+      <CopyToPublishDirectory>Never</CopyToPublishDirectory>
+    </Content>
+  </ItemGroup>
+
+  <!-- Copy shared game data so Myria.Lib.Core services can find them at runtime -->
+
+</Project>

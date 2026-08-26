@@ -1,0 +1,71 @@
+[
+  {
+    "race": "Myralu",
+    "baseStatBonus": { "STR": 3, "DEX": 1, "END": 7, "INT": 3, "SPR": 3 },
+    "baseHpBonus": 30,
+    "baseManaBonus": 20,
+    "statGrowth": { "STR": 1, "DEX": 1, "END": 2, "INT": 2, "SPR": 2 },
+    "hpPerLevel": 6,
+    "manaPerLevel": 5
+  },
+  {
+    "race": "Rotuka",
+    "baseStatBonus": { "STR": 5, "DEX": 2, "END": 7, "INT": -2, "SPR": -3 },
+    "baseHpBonus": 25,
+    "baseManaBonus": 0,
+    "statGrowth": { "STR": 3, "DEX": 2, "END": 2, "INT": 0, "SPR": 1 },
+    "hpPerLevel": 7,
+    "manaPerLevel": 1,
+    "forbiddenClasses": [ "RunicMage" ]
+  },
+  {
+    "race": "Iymva",
+    "baseStatBonus": { "STR": -1, "DEX": 5, "END": 2, "INT": 1, "SPR": 0 },
+    "baseHpBonus": 10,
+    "baseManaBonus": 5,
+    "statGrowth": { "STR": 1, "DEX": 3, "END": 1, "INT": 1, "SPR": 1 },
+    "hpPerLevel": 4,
+    "manaPerLevel": 3,
+    "forbiddenClasses": [ "RunicMage" ]
+  },
+  {
+    "race": "Zalu",
+    "baseStatBonus": { "STR": 0, "DEX": 0, "END": 3, "INT": 0, "SPR": 0 },
+    "baseHpBonus": 10,
+    "baseManaBonus": 0,
+    "statGrowth": { "STR": 2, "DEX": 2, "END": 2, "INT": 1, "SPR": 1 },
+    "hpPerLevel": 5,
+    "manaPerLevel": 2,
+    "forbiddenClasses": [ "RunicMage" ]
+  },
+  {
+    "race": "Gavon",
+    "baseStatBonus": { "STR": -3, "DEX": 2, "END": 1, "INT": 4, "SPR": 5 },
+    "baseHpBonus": 5,
+    "baseManaBonus": 25,
+    "statGrowth": { "STR": 1, "DEX": 1, "END": 1, "INT": 2, "SPR": 2 },
+    "hpPerLevel": 3,
+    "manaPerLevel": 6,
+    "forbiddenClasses": [ "RunicMage" ]
+  },
+  {
+    "race": "Gamato",
+    "baseStatBonus": { "STR": 1, "DEX": 1, "END": 4, "INT": 1, "SPR": 1 },
+    "baseHpBonus": 15,
+    "baseManaBonus": 5,
+    "statGrowth": { "STR": 2, "DEX": 2, "END": 2, "INT": 1, "SPR": 1 },
+    "hpPerLevel": 5,
+    "manaPerLevel": 3,
+    "forbiddenClasses": [ "RunicMage" ]
+  },
+  {
+    "race": "Amato",
+    "baseStatBonus": { "STR": 1, "DEX": 2, "END": 4, "INT": 1, "SPR": 2 },
+    "baseHpBonus": 15,
+    "baseManaBonus": 10,
+    "statGrowth": { "STR": 1, "DEX": 2, "END": 1, "INT": 2, "SPR": 2 },
+    "hpPerLevel": 5,
+    "manaPerLevel": 4,
+    "forbiddenClasses": [ "ElementalMage", "ArcanMage", "Druid", "SoulsKnight" ]
+  }
+]

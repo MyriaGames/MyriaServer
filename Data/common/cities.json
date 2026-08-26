@@ -1,0 +1,27 @@
+[
+  {
+    "Id": "city_hydea",
+    "Name": "city.lumina",
+    "AnchorRoomId": 8,
+    "RoomIds": [ 8, 9, 10, 11, 12, 13 ]
+  },
+  {
+    "Id": "city_royas",
+    "Name": "city.ceralith",
+    "AnchorRoomId": 1,
+    "RoomIds": [ 1 ]
+  },
+  {
+    "Id": "city_gerlyas",
+    "Name": "city.gerlyas",
+    "AnchorRoomId": 27,
+    "RoomIds": [ 27 ]
+  },
+  {
+    "Id": "city_xarra",
+    "Name": "city.elenorium",
+    "IsBig": true,
+    "AnchorRoomId": 62,
+    "RoomIds": [ 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63 ]
+  }
+]

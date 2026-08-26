@@ -1,0 +1,153 @@
+[
+  {
+    "Id": "sky",
+    "Name": "Sky",
+    "FamilyRelations": {
+      "life":   "Support",
+      "fire":   "Support",
+      "water":  "Neutral",
+      "earth":  "Contradiction",
+      "death":  "Contradiction",
+      "battle": "Neutral",
+      "magic":  "Neutral",
+      "divine": "Support"
+    }
+  },
+  {
+    "Id": "death",
+    "Name": "Death",
+    "FamilyRelations": {
+      "dark":   "Support",
+      "light":  "Contradiction",
+      "life":   "Contradiction",
+      "divine": "Contradiction",
+      "sky":    "Contradiction",
+      "magic":  "Neutral",
+      "power":  "Neutral",
+      "battle": "Support"
+    }
+  },
+  {
+    "Id": "light",
+    "Name": "Light",
+    "FamilyRelations": {
+      "dark":   "Contradiction",
+      "death":  "Contradiction",
+      "life":   "Support",
+      "divine": "Support",
+      "magic":  "Support",
+      "sky":    "Support",
+      "power":  "Neutral"
+    }
+  },
+  {
+    "Id": "dark",
+    "Name": "Dark",
+    "FamilyRelations": {
+      "light":  "Contradiction",
+      "life":   "Contradiction",
+      "death":  "Support",
+      "divine": "Contradiction",
+      "magic":  "Neutral",
+      "power":  "Neutral"
+    }
+  },
+  {
+    "Id": "power",
+    "Name": "Power",
+    "FamilyRelations": {
+      "battle": "Support",
+      "magic":  "Support",
+      "divine": "Support",
+      "light":  "Neutral",
+      "death":  "Neutral"
+    }
+  },
+  {
+    "Id": "life",
+    "Name": "Life",
+    "FamilyRelations": {
+      "magic":  "Support",
+      "sky":    "Support",
+      "light":  "Support",
+      "water":  "Support",
+      "earth":  "Support",
+      "death":  "Contradiction",
+      "dark":   "Contradiction",
+      "battle": "Contradiction"
+    }
+  },
+  {
+    "Id": "fire",
+    "Name": "Fire",
+    "FamilyRelations": {
+      "sky":    "Support",
+      "water":  "Contradiction",
+      "earth":  "Neutral",
+      "life":   "Neutral",
+      "battle": "Support"
+    }
+  },
+  {
+    "Id": "water",
+    "Name": "Water",
+    "FamilyRelations": {
+      "fire":   "Contradiction",
+      "life":   "Support",
+      "earth":  "Support",
+      "sky":    "Neutral"
+    }
+  },
+  {
+    "Id": "magic",
+    "Name": "Magic",
+    "FamilyRelations": {
+      "life":   "Support",
+      "light":  "Support",
+      "power":  "Support",
+      "divine": "Support",
+      "sky":    "Neutral",
+      "death":  "Neutral",
+      "battle": "Neutral"
+    }
+  },
+  {
+    "Id": "divine",
+    "Name": "Divine",
+    "FamilyRelations": {
+      "magic":  "Support",
+      "light":  "Support",
+      "life":   "Support",
+      "sky":    "Support",
+      "death":  "Contradiction",
+      "dark":   "Contradiction"
+    }
+  },
+  {
+    "Id": "battle",
+    "Name": "Battle",
+    "FamilyRelations": {
+      "power":  "Support",
+      "death":  "Support",
+      "fire":   "Support",
+      "life":   "Contradiction",
+      "divine": "Neutral",
+      "magic":  "Neutral"
+    }
+  },
+  {
+    "Id": "earth",
+    "Name": "Earth",
+    "FamilyRelations": {
+      "water":  "Support",
+      "life":   "Support",
+      "fire":   "Neutral",
+      "sky":    "Contradiction"
+    }
+  },
+  {
+    "Id": "area",
+    "Name": "Area",
+    "FamilyRelations": {}
+  }
+]

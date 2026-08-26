@@ -1,0 +1,32 @@
+[
+  {
+    "WordIdA": "gaton",
+    "WordIdB": "xuton",
+    "Relationship": "Transform",
+    "TransformResultRuneId": "rune_vael"
+  },
+  {
+    "WordIdA": "kretu",
+    "WordIdB": "solvar",
+    "Relationship": "Transform",
+    "TransformResultRuneId": "rune_kretsolv"
+  },
+  {
+    "WordIdA": "myra",
+    "WordIdB": "vae",
+    "Relationship": "Support",
+    "TransformResultRuneId": null
+  },
+  {
+    "WordIdA": "gyra",
+    "WordIdB": "galun",
+    "Relationship": "Support",
+    "TransformResultRuneId": null
+  },
+  {
+    "WordIdA": "vel",
+    "WordIdB": "solvun",
+    "Relationship": "Support",
+    "TransformResultRuneId": null
+  }
+]

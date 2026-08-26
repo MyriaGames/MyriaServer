@@ -1,0 +1,1383 @@
+[
+  {
+    "Id": 1,
+    "Name": "room.royas.main",
+    "Description": "room.royas.desc",
+    "IsCity": true,
+    "Npcs": [
+      "healer_default",
+      "smith_default",
+      "villager_ceralith",
+      "trader_default"
+    ],
+    "ExitIds": {
+      "north": 2,
+      "south": 22
+    }
+  },
+  {
+    "Id": 2,
+    "Name": "room.novmito.1",
+    "Description": "room.novmito.1.desc",
+    "HasMonsters": true,
+    "ExitIds": {
+      "north": 3,
+      "south": 1
+    },
+    "EncounterableMonsters": {
+      "33": 0.25,
+      "34": 0.25,
+      "35": 0.25,
+      "36": 0.25
+    }
+  },
+  {
+    "Id": 3,
+    "Name": "room.novmito.2",
+    "Description": "room.novmito.2.desc",
+    "HasMonsters": true,
+    "ExitIds": {
+      "north": 4,
+      "south": 2
+    },
+    "EncounterableMonsters": {
+      "33": 0.25,
+      "34": 0.25,
+      "35": 0.25,
+      "36": 0.25,
+      "37": 0.15
+    }
+  },
+  {
+    "Id": 4,
+    "Name": "room.novmito.3",
+    "Description": "room.novmito.3.desc",
+    "HasMonsters": true,
+    "ExitIds": {
+      "north": 5,
+      "south": 3
+    },
+    "EncounterableMonsters": {
+      "33": 0.25,
+      "34": 0.25,
+      "35": 0.25,
+      "36": 0.25,
+      "38": 0.15,
+      "8": 0.15
+    }
+  },
+  {
+    "Id": 5,
+    "Name": "room.novmito.turn",
+    "Description": "room.novmito.turn.desc",
+    "HasMonsters": true,
+    "ExitIds": {
+      "west": 6,
+      "south": 4
+    },
+    "EncounterableMonsters": {
+      "33": 0.25,
+      "34": 0.25,
+      "35": 0.25,
+      "36": 0.25,
+      "10": 0.15
+    }
+  },
+  {
+    "Id": 6,
+    "Name": "room.novmito.4",
+    "Description": "room.novmito.4.desc",
+    "HasMonsters": true,
+    "ExitIds": {
+      "east": 5,
+      "west": 7
+    },
+    "EncounterableMonsters": {
+      "33": 0.25,
+      "34": 0.25,
+      "35": 0.25,
+      "36": 0.25,
+      "12": 0.15,
+      "13": 0.1
+    }
+  },
+  {
+    "Id": 7,
+    "Name": "room.novmito.5",
+    "Description": "room.novmito.5.desc",
+    "HasMonsters": true,
+    "ExitIds": {
+      "east": 6,
+      "west": 8
+    },
+    "EncounterableMonsters": {
+      "33": 0.25,
+      "34": 0.25,
+      "35": 0.25,
+      "36": 0.25,
+      "11": 0.15
+    }
+  },
+  {
+    "Id": 8,
+    "Name": "room.hydea.east",
+    "Description": "room.hydea.east.desc",
+    "IsCity": true,
+    "Npcs": [
+      "villager_lumina",
+      "skill_master_lumina"
+    ],
+    "RequirementType": 1,
+    "AccessLevel": 10,
+    "ExitIds": {
+      "west": 9,
+      "east": 7
+    }
+  },
+  {
+    "Id": 9,
+    "Name": "room.hydea.center",
+    "Description": "room.hydea.center.desc",
+    "IsCity": true,
+    "Npcs": [
+      "healer_default",
+      "trader_default",
+      "artificer_default"
+    ],
+    "RequirementType": 1,
+    "AccessLevel": 10,
+    "ExitIds": {
+      "north": 12,
+      "east": 8,
+      "west": 10,
+      "south": 11
+    }
+  },
+  {
+    "Id": 10,
+    "Name": "room.hydea.west",
+    "Description": "room.hydea.west.desc",
+    "IsCity": true,
+    "Npcs": [],
+    "RequirementType": 1,
+    "AccessLevel": 10,
+    "ExitIds": {
+      "east": 9
+    }
+  },
+  {
+    "Id": 11,
+    "Name": "room.hydea.south",
+    "Description": "room.hydea.south.desc",
+    "IsCity": true,
+    "Npcs": [
+      "villager_default"
+    ],
+    "RequirementType": 1,
+    "AccessLevel": 10,
+    "ExitIds": {
+      "north": 9,
+      "south": 36
+    }
+  },
+  {
+    "Id": 12,
+    "Name": "room.hydea.north",
+    "Description": "room.hydea.north.desc",
+    "IsCity": true,
+    "Npcs": [
+      "smith_default",
+      "leathersmith_default"
+    ],
+    "RequirementType": 1,
+    "AccessLevel": 10,
+    "ExitIds": {
+      "south": 9,
+      "north": 13
+    }
+  },
+  {
+    "Id": 13,
+    "Name": "room.hydea.mines",
+    "Description": "room.hydea.mines.desc",
+    "IsCity": true,
+    "Npcs": [
+      "miner_master"
+    ],
+    "RequirementType": 1,
+    "AccessLevel": 10,
+    "ExitIds": {
+      "south": 12,
+      "north": 14
+    }
+  },
+  {
+    "Id": 14,
+    "Name": "room.cave.entrance",
+    "Description": "room.cave.entrance.desc",
+    "HasMonsters": false,
+    "IsCaveRoom": true,
+    "RequirementType": 1,
+    "AccessLevel": 10,
+    "ExitIds": {
+      "south": 13,
+      "north": 15
+    },
+    "GatheringSpots": [
+      {
+        "Id": "iron_vein",
+        "Name": "Iron Vein",
+        "Description": "A rich seam of iron embedded in the rock.",
+        "Type": "Ore",
+        "GatheredItemId": "iron_ore",
+        "RequiredToolId": "pickaxe"
+      }
+    ]
+  },
+  {
+    "Id": 15,
+    "Name": "room.cave.dark_passage",
+    "Description": "room.cave.dark_passage.desc",
+    "HasMonsters": true,
+    "IsCaveRoom": true,
+    "RequirementType": 1,
+    "AccessLevel": 10,
+    "ExitIds": {
+      "south": 14,
+      "east": 16
+    },
+    "EncounterableMonsters": {
+      "1": 0.45,
+      "2": 0.3,
+      "15": 0.25
+    },
+    "GatheringSpots": [
+      {
+        "Id": "iron_vein",
+        "Name": "Iron Vein",
+        "Description": "A rich seam of iron embedded in the rock.",
+        "Type": "Ore",
+        "GatheredItemId": "iron_ore",
+        "RequiredToolId": "pickaxe"
+      }
+    ]
+  },
+  {
+    "Id": 16,
+    "Name": "room.cave.chamber_echoes",
+    "Description": "room.cave.chamber_echoes.desc",
+    "HasMonsters": true,
+    "IsCaveRoom": true,
+    "RequirementType": 1,
+    "AccessLevel": 10,
+    "ExitIds": {
+      "west": 15,
+      "east": 17
+    },
+    "EncounterableMonsters": {
+      "1": 0.45,
+      "2": 0.3,
+      "15": 0.25
+    },
+    "GatheringSpots": [
+      {
+        "Id": "iron_vein",
+        "Name": "Iron Vein",
+        "Description": "A rich seam of iron embedded in the rock.",
+        "Type": "Ore",
+        "GatheredItemId": "iron_ore",
+        "RequiredToolId": "pickaxe"
+      }
+    ]
+  },
+  {
+    "Id": 17,
+    "Name": "room.cave.junction",
+    "Description": "room.cave.junction.desc",
+    "HasMonsters": true,
+    "IsCaveRoom": true,
+    "RequirementType": 1,
+    "AccessLevel": 10,
+    "ExitIds": {
+      "west": 16,
+      "north": 19,
+      "south": 20
+    },
+    "EncounterableMonsters": {
+      "1": 0.45,
+      "2": 0.3,
+      "15": 0.25
+    },
+    "GatheringSpots": [
+      {
+        "Id": "iron_vein",
+        "Name": "Iron Vein",
+        "Description": "A rich seam of iron embedded in the rock.",
+        "Type": "Ore",
+        "GatheredItemId": "iron_ore",
+        "RequiredToolId": "pickaxe"
+      }
+    ]
+  },
+  {
+    "Id": 18,
+    "Name": "room.cave.chamber_ancient",
+    "Description": "room.cave.chamber_ancient.desc",
+    "HasMonsters": true,
+    "IsCaveRoom": true,
+    "RequirementType": 1,
+    "AccessLevel": 10,
+    "ExitIds": {
+      "south": 19
+    },
+    "EncounterableMonsters": {
+      "15": 0.4,
+      "16": 0.4,
+      "17": 0.2
+    },
+    "GatheringSpots": [
+      {
+        "Id": "iron_vein",
+        "Name": "Iron Vein",
+        "Description": "A rich seam of iron embedded in the rock.",
+        "Type": "Ore",
+        "GatheredItemId": "iron_ore",
+        "RequiredToolId": "pickaxe"
+      }
+    ]
+  },
+  {
+    "Id": 19,
+    "Name": "room.cave.chamber_deep",
+    "Description": "room.cave.chamber_deep.desc",
+    "HasMonsters": true,
+    "IsCaveRoom": true,
+    "RequirementType": 1,
+    "AccessLevel": 10,
+    "ExitIds": {
+      "north": 18,
+      "south": 17
+    },
+    "EncounterableMonsters": {
+      "15": 0.4,
+      "16": 0.4,
+      "17": 0.2
+    },
+    "GatheringSpots": [
+      {
+        "Id": "iron_vein",
+        "Name": "Iron Vein",
+        "Description": "A rich seam of iron embedded in the rock.",
+        "Type": "Ore",
+        "GatheredItemId": "iron_ore",
+        "RequiredToolId": "pickaxe"
+      }
+    ]
+  },
+  {
+    "Id": 20,
+    "Name": "room.cave.abyss_passage",
+    "Description": "room.cave.abyss_passage.desc",
+    "HasMonsters": true,
+    "IsCaveRoom": true,
+    "RequirementType": 1,
+    "AccessLevel": 10,
+    "ExitIds": {
+      "north": 17,
+      "south": 21
+    },
+    "EncounterableMonsters": {
+      "15": 0.4,
+      "16": 0.4,
+      "17": 0.2
+    },
+    "GatheringSpots": [
+      {
+        "Id": "iron_vein",
+        "Name": "Iron Vein",
+        "Description": "A rich seam of iron embedded in the rock.",
+        "Type": "Ore",
+        "GatheredItemId": "iron_ore",
+        "RequiredToolId": "pickaxe"
+      }
+    ]
+  },
+  {
+    "Id": 21,
+    "Name": "room.cave.chamber_hollow",
+    "Description": "room.cave.chamber_hollow.desc",
+    "HasMonsters": true,
+    "IsCaveRoom": true,
+    "RequirementType": 1,
+    "AccessLevel": 10,
+    "ExitIds": {
+      "north": 20,
+      "east": 64
+    },
+    "EncounterableMonsters": {
+      "15": 0.35,
+      "16": 0.35,
+      "17": 0.15,
+      "3": 0.15
+    },
+    "GatheringSpots": [
+      {
+        "Id": "iron_vein",
+        "Name": "Iron Vein",
+        "Description": "A rich seam of iron embedded in the rock.",
+        "Type": "Ore",
+        "GatheredItemId": "iron_ore",
+        "RequiredToolId": "pickaxe"
+      }
+    ]
+  },
+  {
+    "Id": 22,
+    "Name": "room.grelmito.1",
+    "Description": "room.grelmito.1.desc",
+    "HasMonsters": true,
+    "RequirementType": 1,
+    "AccessLevel": 12,
+    "ExitIds": {
+      "north": 1,
+      "south": 23
+    },
+    "EncounterableMonsters": {
+      "19": 0.2,
+      "20": 0.3,
+      "21": 0.25,
+      "29": 0.25,
+      "18": 0.2
+    }
+  },
+  {
+    "Id": 23,
+    "Name": "room.grelmito.2",
+    "Description": "room.grelmito.2.desc",
+    "HasMonsters": true,
+    "RequirementType": 1,
+    "AccessLevel": 12,
+    "ExitIds": {
+      "north": 22,
+      "south": 24,
+      "west": 28
+    },
+    "EncounterableMonsters": {
+      "19": 0.2,
+      "20": 0.3,
+      "21": 0.25,
+      "29": 0.25,
+      "18": 0.2
+    }
+  },
+  {
+    "Id": 24,
+    "Name": "room.grelmito.3",
+    "Description": "room.grelmito.3.desc",
+    "HasMonsters": true,
+    "RequirementType": 1,
+    "AccessLevel": 12,
+    "ExitIds": {
+      "north": 23,
+      "south": 25
+    },
+    "EncounterableMonsters": {
+      "19": 0.2,
+      "20": 0.3,
+      "21": 0.25,
+      "29": 0.25,
+      "18": 0.2
+    }
+  },
+  {
+    "Id": 25,
+    "Name": "room.grelmito.4",
+    "Description": "room.grelmito.4.desc",
+    "HasMonsters": true,
+    "RequirementType": 1,
+    "AccessLevel": 13,
+    "ExitIds": {
+      "north": 24,
+      "south": 26
+    },
+    "EncounterableMonsters": {
+      "19": 0.2,
+      "20": 0.3,
+      "21": 0.25,
+      "29": 0.25
+    }
+  },
+  {
+    "Id": 26,
+    "Name": "room.grelmito.5",
+    "Description": "room.grelmito.5.desc",
+    "HasMonsters": true,
+    "RequirementType": 1,
+    "AccessLevel": 13,
+    "ExitIds": {
+      "north": 25,
+      "south": 27,
+      "west": 31
+    },
+    "EncounterableMonsters": {
+      "19": 0.2,
+      "20": 0.3,
+      "21": 0.25,
+      "29": 0.25
+    }
+  },
+  {
+    "Id": 27,
+    "Name": "room.gerlyas",
+    "Description": "room.gerlyas.desc",
+    "IsCity": true,
+    "Npcs": [
+      "healer_default",
+      "villager_default"
+    ],
+    "RequirementType": 1,
+    "AccessLevel": 13,
+    "ExitIds": {
+      "north": 26,
+      "west": 48
+    }
+  },
+  {
+    "Id": 28,
+    "Name": "room.whispering_woods.1",
+    "Description": "room.whispering_woods.1.desc",
+    "HasMonsters": true,
+    "RequirementType": 1,
+    "AccessLevel": 13,
+    "ExitIds": {
+      "east": 23,
+      "south": 29
+    },
+    "EncounterableMonsters": {
+      "21": 0.2,
+      "22": 0.2,
+      "29": 0.3,
+      "30": 0.3
+    },
+    "GatheringSpots": [
+      {
+        "Id": "timber_tree",
+        "Name": "Old-Growth Tree",
+        "Description": "A mature tree with dense, workable wood.",
+        "Type": "Tree",
+        "GatheredItemId": "wood",
+        "RequiredToolId": "woodcutter_axe"
+      }
+    ]
+  },
+  {
+    "Id": 29,
+    "Name": "room.whispering_woods.2",
+    "Description": "room.whispering_woods.2.desc",
+    "HasMonsters": true,
+    "RequirementType": 1,
+    "AccessLevel": 13,
+    "ExitIds": {
+      "north": 28,
+      "south": 30
+    },
+    "EncounterableMonsters": {
+      "21": 0.2,
+      "22": 0.2,
+      "29": 0.3,
+      "30": 0.3
+    },
+    "GatheringSpots": [
+      {
+        "Id": "timber_tree",
+        "Name": "Old-Growth Tree",
+        "Description": "A mature tree with dense, workable wood.",
+        "Type": "Tree",
+        "GatheredItemId": "wood",
+        "RequiredToolId": "woodcutter_axe"
+      }
+    ]
+  },
+  {
+    "Id": 30,
+    "Name": "room.whispering_woods.3",
+    "Description": "room.whispering_woods.3.desc",
+    "HasMonsters": true,
+    "RequirementType": 1,
+    "AccessLevel": 13,
+    "ExitIds": {
+      "north": 29,
+      "south": 31,
+      "west": 33
+    },
+    "EncounterableMonsters": {
+      "21": 0.2,
+      "22": 0.2,
+      "29": 0.3,
+      "30": 0.3
+    },
+    "GatheringSpots": [
+      {
+        "Id": "timber_tree",
+        "Name": "Old-Growth Tree",
+        "Description": "A mature tree with dense, workable wood.",
+        "Type": "Tree",
+        "GatheredItemId": "wood",
+        "RequiredToolId": "woodcutter_axe"
+      }
+    ]
+  },
+  {
+    "Id": 31,
+    "Name": "room.whispering_woods.4",
+    "Description": "room.whispering_woods.4.desc",
+    "HasMonsters": true,
+    "RequirementType": 1,
+    "AccessLevel": 13,
+    "ExitIds": {
+      "north": 30,
+      "east": 26,
+      "south": 48
+    },
+    "EncounterableMonsters": {
+      "21": 0.2,
+      "22": 0.2,
+      "29": 0.3,
+      "30": 0.3
+    },
+    "GatheringSpots": [
+      {
+        "Id": "timber_tree",
+        "Name": "Old-Growth Tree",
+        "Description": "A mature tree with dense, workable wood.",
+        "Type": "Tree",
+        "GatheredItemId": "wood",
+        "RequiredToolId": "woodcutter_axe"
+      }
+    ]
+  },
+  {
+    "Id": 32,
+    "Name": "room.whispering_woods.5",
+    "Description": "room.whispering_woods.5.desc",
+    "HasMonsters": true,
+    "RequirementType": 1,
+    "AccessLevel": 13,
+    "ExitIds": {
+      "south": 33
+    },
+    "EncounterableMonsters": {
+      "21": 0.2,
+      "22": 0.2,
+      "29": 0.3,
+      "30": 0.3
+    },
+    "GatheringSpots": [
+      {
+        "Id": "timber_tree",
+        "Name": "Old-Growth Tree",
+        "Description": "A mature tree with dense, workable wood.",
+        "Type": "Tree",
+        "GatheredItemId": "wood",
+        "RequiredToolId": "woodcutter_axe"
+      }
+    ]
+  },
+  {
+    "Id": 33,
+    "Name": "room.whispering_woods.6",
+    "Description": "room.whispering_woods.6.desc",
+    "HasMonsters": true,
+    "RequirementType": 1,
+    "AccessLevel": 13,
+    "ExitIds": {
+      "north": 32,
+      "west": 34,
+      "east": 30
+    },
+    "EncounterableMonsters": {
+      "21": 0.2,
+      "22": 0.2,
+      "29": 0.3,
+      "30": 0.3
+    },
+    "GatheringSpots": [
+      {
+        "Id": "timber_tree",
+        "Name": "Old-Growth Tree",
+        "Description": "A mature tree with dense, workable wood.",
+        "Type": "Tree",
+        "GatheredItemId": "wood",
+        "RequiredToolId": "woodcutter_axe"
+      }
+    ]
+  },
+  {
+    "Id": 34,
+    "Name": "room.whispering_woods.7",
+    "Description": "room.whispering_woods.7.desc",
+    "HasMonsters": true,
+    "RequirementType": 1,
+    "AccessLevel": 13,
+    "ExitIds": {
+      "east": 33,
+      "south": 35
+    },
+    "EncounterableMonsters": {
+      "21": 0.2,
+      "22": 0.2,
+      "29": 0.3,
+      "30": 0.3
+    },
+    "GatheringSpots": [
+      {
+        "Id": "timber_tree",
+        "Name": "Old-Growth Tree",
+        "Description": "A mature tree with dense, workable wood.",
+        "Type": "Tree",
+        "GatheredItemId": "wood",
+        "RequiredToolId": "woodcutter_axe"
+      }
+    ]
+  },
+  {
+    "Id": 35,
+    "Name": "room.whispering_woods.8",
+    "Description": "room.whispering_woods.8.desc",
+    "HasMonsters": true,
+    "RequirementType": 1,
+    "AccessLevel": 13,
+    "ExitIds": {
+      "north": 34
+    },
+    "EncounterableMonsters": {
+      "21": 0.2,
+      "22": 0.2,
+      "29": 0.3,
+      "30": 0.3
+    },
+    "GatheringSpots": [
+      {
+        "Id": "timber_tree",
+        "Name": "Old-Growth Tree",
+        "Description": "A mature tree with dense, workable wood.",
+        "Type": "Tree",
+        "GatheredItemId": "wood",
+        "RequiredToolId": "woodcutter_axe"
+      }
+    ]
+  },
+  {
+    "Id": 36,
+    "Name": "room.mountain_pass.1",
+    "Description": "room.mountain_pass.1.desc",
+    "HasMonsters": true,
+    "RequirementType": 1,
+    "AccessLevel": 17,
+    "ExitIds": {
+      "north": 11,
+      "south": 37
+    },
+    "EncounterableMonsters": {
+      "22": 0.25,
+      "23": 0.25,
+      "24": 0.25,
+      "31": 0.25
+    }
+  },
+  {
+    "Id": 37,
+    "Name": "room.mountain_pass.2",
+    "Description": "room.mountain_pass.2.desc",
+    "HasMonsters": true,
+    "RequirementType": 1,
+    "AccessLevel": 17,
+    "ExitIds": {
+      "north": 36,
+      "south": 38
+    },
+    "EncounterableMonsters": {
+      "22": 0.25,
+      "23": 0.25,
+      "24": 0.25,
+      "31": 0.25
+    }
+  },
+  {
+    "Id": 38,
+    "Name": "room.mountain_pass.3",
+    "Description": "room.mountain_pass.3.desc",
+    "HasMonsters": true,
+    "RequirementType": 1,
+    "AccessLevel": 17,
+    "ExitIds": {
+      "north": 37,
+      "south": 39
+    },
+    "EncounterableMonsters": {
+      "22": 0.25,
+      "23": 0.25,
+      "24": 0.25,
+      "31": 0.25
+    }
+  },
+  {
+    "Id": 39,
+    "Name": "room.mountain_pass.4",
+    "Description": "room.mountain_pass.4.desc",
+    "HasMonsters": true,
+    "RequirementType": 1,
+    "AccessLevel": 17,
+    "ExitIds": {
+      "north": 38,
+      "south": 40
+    },
+    "EncounterableMonsters": {
+      "22": 0.25,
+      "23": 0.25,
+      "24": 0.25,
+      "31": 0.25
+    }
+  },
+  {
+    "Id": 40,
+    "Name": "room.mountain_pass.5",
+    "Description": "room.mountain_pass.5.desc",
+    "HasMonsters": true,
+    "RequirementType": 1,
+    "AccessLevel": 17,
+    "ExitIds": {
+      "north": 39,
+      "south": 41
+    },
+    "EncounterableMonsters": {
+      "22": 0.25,
+      "23": 0.25,
+      "24": 0.25,
+      "31": 0.25
+    }
+  },
+  {
+    "Id": 41,
+    "Name": "room.mountain_pass.6",
+    "Description": "room.mountain_pass.6.desc",
+    "HasMonsters": true,
+    "RequirementType": 1,
+    "AccessLevel": 18,
+    "ExitIds": {
+      "north": 40,
+      "south": 42
+    },
+    "EncounterableMonsters": {
+      "23": 0.25,
+      "24": 0.35,
+      "25": 0.25,
+      "31": 0.15
+    }
+  },
+  {
+    "Id": 42,
+    "Name": "room.mountain_pass.7",
+    "Description": "room.mountain_pass.7.desc",
+    "HasMonsters": true,
+    "RequirementType": 1,
+    "AccessLevel": 18,
+    "ExitIds": {
+      "north": 41,
+      "south": 43
+    },
+    "EncounterableMonsters": {
+      "23": 0.25,
+      "24": 0.35,
+      "25": 0.25,
+      "31": 0.15
+    }
+  },
+  {
+    "Id": 43,
+    "Name": "room.mountain_pass.8",
+    "Description": "room.mountain_pass.8.desc",
+    "HasMonsters": true,
+    "RequirementType": 1,
+    "AccessLevel": 18,
+    "ExitIds": {
+      "north": 42,
+      "south": 44
+    },
+    "EncounterableMonsters": {
+      "23": 0.25,
+      "24": 0.35,
+      "25": 0.25,
+      "31": 0.15
+    }
+  },
+  {
+    "Id": 44,
+    "Name": "room.mountain_pass.9",
+    "Description": "room.mountain_pass.9.desc",
+    "HasMonsters": true,
+    "RequirementType": 1,
+    "AccessLevel": 18,
+    "ExitIds": {
+      "north": 43,
+      "south": 45
+    },
+    "EncounterableMonsters": {
+      "23": 0.25,
+      "24": 0.35,
+      "25": 0.25,
+      "31": 0.15
+    }
+  },
+  {
+    "Id": 45,
+    "Name": "room.mountain_pass.10",
+    "Description": "room.mountain_pass.10.desc",
+    "HasMonsters": true,
+    "RequirementType": 1,
+    "AccessLevel": 18,
+    "ExitIds": {
+      "north": 44,
+      "west": 49,
+      "east": 46
+    },
+    "EncounterableMonsters": {
+      "23": 0.25,
+      "24": 0.35,
+      "25": 0.25,
+      "31": 0.15
+    }
+  },
+  {
+    "Id": 46,
+    "Name": "room.mountain_pass.11",
+    "Description": "room.mountain_pass.11.desc",
+    "HasMonsters": true,
+    "RequirementType": 1,
+    "AccessLevel": 18,
+    "ExitIds": {
+      "west": 45,
+      "east": 48
+    },
+    "EncounterableMonsters": {
+      "23": 0.25,
+      "24": 0.35,
+      "25": 0.25,
+      "31": 0.15
+    }
+  },
+  {
+    "Id": 48,
+    "Name": "room.mountain_pass.13",
+    "Description": "room.mountain_pass.13.desc",
+    "HasMonsters": true,
+    "RequirementType": 1,
+    "AccessLevel": 18,
+    "ExitIds": {
+      "west": 46,
+      "east": 27,
+      "north": 31
+    },
+    "EncounterableMonsters": {
+      "23": 0.25,
+      "24": 0.35,
+      "25": 0.25,
+      "31": 0.15
+    }
+  },
+  {
+    "Id": 49,
+    "Name": "room.mountain_pass.14",
+    "Description": "room.mountain_pass.14.desc",
+    "HasMonsters": true,
+    "RequirementType": 1,
+    "AccessLevel": 18,
+    "ExitIds": {
+      "west": 62,
+      "east": 45
+    },
+    "EncounterableMonsters": {
+      "23": 0.25,
+      "24": 0.35,
+      "25": 0.25,
+      "31": 0.15
+    }
+  },
+  {
+    "Id": 50,
+    "Name": "room.xarra.north",
+    "Description": "room.xarra.north.desc",
+    "IsCity": true,
+    "Npcs": [
+      "villager_default"
+    ],
+    "RequirementType": 1,
+    "AccessLevel": 20,
+    "ExitIds": {
+      "south": 51
+    }
+  },
+  {
+    "Id": 51,
+    "Name": "room.xarra.smithy",
+    "Description": "room.xarra.smithy.desc",
+    "IsCity": true,
+    "Npcs": [
+      "smith_default"
+    ],
+    "RequirementType": 1,
+    "AccessLevel": 20,
+    "ExitIds": {
+      "north": 50,
+      "south": 55
+    }
+  },
+  {
+    "Id": 52,
+    "Name": "room.xarra.academy",
+    "Description": "room.xarra.academy.desc",
+    "IsCity": true,
+    "Npcs": [
+      "villager_default"
+    ],
+    "RequirementType": 1,
+    "AccessLevel": 20,
+    "ExitIds": {
+      "east": 55,
+      "south": 54
+    }
+  },
+  {
+    "Id": 53,
+    "Name": "room.xarra.manufactory",
+    "Description": "room.xarra.manufactory.desc",
+    "IsCity": true,
+    "Npcs": [
+      "villager_default"
+    ],
+    "RequirementType": 1,
+    "AccessLevel": 20,
+    "ExitIds": {
+      "north": 54,
+      "east": 60
+    }
+  },
+  {
+    "Id": 54,
+    "Name": "room.xarra.west",
+    "Description": "room.xarra.west.desc",
+    "IsCity": true,
+    "Npcs": [
+      "villager_default"
+    ],
+    "RequirementType": 1,
+    "AccessLevel": 20,
+    "ExitIds": {
+      "west": 59,
+      "east": 56,
+      "north": 52,
+      "south": 53
+    }
+  },
+  {
+    "Id": 55,
+    "Name": "room.xarra.spellbound",
+    "Description": "room.xarra.spellbound.desc",
+    "IsCity": true,
+    "Npcs": [
+      "enchanter_default",
+      "artificer_default"
+    ],
+    "RequirementType": 1,
+    "AccessLevel": 20,
+    "ExitIds": {
+      "north": 51,
+      "west": 52,
+      "east": 57,
+      "south": 56
+    }
+  },
+  {
+    "Id": 56,
+    "Name": "room.xarra.center",
+    "Description": "room.xarra.center.desc",
+    "IsCity": true,
+    "Npcs": [
+      "villager_default"
+    ],
+    "RequirementType": 1,
+    "AccessLevel": 20,
+    "ExitIds": {
+      "north": 55,
+      "west": 54,
+      "east": 58,
+      "south": 60
+    }
+  },
+  {
+    "Id": 57,
+    "Name": "room.xarra.market",
+    "Description": "room.xarra.market.desc",
+    "IsCity": true,
+    "Npcs": [
+      "trader_default"
+    ],
+    "RequirementType": 1,
+    "AccessLevel": 20,
+    "ExitIds": {
+      "west": 55,
+      "south": 58
+    }
+  },
+  {
+    "Id": 58,
+    "Name": "room.xarra.cathedral",
+    "Description": "room.xarra.cathedral.desc",
+    "IsCity": true,
+    "Npcs": [
+      "healer_default"
+    ],
+    "RequirementType": 1,
+    "AccessLevel": 20,
+    "ExitIds": {
+      "north": 57,
+      "west": 56,
+      "east": 61
+    }
+  },
+  {
+    "Id": 59,
+    "Name": "room.xarra.west_gate",
+    "Description": "room.xarra.west_gate.desc",
+    "IsCity": true,
+    "Npcs": [
+      "villager_default"
+    ],
+    "RequirementType": 1,
+    "AccessLevel": 20,
+    "ExitIds": {
+      "east": 54
+    }
+  },
+  {
+    "Id": 60,
+    "Name": "room.xarra.south",
+    "Description": "room.xarra.south.desc",
+    "IsCity": true,
+    "Npcs": [
+      "tailor_default"
+    ],
+    "RequirementType": 1,
+    "AccessLevel": 20,
+    "ExitIds": {
+      "north": 56,
+      "west": 53
+    }
+  },
+  {
+    "Id": 61,
+    "Name": "room.xarra.east",
+    "Description": "room.xarra.east.desc",
+    "IsCity": true,
+    "Npcs": [
+      "villager_default"
+    ],
+    "RequirementType": 1,
+    "AccessLevel": 20,
+    "ExitIds": {
+      "west": 58,
+      "east": 62,
+      "south": 63
+    }
+  },
+  {
+    "Id": 62,
+    "Name": "room.xarra.eastern_gate",
+    "Description": "room.xarra.eastern_gate.desc",
+    "IsCity": true,
+    "Npcs": [
+      "villager_default"
+    ],
+    "RequirementType": 1,
+    "AccessLevel": 20,
+    "ExitIds": {
+      "west": 61,
+      "east": 49
+    }
+  },
+  {
+    "Id": 63,
+    "Name": "room.xarra.palace",
+    "Description": "room.xarra.palace.desc",
+    "IsCity": true,
+    "Npcs": [
+      "villager_default"
+    ],
+    "RequirementType": 1,
+    "AccessLevel": 20,
+    "ExitIds": {
+      "north": 61
+    }
+  },
+  {
+    "Id": 64,
+    "Name": "room.hollow_crypt.1",
+    "Description": "room.hollow_crypt.1.desc",
+    "HasMonsters": true,
+    "DungonId": 0,
+    "IsDungeonRoom": true,
+    "RequirementType": 1,
+    "AccessLevel": 40,
+    "ExitIds": {
+      "west": 21,
+      "east": 65
+    },
+    "EncounterableMonsters": {
+      "4": 0.6,
+      "5": 0.4
+    }
+  },
+  {
+    "Id": 65,
+    "Name": "room.hollow_crypt.2",
+    "Description": "room.hollow_crypt.2.desc",
+    "HasMonsters": true,
+    "DungonId": 0,
+    "IsDungeonRoom": true,
+    "RequirementType": 1,
+    "AccessLevel": 40,
+    "ExitIds": {
+      "west": 64,
+      "north": 66
+    },
+    "EncounterableMonsters": {
+      "4": 0.6,
+      "5": 0.4
+    }
+  },
+  {
+    "Id": 66,
+    "Name": "room.hollow_crypt.3",
+    "Description": "room.hollow_crypt.3.desc",
+    "HasMonsters": true,
+    "DungonId": 0,
+    "IsDungeonRoom": true,
+    "RequirementType": 1,
+    "AccessLevel": 40,
+    "ExitIds": {
+      "south": 65,
+      "east": 67
+    },
+    "EncounterableMonsters": {
+      "4": 0.6,
+      "5": 0.4
+    }
+  },
+  {
+    "Id": 67,
+    "Name": "room.hollow_crypt.4",
+    "Description": "room.hollow_crypt.4.desc",
+    "HasMonsters": true,
+    "DungonId": 0,
+    "IsDungeonRoom": true,
+    "RequirementType": 1,
+    "AccessLevel": 40,
+    "ExitIds": {
+      "west": 66,
+      "north": 68
+    },
+    "EncounterableMonsters": {
+      "5": 0.3,
+      "6": 0.7
+    }
+  },
+  {
+    "Id": 68,
+    "Name": "room.hollow_crypt.5",
+    "Description": "room.hollow_crypt.5.desc",
+    "HasMonsters": true,
+    "DungonId": 0,
+    "IsDungeonRoom": true,
+    "RequirementType": 1,
+    "AccessLevel": 40,
+    "ExitIds": {
+      "south": 67,
+      "north": 69
+    },
+    "EncounterableMonsters": {
+      "5": 0.3,
+      "6": 0.7
+    }
+  },
+  {
+    "Id": 69,
+    "Name": "room.hollow_crypt.6",
+    "Description": "room.hollow_crypt.6.desc",
+    "HasMonsters": true,
+    "DungonId": 0,
+    "IsDungeonRoom": true,
+    "RequirementType": 1,
+    "AccessLevel": 40,
+    "ExitIds": {
+      "south": 68,
+      "west": 70
+    },
+    "EncounterableMonsters": {
+      "5": 0.3,
+      "6": 0.7
+    }
+  },
+  {
+    "Id": 70,
+    "Name": "room.hollow_crypt.7",
+    "Description": "room.hollow_crypt.7.desc",
+    "HasMonsters": true,
+    "DungonId": 0,
+    "IsDungeonRoom": true,
+    "RequirementType": 1,
+    "AccessLevel": 40,
+    "ExitIds": {
+      "east": 69,
+      "west": 71
+    },
+    "EncounterableMonsters": {
+      "5": 0.3,
+      "6": 0.7
+    }
+  },
+  {
+    "Id": 71,
+    "Name": "room.hollow_crypt.8",
+    "Description": "room.hollow_crypt.8.desc",
+    "HasMonsters": true,
+    "DungonId": 0,
+    "IsDungeonRoom": true,
+    "RequirementType": 1,
+    "AccessLevel": 40,
+    "ExitIds": {
+      "east": 70,
+      "south": 72
+    },
+    "EncounterableMonsters": {
+      "5": 0.3,
+      "6": 0.7
+    }
+  },
+  {
+    "Id": 72,
+    "Name": "room.hollow_crypt.9",
+    "Description": "room.hollow_crypt.9.desc",
+    "HasMonsters": true,
+    "DungonId": 0,
+    "IsDungeonRoom": true,
+    "IsBossRoom": true,
+    "RequirementType": 1,
+    "AccessLevel": 40,
+    "ExitIds": {
+      "north": 71
+    },
+    "EncounterableMonsters": {
+      "7": 1.0
+    }
+  }
+]

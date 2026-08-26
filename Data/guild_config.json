@@ -1,0 +1,31 @@
+{
+  "HouseBaseGoldCost": 10,
+  "HouseCenterCostMultiplierPerLevel": 0.10,
+  "RookieXpBoostPct": 0.07,
+  "RookieCommissionPct": 0.03,
+  "HouseRoomCosts": {
+    "Deposit":      50,
+    "Treasury":     100,
+    "OfficersHall": 75,
+    "LeaderOffice": 150
+  },
+  "BaseRoomCosts": {
+    "Deposit": [
+      { "ItemId": "stone", "Amount": 100 },
+      { "ItemId": "wood",  "Amount": 50  }
+    ],
+    "Treasury": [
+      { "ItemId": "iron_ingot", "Amount": 30 },
+      { "ItemId": "stone",      "Amount": 80 }
+    ],
+    "OfficersHall": [
+      { "ItemId": "wood",       "Amount": 60 },
+      { "ItemId": "iron_ingot", "Amount": 20 }
+    ],
+    "LeaderOffice": [
+      { "ItemId": "stone",      "Amount": 60 },
+      { "ItemId": "iron_ingot", "Amount": 40 },
+      { "ItemId": "wood",       "Amount": 40 }
+    ]
+  }
+}

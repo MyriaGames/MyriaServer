@@ -1,0 +1,38 @@
+[
+  {
+    "monsterType": "Spirit",
+    "drops": [
+      { "itemId": "spirit_dust", "dropChance": 0.7 }
+    ]
+  },
+  {
+    "monsterType": "Shadow",
+    "drops": [
+      { "itemId": "shadow_remnant", "dropChance": 0.7 }
+    ]
+  },
+  {
+    "monsterType": "Elemental",
+    "drops": [
+      { "itemId": "earth_essence",  "dropChance": 0.3 },
+      { "itemId": "stone_fragment", "dropChance": 0.3 },
+      { "itemId": "fire_ash",       "dropChance": 0.3 },
+      { "itemId": "wind_whisper",   "dropChance": 0.3 },
+      { "itemId": "water_bead",     "dropChance": 0.3 }
+    ]
+  },
+  {
+    "monsterType": "Beast",
+    "drops": [
+      { "itemId": "beast_flesh",   "dropChance": 0.6 },
+      { "itemId": "feral_leather", "dropChance": 0.4 },
+      { "itemId": "beast_fang",    "dropChance": 0.2 }
+    ]
+  },
+  {
+    "monsterType": "Humanoid",
+    "drops": [
+      { "itemId": "beast_flesh", "dropChance": 0.7 }
+    ]
+  }
+]

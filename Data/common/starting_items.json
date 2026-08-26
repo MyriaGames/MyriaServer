@@ -1,0 +1,14 @@
+[
+  { "ClassId": "Archer",        "ItemIds": ["leather_bow",       "archer_garb",    "focus_band"]          },
+  { "ClassId": "Hunter",        "ItemIds": ["starter_crossbow",  "hunter_coat",    "tracker_band"]        },
+  { "ClassId": "Knight",        "ItemIds": ["steel_sword",       "starter_armor",  "iron_band"]           },
+  { "ClassId": "Fighter",       "ItemIds": ["starter_gauntlets", "padded_armor",   "fighter_token"]       },
+  { "ClassId": "Barbarian",     "ItemIds": ["woodcutter_axe",    "fur_vest",       "power_charm"]         },
+  { "ClassId": "Cleric",        "ItemIds": ["starter_mace",      "prayer_robes",   "faith_charm"]         },
+  { "ClassId": "Rogue",         "ItemIds": ["starter_dagger",    "rogue_cloak",    "crit_band"]           },
+  { "ClassId": "ElementalMage", "ItemIds": ["flamecaster_staff", "storm_robes",    "crystal_focus_band"]  },
+  { "ClassId": "ArcanMage",     "ItemIds": ["mages_tome",        "mage_robe",      "mana_ring"]           },
+  { "ClassId": "Druid",         "ItemIds": ["starter_branch",    "nature_robe",    "life_leaf"]           },
+  { "ClassId": "SoulsKnight",   "ItemIds": ["souls_blade",       "bone_plate",     "soul_shard"]          },
+  { "ClassId": "RunicMage",     "ItemIds": ["runic_focus",       "runic_vestment", "runic_sigil"]         }
+]

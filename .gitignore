@@ -1,0 +1,47 @@
+## .NET
+bin/
+obj/
+*.user
+*.suo
+.vs/
+
+## Build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+publish/linux-x64/
+
+## NuGet
+*.nupkg
+packages/
+
+## Secrets (never commit real secrets)
+secrets.json
+appsettings.local.json
+appsettings.Local.json
+appsettings.Development.json
+appsettings.Production.json
+.env
+.env.*
+*.pfx
+*.pem
+*.key
+
+## SQLite runtime data (player/account state — not source content)
+Storage/*.db
+Storage/*.db-shm
+Storage/*.db-wal
+
+## Deployment state (written by update-production.sh on the live server)
+.installed_version
+
+## Rider
+.idea/
+
+## VS Code
+.vscode/
+
+## OS
+.DS_Store
+Thumbs.db

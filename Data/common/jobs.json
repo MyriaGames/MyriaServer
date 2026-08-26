@@ -1,0 +1,62 @@
+[
+  {
+    "Id": "woodcutter",
+    "Name": "job.woodcutter.name",
+    "Description": "job.woodcutter.desc",
+    "Type": "Gathering"
+  },
+  {
+    "Id": "miner",
+    "Name": "job.miner.name",
+    "Description": "job.miner.desc",
+    "Type": "Gathering"
+  },
+  {
+    "Id": "herbalist",
+    "Name": "job.herbalist.name",
+    "Description": "job.herbalist.desc",
+    "Type": "Gathering"
+  },
+  {
+    "Id": "blacksmith",
+    "Name": "job.blacksmith.name",
+    "Description": "job.blacksmith.desc",
+    "Type": "Crafting"
+  },
+  {
+    "Id": "alchemist",
+    "Name": "job.alchemist.name",
+    "Description": "job.alchemist.desc",
+    "Type": "Crafting"
+  },
+  {
+    "Id": "cook",
+    "Name": "job.cook.name",
+    "Description": "job.cook.desc",
+    "Type": "Crafting"
+  },
+  {
+    "Id": "leathersmith",
+    "Name": "job.leathersmith.name",
+    "Description": "job.leathersmith.desc",
+    "Type": "Crafting"
+  },
+  {
+    "Id": "tailor",
+    "Name": "job.tailor.name",
+    "Description": "job.tailor.desc",
+    "Type": "Crafting"
+  },
+  {
+    "Id": "artificer",
+    "Name": "job.artificer.name",
+    "Description": "job.artificer.desc",
+    "Type": "Crafting"
+  },
+  {
+    "Id": "enchanter",
+    "Name": "job.enchanter.name",
+    "Description": "job.enchanter.desc",
+    "Type": "Crafting"
+  }
+]

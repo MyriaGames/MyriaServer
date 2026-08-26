@@ -1,0 +1,6 @@
+@MyriaServer_HostAddress = http://localhost:5145
+
+GET {{MyriaServer_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

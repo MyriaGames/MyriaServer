@@ -1,0 +1,403 @@
+{
+  "smith_default": [
+    {
+      "OutputId": "iron_ingot",
+      "XpReward": 5,
+      "RequiredKnowledgeLevel": 1,
+      "Ingredients": [
+        {
+          "ItemId": "iron_ore",
+          "Amount": 2
+        }
+      ]
+    },
+    {
+      "OutputId": "starter_gauntlets",
+      "XpReward": 15,
+      "RequiredKnowledgeLevel": 1,
+      "Ingredients": [
+        {
+          "ItemId": "iron_ingot",
+          "Amount": 2
+        }
+      ]
+    },
+    {
+      "OutputId": "iron_sword",
+      "XpReward": 30,
+      "RequiredKnowledgeLevel": 1,
+      "Ingredients": [
+        {
+          "ItemId": "iron_ingot",
+          "Amount": 3
+        }
+      ]
+    },
+    {
+      "OutputId": "chain_armor",
+      "XpReward": 50,
+      "RequiredKnowledgeLevel": 1,
+      "Ingredients": [
+        {
+          "ItemId": "iron_ingot",
+          "Amount": 5
+        }
+      ]
+    },
+    {
+      "OutputId": "steel_sword",
+      "XpReward": 80,
+      "RequiredKnowledgeLevel": 4,
+      "Ingredients": [
+        {
+          "ItemId": "iron_ingot",
+          "Amount": 5
+        },
+        {
+          "ItemId": "beast_fang",
+          "Amount": 2
+        }
+      ]
+    },
+    {
+      "OutputId": "tempered_blade",
+      "XpReward": 130,
+      "RequiredKnowledgeLevel": 10,
+      "Ingredients": [
+        {
+          "ItemId": "iron_ingot",
+          "Amount": 8
+        },
+        {
+          "ItemId": "beast_fang",
+          "Amount": 3
+        }
+      ]
+    },
+    {
+      "OutputId": "vanguard_mail",
+      "XpReward": 150,
+      "RequiredKnowledgeLevel": 12,
+      "Ingredients": [
+        {
+          "ItemId": "iron_ingot",
+          "Amount": 10
+        },
+        {
+          "ItemId": "earth_essence",
+          "Amount": 3
+        }
+      ]
+    }
+  ],
+  "leathersmith_default": [
+    {
+      "OutputId": "cured_leather",
+      "XpReward": 3,
+      "RequiredKnowledgeLevel": 1,
+      "Ingredients": [
+        {
+          "ItemId": "feral_leather",
+          "Amount": 2
+        }
+      ]
+    },
+    {
+      "OutputId": "archer_garb",
+      "XpReward": 12,
+      "RequiredKnowledgeLevel": 2,
+      "Ingredients": [
+        {
+          "ItemId": "cured_leather",
+          "Amount": 2
+        }
+      ]
+    },
+    {
+      "OutputId": "padded_armor",
+      "XpReward": 18,
+      "RequiredKnowledgeLevel": 2,
+      "Ingredients": [
+        {
+          "ItemId": "cured_leather",
+          "Amount": 3
+        }
+      ]
+    },
+    {
+      "OutputId": "leather_vest",
+      "XpReward": 20,
+      "RequiredKnowledgeLevel": 3,
+      "Ingredients": [
+        {
+          "ItemId": "cured_leather",
+          "Amount": 4
+        }
+      ]
+    },
+    {
+      "OutputId": "leather_bow",
+      "XpReward": 28,
+      "RequiredKnowledgeLevel": 1,
+      "Ingredients": [
+        {
+          "ItemId": "cured_leather",
+          "Amount": 3
+        },
+        {
+          "ItemId": "beast_fang",
+          "Amount": 1
+        }
+      ]
+    },
+    {
+      "OutputId": "hunter_coat",
+      "XpReward": 38,
+      "RequiredKnowledgeLevel": 4,
+      "Ingredients": [
+        {
+          "ItemId": "cured_leather",
+          "Amount": 4
+        },
+        {
+          "ItemId": "beast_fang",
+          "Amount": 2
+        }
+      ]
+    },
+    {
+      "OutputId": "swiftsteel_edge",
+      "XpReward": 120,
+      "RequiredKnowledgeLevel": 10,
+      "Ingredients": [
+        {
+          "ItemId": "cured_leather",
+          "Amount": 6
+        },
+        {
+          "ItemId": "beast_fang",
+          "Amount": 4
+        },
+        {
+          "ItemId": "wind_whisper",
+          "Amount": 2
+        }
+      ]
+    },
+    {
+      "OutputId": "stalkers_leather",
+      "XpReward": 140,
+      "RequiredKnowledgeLevel": 12,
+      "Ingredients": [
+        {
+          "ItemId": "cured_leather",
+          "Amount": 8
+        },
+        {
+          "ItemId": "shadow_remnant",
+          "Amount": 2
+        }
+      ]
+    }
+  ],
+  "tailor_default": [
+    {
+      "OutputId": "prayer_robes",
+      "XpReward": 18,
+      "RequiredKnowledgeLevel": 5,
+      "Ingredients": [
+        {
+          "ItemId": "bolt_of_cloth",
+          "Amount": 3
+        },
+        {
+          "ItemId": "spirit_dust",
+          "Amount": 1
+        }
+      ]
+    },
+    {
+      "OutputId": "linen_robe",
+      "XpReward": 20,
+      "RequiredKnowledgeLevel": 5,
+      "Ingredients": [
+        {
+          "ItemId": "bolt_of_cloth",
+          "Amount": 4
+        }
+      ]
+    },
+    {
+      "OutputId": "mage_robe",
+      "XpReward": 28,
+      "RequiredKnowledgeLevel": 8,
+      "Ingredients": [
+        {
+          "ItemId": "bolt_of_cloth",
+          "Amount": 3
+        },
+        {
+          "ItemId": "shadow_remnant",
+          "Amount": 1
+        }
+      ]
+    },
+    {
+      "OutputId": "storm_robes",
+      "XpReward": 45,
+      "RequiredKnowledgeLevel": 12,
+      "Ingredients": [
+        {
+          "ItemId": "bolt_of_cloth",
+          "Amount": 4
+        },
+        {
+          "ItemId": "wind_whisper",
+          "Amount": 2
+        }
+      ]
+    },
+    {
+      "OutputId": "runed_staff",
+      "XpReward": 135,
+      "RequiredKnowledgeLevel": 12,
+      "Ingredients": [
+        {
+          "ItemId": "bolt_of_cloth",
+          "Amount": 5
+        },
+        {
+          "ItemId": "spirit_dust",
+          "Amount": 3
+        },
+        {
+          "ItemId": "water_bead",
+          "Amount": 2
+        }
+      ]
+    },
+    {
+      "OutputId": "sage_robes",
+      "XpReward": 150,
+      "RequiredKnowledgeLevel": 14,
+      "Ingredients": [
+        {
+          "ItemId": "bolt_of_cloth",
+          "Amount": 8
+        },
+        {
+          "ItemId": "spirit_dust",
+          "Amount": 3
+        },
+        {
+          "ItemId": "wind_whisper",
+          "Amount": 2
+        }
+      ]
+    }
+  ],
+  "artificer_default": [
+    {
+      "OutputId": "mana_ring",
+      "XpReward": 22,
+      "RequiredKnowledgeLevel": 5,
+      "Ingredients": [
+        {
+          "ItemId": "iron_ingot",
+          "Amount": 1
+        },
+        {
+          "ItemId": "water_bead",
+          "Amount": 2
+        }
+      ]
+    },
+    {
+      "OutputId": "soul_shard",
+      "XpReward": 30,
+      "RequiredKnowledgeLevel": 8,
+      "Ingredients": [
+        {
+          "ItemId": "iron_ingot",
+          "Amount": 1
+        },
+        {
+          "ItemId": "shadow_remnant",
+          "Amount": 2
+        }
+      ]
+    },
+    {
+      "OutputId": "imbued_ring",
+      "XpReward": 35,
+      "RequiredKnowledgeLevel": 10,
+      "Ingredients": [
+        {
+          "ItemId": "iron_ingot",
+          "Amount": 2
+        },
+        {
+          "ItemId": "earth_essence",
+          "Amount": 2
+        }
+      ]
+    },
+    {
+      "OutputId": "crystal_focus_band",
+      "XpReward": 50,
+      "RequiredKnowledgeLevel": 12,
+      "Ingredients": [
+        {
+          "ItemId": "iron_ingot",
+          "Amount": 2
+        },
+        {
+          "ItemId": "earth_essence",
+          "Amount": 2
+        },
+        {
+          "ItemId": "spirit_dust",
+          "Amount": 1
+        }
+      ]
+    },
+    {
+      "OutputId": "champions_seal",
+      "XpReward": 125,
+      "RequiredKnowledgeLevel": 10,
+      "Ingredients": [
+        {
+          "ItemId": "iron_ingot",
+          "Amount": 3
+        },
+        {
+          "ItemId": "earth_essence",
+          "Amount": 3
+        },
+        {
+          "ItemId": "beast_fang",
+          "Amount": 2
+        }
+      ]
+    },
+    {
+      "OutputId": "focus_crystal",
+      "XpReward": 135,
+      "RequiredKnowledgeLevel": 12,
+      "Ingredients": [
+        {
+          "ItemId": "iron_ingot",
+          "Amount": 2
+        },
+        {
+          "ItemId": "spirit_dust",
+          "Amount": 3
+        },
+        {
+          "ItemId": "water_bead",
+          "Amount": 2
+        }
+      ]
+    }
+  ]
+}
