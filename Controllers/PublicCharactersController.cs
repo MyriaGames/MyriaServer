@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Myria.Lib.Core.Entities.Items;
 using Myria.Lib.Core.Services.Builder;
@@ -11,10 +12,12 @@ namespace Myria.Server.Realm.Controllers
     /// Public, unauthenticated character registry — anyone can browse basic character
     /// info and equipped gear. Unlike <see cref="CharactersController"/> (which is
     /// locked to the owning player's JWT and used by the game clients), this sector
-    /// of the API has no [Authorize] and is meant for tools like MyriaWeb.
+    /// of the API has no [Authorize] and is meant for tools like MyriaWeb. Rate limited
+    /// (see Program.cs's "public" policy) so it can't be used to bulk-scrape the registry.
     /// </summary>
     [ApiController]
     [Route("api/public/characters")]
+    [EnableRateLimiting("public")]
     public class PublicCharactersController(AppDbContext db) : ControllerBase
     {
         // ── GET /api/public/characters — registry list ─────────────────────────────

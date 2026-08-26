@@ -926,6 +926,20 @@ namespace Myria.Server.Realm.Hubs
             var player = session.Get(Context.ConnectionId);
             if (player == null) return Task.CompletedTask;
 
+            // The client computes this locally for responsive UI, but it's still client-submitted
+            // input over the wire - reject anything a modified client couldn't have legitimately
+            // reached by spending this character's own level-up points (1 per level from level 2
+            // onward, the same formula Character.RecalculateUnusedPoints uses), so a player can't
+            // grant themselves free stat points.
+            if (strengthAdded < 0 || dexterityAdded < 0 || enduranceAdded < 0 ||
+                intelligenceAdded < 0 || spiritAdded < 0 || unusedPoints < 0)
+                return Task.CompletedTask;
+
+            int totalPointsEarned = Math.Max(0, player.Level - 1);
+            int pointsSpent = strengthAdded + dexterityAdded + enduranceAdded + intelligenceAdded + spiritAdded;
+            if (pointsSpent + unusedPoints > totalPointsEarned)
+                return Task.CompletedTask;
+
             player.Stats.StrengthAdded     = strengthAdded;
             player.Stats.DexterityAdded    = dexterityAdded;
             player.Stats.EnduranceAdded    = enduranceAdded;

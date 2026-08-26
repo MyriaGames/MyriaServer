@@ -1,6 +1,8 @@
 ﻿using System.Text;
 using System.Text.Json;
+using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -93,6 +95,23 @@ builder.Services.AddSingleton<TradeService>();
 builder.Services.AddScoped<PlayerShopService>();
 builder.Services.AddSingleton<GroupCombatService>();
 builder.Services.AddSignalR();
+
+// PublicCharactersController has no [Authorize] by design (see its own doc comment) - it's
+// meant for anonymous browsing/tools like MyriaWeb. Rate limit it anyway so it can't be used to
+// bulk-scrape the entire character registry in a tight loop; generous enough for a real browser
+// paging through results, not for a scraper hammering it.
+builder.Services.AddRateLimiter(opt =>
+{
+    opt.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    opt.AddPolicy("public", ctx => RateLimitPartition.GetFixedWindowLimiter(
+        ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+        _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 30,
+            Window = TimeSpan.FromMinutes(1),
+            QueueLimit = 0
+        }));
+});
 
 // JWT authentication
 var jwtKey = builder.Configuration["Jwt:Key"]!;
@@ -188,6 +207,7 @@ if (app.Environment.IsDevelopment())
 // keeps its plain Http endpoint from appsettings.json for local-loopback convenience.
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseRateLimiter();
 app.MapControllers();
 app.MapHub<GameHub>("/hubs/game");
 
