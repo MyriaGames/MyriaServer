@@ -642,9 +642,7 @@ namespace Myria.Server.Realm.Hubs
                 {
                     JobManager.GrantSkillXp(player, jobId, 10);
                     xp = 10;
-                    using var rookieScope = scopeFactory.CreateScope();
-                    await rookieScope.ServiceProvider.GetRequiredService<RookieService>()
-                        .ApplyJobXpBonusAsync(player, jobId, xp);
+                    await TryApplyRookieJobXpBonusAsync(player, jobId, xp);
                 }
 
                 await Clients.OthersInGroup(RoomGroup(roomId)).SendAsync("CharacterGathering", DisplayName());
@@ -732,9 +730,7 @@ namespace Myria.Server.Realm.Hubs
             {
                 xp = recipe.XpReward * quantity;
                 JobManager.GrantSkillXp(player, jobId, xp);
-                using var rookieScope = scopeFactory.CreateScope();
-                await rookieScope.ServiceProvider.GetRequiredService<RookieService>()
-                    .ApplyJobXpBonusAsync(player, jobId, xp);
+                await TryApplyRookieJobXpBonusAsync(player, jobId, xp);
             }
 
             if (presence.GetRoom(Context.ConnectionId) is int craftRoomId)
@@ -804,9 +800,7 @@ namespace Myria.Server.Realm.Hubs
             {
                 xp = 25;
                 JobManager.GrantSkillXp(player, jobId, xp);
-                using var rookieScope = scopeFactory.CreateScope();
-                await rookieScope.ServiceProvider.GetRequiredService<RookieService>()
-                    .ApplyJobXpBonusAsync(player, jobId, xp);
+                await TryApplyRookieJobXpBonusAsync(player, jobId, xp);
             }
 
             if (presence.GetRoom(Context.ConnectionId) is int upgradeRoomId)
@@ -868,9 +862,7 @@ namespace Myria.Server.Realm.Hubs
             player.Money.TrySpend(totalCost);
 
             // Credit guild treasury if buyer is a rookie
-            using var rookieScope = scopeFactory.CreateScope();
-            await rookieScope.ServiceProvider.GetRequiredService<RookieService>()
-                .ApplyPurchaseCommissionAsync(player, totalCost);
+            await TryApplyPurchaseCommissionAsync(player, totalCost);
 
             await NotifyCharacterUpdate(player, inventory: true, money: true);
             return new NpcShopBuyResult(true, null, totalCost, quantity);
@@ -1158,11 +1150,45 @@ namespace Myria.Server.Realm.Hubs
         // ── Combat ────────────────────────────────────────────────────────────
 
         /// <summary>Abandons any active combat (solo or group) without awarding loot or XP.</summary>
-        public Task AbandonCombat()
+        public async Task AbandonCombat()
         {
             session.RemoveEncounter(Context.ConnectionId);
-            groupCombat.RemoveConn(Context.ConnectionId);
-            return Task.CompletedTask;
+
+            // Fixes TODO.md item 51: this used to only unregister the fleeing connection from
+            // groupCombat, never touching the shared GroupCombatEncounter's own roster/turn
+            // order - if it was (or became) the fled character's turn, nobody could ever act for
+            // them again, silently stranding every other still-fighting party member with their
+            // own actions rejected forever (IsThisCharactersTurn never matched them). Resolve the
+            // fight/encounter BEFORE unregistering the connection (need the fightId that
+            // RemoveConn would otherwise erase), call the new GroupCombatEncounter.RemoveCharacter
+            // to fix up the turn order for whoever's left, then unregister the connection as
+            // before. Broadcasting after RemoveConn is deliberate here (unlike item 52's
+            // finish-broadcast ordering) since CombatGroupClients' recipient list should exclude
+            // the fleeing connection itself - they already got their own local "fled" navigation
+            // client-side and don't need this update.
+            var fightId = groupCombat.GetPartyId(Context.ConnectionId);
+            if (fightId is not null && groupCombat.GetEncounter(fightId) is { } encounter)
+            {
+                int logBefore = encounter.Log.Count;
+                encounter.RemoveCharacter(DisplayName());
+                groupCombat.RemoveConn(Context.ConnectionId);
+
+                if (encounter.IsFinished)
+                {
+                    // Nobody was left standing (the last remaining member just fled too) - no
+                    // one left to notify, just clean up the now-dead encounter's registration.
+                    groupCombat.RemoveByParty(fightId);
+                }
+                else
+                {
+                    var snap = BuildGroupSnapshot(encounter, logBefore);
+                    await CombatGroupClients(fightId).SendAsync("GroupCombatUpdated", snap);
+                }
+            }
+            else
+            {
+                groupCombat.RemoveConn(Context.ConnectionId);
+            }
         }
 
         /// <summary>Starts a combat encounter for the player in the given room.</summary>
@@ -1219,9 +1245,7 @@ namespace Myria.Server.Realm.Hubs
             }
             else if (result.Finished && result.CharacterWon && result.XpGained > 0 && player is not null)
             {
-                using var rookieScope = scopeFactory.CreateScope();
-                long bonus = await rookieScope.ServiceProvider.GetRequiredService<RookieService>()
-                    .ApplyXpBonusAsync(player, result.XpGained);
+                long bonus = await TryApplyRookieXpBonusAsync(player, result.XpGained);
                 // The bonus is applied to the server's character above, but was granted after
                 // `result` was already built - without folding it in here, the client never
                 // learns about the extra XP/levels/stat growth at all (only a full reload would
@@ -1249,9 +1273,7 @@ namespace Myria.Server.Realm.Hubs
                 await RespawnCharacterAsync(player, Context.ConnectionId);
             else if (result.Finished && result.CharacterWon && result.XpGained > 0)
             {
-                using var rookieScope = scopeFactory.CreateScope();
-                long bonus = await rookieScope.ServiceProvider.GetRequiredService<RookieService>()
-                    .ApplyXpBonusAsync(player, result.XpGained);
+                long bonus = await TryApplyRookieXpBonusAsync(player, result.XpGained);
                 if (bonus > 0)
                     result = result with { RookieBonusXp = bonus };
             }
@@ -1442,13 +1464,15 @@ namespace Myria.Server.Realm.Hubs
                     logger.LogInformation("Group combat won: {Chars}",
                         string.Join(", ", encounter.Characters.Select(c => $"{c.Name} (Lvl {c.Level})")));
 
-                    using var rookieScope = scopeFactory.CreateScope();
-                    var rookieSvc = rookieScope.ServiceProvider.GetRequiredService<RookieService>();
                     long totalMonsterExp = encounter.Monsters.Sum(m => m.Exp);
                     var bonusByName = new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase);
                     foreach (var p in encounter.Characters.Where(p => p.IsAlive))
                     {
-                        long bonus = await rookieSvc.ApplyXpBonusAsync(p, totalMonsterExp);
+                        // A rookie-bonus failure here must never block the save/broadcast/respawn
+                        // below - the fight is already fully resolved in-memory (monsters dead,
+                        // XP/levels applied), so an unguarded throw would silently strand the
+                        // party mid-fight exactly like the bug fixed in item 52 (see item 66).
+                        long bonus = await TryApplyRookieXpBonusAsync(p, totalMonsterExp);
                         if (bonus > 0) bonusByName[p.Name] = bonus;
                     }
 
@@ -1540,13 +1564,15 @@ namespace Myria.Server.Realm.Hubs
                     logger.LogInformation("Group combat won: {Chars}",
                         string.Join(", ", encounter.Characters.Select(c => $"{c.Name} (Lvl {c.Level})")));
 
-                    using var rookieScope = scopeFactory.CreateScope();
-                    var rookieSvc = rookieScope.ServiceProvider.GetRequiredService<RookieService>();
                     long totalMonsterExp = encounter.Monsters.Sum(m => m.Exp);
                     var bonusByName = new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase);
                     foreach (var p in encounter.Characters.Where(p => p.IsAlive))
                     {
-                        long bonus = await rookieSvc.ApplyXpBonusAsync(p, totalMonsterExp);
+                        // A rookie-bonus failure here must never block the save/broadcast/respawn
+                        // below - the fight is already fully resolved in-memory (monsters dead,
+                        // XP/levels applied), so an unguarded throw would silently strand the
+                        // party mid-fight exactly like the bug fixed in item 52 (see item 66).
+                        long bonus = await TryApplyRookieXpBonusAsync(p, totalMonsterExp);
                         if (bonus > 0) bonusByName[p.Name] = bonus;
                     }
 
@@ -2691,6 +2717,63 @@ namespace Myria.Server.Realm.Hubs
                 var username = conn != null ? presence.GetAccountUsername(conn) : null;
                 if (username == null) continue;
                 try { await repo.SaveAsync(username, p); } catch { /* best-effort */ }
+            }
+        }
+
+        // The three RookieService bonuses (XP/job-XP/purchase commission) are always applied
+        // AFTER the primary action (combat win, craft, gather, upgrade, purchase) has already
+        // succeeded and mutated in-memory state - an unguarded throw here used to propagate out
+        // of the hub method entirely, aborting the response (and, in group combat, the save/
+        // broadcast/respawn that follows) even though the primary action the player was told
+        // about had already genuinely happened server-side. Swallowing failures here and simply
+        // skipping the bonus keeps the primary action's outcome truthful (see TODO.md item 66).
+        private async Task<long> TryApplyRookieXpBonusAsync(Myria.Lib.Core.Entities.Characters.Character player, long baseXp)
+        {
+            try
+            {
+                using var rookieScope = scopeFactory.CreateScope();
+                return await rookieScope.ServiceProvider.GetRequiredService<RookieService>()
+                    .ApplyXpBonusAsync(player, baseXp);
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex,
+                    "Rookie XP bonus failed for {Character} - continuing without it (see TODO.md item 66)",
+                    player.Name);
+                return 0;
+            }
+        }
+
+        private async Task<long> TryApplyRookieJobXpBonusAsync(Myria.Lib.Core.Entities.Characters.Character player, string jobId, long baseJobXp)
+        {
+            try
+            {
+                using var rookieScope = scopeFactory.CreateScope();
+                return await rookieScope.ServiceProvider.GetRequiredService<RookieService>()
+                    .ApplyJobXpBonusAsync(player, jobId, baseJobXp);
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex,
+                    "Rookie job XP bonus failed for {Character}/{JobId} - continuing without it (see TODO.md item 66)",
+                    player.Name, jobId);
+                return 0;
+            }
+        }
+
+        private async Task TryApplyPurchaseCommissionAsync(Myria.Lib.Core.Entities.Characters.Character player, long goldSpent)
+        {
+            try
+            {
+                using var rookieScope = scopeFactory.CreateScope();
+                await rookieScope.ServiceProvider.GetRequiredService<RookieService>()
+                    .ApplyPurchaseCommissionAsync(player, goldSpent);
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex,
+                    "Rookie purchase commission failed for {Character} - the purchase itself already succeeded (see TODO.md item 66)",
+                    player.Name);
             }
         }
 

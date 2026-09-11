@@ -115,7 +115,12 @@ namespace Myria.Server.Realm.Repositories
                 .Include(c => c.ClassXp)
                 .SingleOrDefaultAsync(c => c.UserId == userId && c.Name == name);
 
-        private static GameChar ReconstructCharacter(DbRow c)
+        // internal rather than private: CharactersController.Save (MP21's anti-cheat fix) reuses
+        // this exact, already-tested reconstruction to compute a character's real MaxHealth/
+        // MaxMana (Stats+Equipment+Class/ClassXp-derived) so it can clamp a client-submitted
+        // CurrentHealth/CurrentMana down to what they actually earned, rather than duplicating
+        // (and risking drifting from) this same logic a second time.
+        internal static GameChar ReconstructCharacter(DbRow c)
         {
             var stats = new Myria.Lib.Core.Entities.Stats
             {

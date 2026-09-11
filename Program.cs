@@ -5,6 +5,7 @@ using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -96,11 +97,29 @@ builder.Services.AddSingleton<CharacterSessionService>();
 builder.Services.AddSingleton<TradeService>();
 builder.Services.AddScoped<PlayerShopService>();
 builder.Services.AddSingleton<GroupCombatService>();
-// Registering against IHubFilter (rather than a per-hub HubOptions<T>.AddFilter call) makes
-// SignalR apply this to every hub automatically - there's currently only GameHub, but this way
-// it stays global without needing updating if a second hub is ever added.
-builder.Services.AddSingleton<Microsoft.AspNetCore.SignalR.IHubFilter, UnhandledExceptionLoggingFilter>();
-builder.Services.AddSignalR();
+// Global hub filters: registered via AddSignalR(options => options.AddFilter<T>()) plus a plain
+// DI registration of the filter type itself - this applies the filter to every hub (there's
+// currently only GameHub, but this stays global without needing updating if a second hub is ever
+// added). NOTE: the alternative "just add it to DI as IHubFilter" pattern some docs/examples show
+// (services.AddSingleton<IHubFilter, T>() with no AddFilter call) does NOT actually get invoked by
+// SignalR's dispatcher in this app - confirmed empirically while wiring up HubRateLimitFilter
+// (see TODO.md item 62): the filter's own always-on diagnostic log line never fired for any of 110
+// real hub invocations against a live connection. Switched to the AddFilter<T>() form below, which
+// does fire on every invocation - if a future filter is added here, use this same pattern, not the
+// IHubFilter-only one.
+builder.Services.AddSingleton<UnhandledExceptionLoggingFilter>();
+// Closes the hub-method half of TODO.md item 62 - see HubRateLimitFilter's own doc comment for
+// why this needs to be a hand-rolled filter instead of the "authenticated" RateLimiter policy
+// below (which only covers the REST controllers).
+builder.Services.AddSingleton<HubRateLimitFilter>();
+builder.Services.AddSignalR(options =>
+{
+    // Order matters: a rate-limit rejection thrown by HubRateLimitFilter should still pass back
+    // through UnhandledExceptionLoggingFilter's catch so it gets logged the same way any other
+    // hub exception would - so the logging filter must wrap (be added before) the rate limiter.
+    options.AddFilter<UnhandledExceptionLoggingFilter>();
+    options.AddFilter<HubRateLimitFilter>();
+});
 
 // PublicCharactersController has no [Authorize] by design (see its own doc comment) - it's
 // meant for anonymous browsing/tools like MyriaWeb. Rate limit it anyway so it can't be used to
@@ -135,8 +154,8 @@ builder.Services.AddRateLimiter(opt =>
     // (loading a character list + details, a burst of guild/friend actions) while still refusing
     // a tight spam loop. This does NOT cover SignalR hub methods (GameHub) - ASP.NET Core's
     // rate-limiter middleware only applies to the HTTP endpoint pipeline, not to individual hub
-    // method invocations over an already-established connection; hub-level throttling needs a
-    // different mechanism and is intentionally left as a follow-up (see TODO.md item 62).
+    // method invocations over an already-established connection; that half is instead covered by
+    // HubRateLimitFilter (registered as a global IHubFilter above) - see TODO.md item 62.
     opt.AddPolicy("authenticated", ctx => RateLimitPartition.GetFixedWindowLimiter(
         ctx.User.Identity?.Name ?? ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown",
         _ => new FixedWindowRateLimiterOptions

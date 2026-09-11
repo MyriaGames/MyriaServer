@@ -7,6 +7,7 @@ using Myria.Lib.Core.Services.Builder;
 using Myria.Server.Realm.Data;
 using Myria.Server.Realm.Models;
 using Myria.Server.Realm.Models.Dto;
+using Myria.Server.Realm.Repositories;
 
 namespace Myria.Server.Realm.Controllers
 {
@@ -420,6 +421,23 @@ namespace Myria.Server.Realm.Controllers
             record.ClassXp.Clear();
             foreach (var cx in req.ClassXp)
                 record.ClassXp.Add(new CharacterClassXp { Class = cx.Class, Xp = cx.Xp });
+
+            // Anti-cheat (TODO.md item MP21): every other field on this endpoint got validated
+            // by item 54's fix, but CurrentHealth/CurrentMana were still only lower-bounded
+            // (SaveCharacterRequest's [Range(0, int.MaxValue)]) - a crafted request could still
+            // set either to an arbitrary huge number and have it persist as-is, since nothing
+            // clamped them against what this character's own Stats+Equipment+Class/ClassXp
+            // actually derive as MaxHealth/MaxMana (both level-and-class-progression-dependent
+            // via ClassManager.GetClassBonusForStat/GetClassHpBonus, not a fixed formula computable
+            // from Stats alone - hence reusing the full reconstruction below rather than a
+            // lighter, easier-to-get-subtly-wrong reimplementation). record now has every field
+            // (including ClassXp, just above) that reconstruction depends on, so this can run
+            // right before the save that persists CurrentHealth/CurrentMana. The reconstructed
+            // character itself is discarded immediately after - only its two derived properties
+            // are used, no DB write happens through it.
+            var reconstructed = SqlCharacterRepository.ReconstructCharacter(record);
+            record.CurrentHealth = Math.Min(record.CurrentHealth, reconstructed.MaxHealth);
+            record.CurrentMana   = Math.Min(record.CurrentMana, reconstructed.MaxMana);
 
             await db.SaveChangesAsync();
             return Ok();

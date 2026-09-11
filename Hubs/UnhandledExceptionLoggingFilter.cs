@@ -3,26 +3,16 @@ using Microsoft.AspNetCore.SignalR;
 namespace Myria.Server.Realm.Hubs
 {
     /// <summary>
-    /// Scoped, additive fix for one half of the 2026-09-10 security/robustness audit's finding
-    /// on <c>GameHub.cs</c>: outside a couple of methods, hub methods have no try/catch around
-    /// their DB-writing service calls, so an exception thrown after an in-memory effect was
-    /// already applied (e.g. <c>BuyFromNpcShop</c> granting the item and spending gold *before*
-    /// its later <c>RookieService.ApplyPurchaseCommissionAsync</c> call) leaves the server's
-    /// authoritative session state and what the client was told diverged - the player is told
-    /// "it failed" for an action that server-side actually succeeded (and will persist on next
-    /// save). Properly closing that gap needs each affected method individually restructured
-    /// (validate/commit the DB write before applying any in-memory effect, or roll the effect
-    /// back on failure) - too broad a change to make safely across dozens of methods without the
-    /// live testing this pass didn't have time for, so deliberately deferred as a real follow-up
-    /// (see TODO.md item 66).
-    ///
-    /// What this filter DOES do, safely and with zero behavior change for callers: every
-    /// unhandled exception from any hub method invocation is logged here with full detail
-    /// (method name, exception) before being rethrown completely unchanged - so this class of
-    /// failure at least becomes visible in the server log instead of vanishing into whatever
-    /// SignalR's own default handling does with it, without altering what the client
-    /// experiences at all (the original exception still propagates exactly as it did before this
-    /// filter existed).
+    /// Originally added as a scoped, additive safety net for the 2026-09-10 security/robustness
+    /// audit's finding on <c>GameHub.cs</c> (see TODO.md item 66): every unhandled exception from
+    /// any hub method invocation is logged here with full detail (method name, connection id)
+    /// before being rethrown completely unchanged - zero behavior change for callers, just makes
+    /// the failure visible in the server log instead of vanishing into whatever SignalR's default
+    /// handling does with it. Item 66's actual per-method fix (guarding the specific call sites
+    /// where an in-memory effect was applied before an unguarded DB write) has since been done
+    /// directly in <c>GameHub.cs</c> (the 8 <c>RookieService</c> bonus call sites) - this filter
+    /// stays in place regardless as general-purpose visibility for any *other* unhandled hub
+    /// exception, not just that one bug class.
     /// </summary>
     public class UnhandledExceptionLoggingFilter(ILogger<UnhandledExceptionLoggingFilter> logger) : IHubFilter
     {
