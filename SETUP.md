@@ -56,8 +56,8 @@ separately or on another host.
 ## Getting the binaries
 
 **Option A — download a prebuilt release (recommended):** grab the latest
-`MyriaServer_linux-x64_<version>.zip` from the
-[MyriaRPG-releases](https://github.com/rllyben/MyriaRPG-releases) GitHub Releases page and
+`MyriaServer_linux-x64_<version>.zip` from this repo's own
+[GitHub Releases](https://github.com/MyriaGames/MyriaServer/releases) page and
 extract it — it already has the `auth/` subfolder bundled in.
 
 **Option B — build from source:**

@@ -4,7 +4,8 @@
 # secrets. Safe to re-run any time; it only replaces application files.
 #
 # What it does:
-#   1. Reads MyriaRPG-releases' version.json to find the latest version + linux-x64 zip URL.
+#   1. Queries this repo's own GitHub Releases API (MyriaGames/MyriaServer) for the latest
+#      release tag, then downloads that tag's MyriaServer_linux-x64_<version>.zip asset.
 #   2. Downloads and extracts that zip into a temp staging directory.
 #   3. Copies everything from staging over this directory EXCEPT:
 #        - Storage/            (this realm's character/guild database)
@@ -18,42 +19,42 @@
 #
 # Usage: ./update-production.sh [version]
 #   No argument -> updates to the latest published release.
-#   A version like "0.2.14" -> updates to that specific tag instead.
+#   A version like "0.2.20" -> updates to that specific tag instead.
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$SCRIPT_DIR"
 
-VERSION_JSON_URL="https://raw.githubusercontent.com/rllyben/MyriaRPG-releases/main/version.json"
+# Previously this read a hand-maintained version.json from a separate rllyben/MyriaRPG-releases
+# repo. Releases are now published directly on this repo's own GitHub Releases (matching the WPF
+# client's UpdateService.cs, which made the same switch to MyriaGames/MyriaRPG) - the Releases API
+# is the source of truth instead, no separate manifest file to keep in sync.
+GITHUB_REPO="MyriaGames/MyriaServer"
 REQUESTED_VERSION="${1:-}"
 
-echo "Checking latest release..."
-VERSION_JSON="$(curl -fsSL "$VERSION_JSON_URL")" || {
-    echo "ERROR: could not reach $VERSION_JSON_URL" >&2
-    exit 1
-}
-
-# Tiny inline JSON field extraction (no jq dependency assumed) - version.json is a flat,
-# single-level object, so a targeted grep/sed per key is reliable enough here.
-extract_field() {
-    echo "$VERSION_JSON" | grep -o "\"$1\"[[:space:]]*:[[:space:]]*\"[^\"]*\"" | sed -E 's/.*:[[:space:]]*"([^"]*)"/\1/'
-}
-
-LATEST_VERSION="$(extract_field version)"
-LINUX_URL="$(extract_field serverLinuxUrl)"
-
-if [ -z "$LATEST_VERSION" ] || [ -z "$LINUX_URL" ]; then
-    echo "ERROR: could not parse version.json (got: $VERSION_JSON)" >&2
-    exit 1
+if [ -z "$REQUESTED_VERSION" ]; then
+    echo "Checking latest release..."
+    LATEST_JSON="$(curl -fsSL -H "Accept: application/vnd.github+json" \
+        "https://api.github.com/repos/$GITHUB_REPO/releases/latest")" || {
+        echo "ERROR: could not reach the GitHub Releases API for $GITHUB_REPO" >&2
+        exit 1
+    }
+    # Tiny inline JSON field extraction (no jq dependency assumed) - only the top-level
+    # "tag_name" field is needed; the asset URL is synthesized below from the known filename
+    # convention rather than parsed out of the (nested, harder to grep reliably) assets array.
+    TAG_NAME="$(echo "$LATEST_JSON" | grep -o '"tag_name"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed -E 's/.*:[[:space:]]*"([^"]*)"/\1/')"
+    if [ -z "$TAG_NAME" ]; then
+        echo "ERROR: could not parse the latest release's tag_name (got: $LATEST_JSON)" >&2
+        exit 1
+    fi
+    TARGET_VERSION="${TAG_NAME#v}"
+else
+    TARGET_VERSION="$REQUESTED_VERSION"
+    TAG_NAME="v$TARGET_VERSION"
 fi
 
-TARGET_VERSION="${REQUESTED_VERSION:-$LATEST_VERSION}"
-if [ -n "$REQUESTED_VERSION" ] && [ "$REQUESTED_VERSION" != "$LATEST_VERSION" ]; then
-    # Requested an explicit non-latest version - rebuild the URL for that tag using the
-    # same filename pattern release.ps1 produces, since version.json only ever describes latest.
-    LINUX_URL="https://github.com/rllyben/MyriaRPG-releases/releases/download/v${TARGET_VERSION}/MyriaServer_linux-x64_${TARGET_VERSION}.zip"
-fi
+LINUX_URL="https://github.com/$GITHUB_REPO/releases/download/$TAG_NAME/MyriaServer_linux-x64_${TARGET_VERSION}.zip"
 
 # MyriaServer.csproj's own <Version> isn't bumped in step with releases (releases are
 # versioned off the WPF client instead), so it can't be used to detect what's installed here.
