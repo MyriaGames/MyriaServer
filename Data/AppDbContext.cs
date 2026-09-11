@@ -247,6 +247,15 @@ namespace Myria.Server.Realm.Data
                 e.HasOne(i => i.PlayerShop).WithMany(s => s.Items)
                     .HasForeignKey(i => i.PlayerShopId).OnDelete(DeleteBehavior.Cascade);
                 e.HasIndex(i => new { i.PlayerShopId, i.ItemId }).IsUnique();
+
+                // Reusing Quantity itself as the optimistic-concurrency token (rather than adding
+                // a dedicated RowVersion column + migration) is enough for PlayerShopService.
+                // CommitSaleAsync's actual need: EF now includes the originally-read Quantity in
+                // the UPDATE's WHERE clause, so two buyers racing for the same stock can no longer
+                // both read Quantity=1, both decrement to 0, and both save successfully - the
+                // loser's SaveChangesAsync now throws DbUpdateConcurrencyException instead of
+                // silently overwriting the winner's write (see the 2026-09-10 security audit).
+                e.Property(i => i.Quantity).IsConcurrencyToken();
             });
         }
     }

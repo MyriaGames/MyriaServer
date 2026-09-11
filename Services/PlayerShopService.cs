@@ -195,6 +195,11 @@ namespace Myria.Server.Realm.Services
 
         // Only call once every buyer-side check has already passed - returns false (nothing
         // decremented) if stock changed out from under a concurrent purchase since validation.
+        // Quantity is configured as this entity's optimistic-concurrency token (AppDbContext),
+        // so the read-check-write below is actually race-safe now: if another commit already
+        // changed Quantity between our read and our SaveChangesAsync, EF's UPDATE affects zero
+        // rows and throws DbUpdateConcurrencyException instead of two buyers both getting the
+        // last unit (see the 2026-09-10 security audit for the pre-fix duplication scenario).
         public async Task<bool> CommitSaleAsync(string ownerName, string itemId, int quantity)
         {
             var shop = await db.PlayerShops.Include(s => s.Items)
@@ -207,8 +212,15 @@ namespace Myria.Server.Realm.Services
             if (item.Quantity <= 0)
                 shop!.Items.Remove(item);
 
-            await db.SaveChangesAsync();
-            return true;
+            try
+            {
+                await db.SaveChangesAsync();
+                return true;
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                return false;
+            }
         }
 
         private static List<PlayerShopItemDto> ToDtos(IEnumerable<PlayerShopItem> items) =>

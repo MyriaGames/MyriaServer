@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Myria.Server.Realm.Data;
 using Myria.Server.Realm.Models;
@@ -132,6 +133,7 @@ namespace Myria.Server.Realm.Controllers
     [ApiController]
     [Route("api/guilds")]
     [Authorize]
+    [EnableRateLimiting("authenticated")]
     public class GuildsController(AppDbContext db, GuildService guilds, GuildPropertyService property) : ControllerBase
     {
         private Task<string?> GetUserAsync() => Task.FromResult(User.Identity!.Name);

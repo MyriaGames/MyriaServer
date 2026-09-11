@@ -14,18 +14,35 @@
     <FileVersion>0.2.0.0</FileVersion>
   </PropertyGroup>
 
+  <!--
+    gameStatus.json is live server state (GameDay/TimeOfDay/Ticks/LastSavedAt), written by
+    GameStatusService at runtime — it must stay local to this project and must NOT be
+    overwritten by a rebuild, unlike the shared game-content JSON below.
+  -->
   <ItemGroup>
     <Content Remove="Data\common\gameStatus.json" />
-    <Content Remove="Data\common\shops.json" />
-    <Content Remove="Data\common\skill_combinations.json" />
-    <Content Remove="Data\common\starting_items.json" />
   </ItemGroup>
 
   <ItemGroup>
     <None Include="Data\common\gameStatus.json" />
-    <None Include="Data\common\shops.json" />
-    <None Include="Data\common\skill_combinations.json" />
-    <None Include="Data\common\starting_items.json" />
+  </ItemGroup>
+
+  <!--
+    Shared static game-content JSON and locale strings live once in Myria.Lib\Myria.Lib.Core\Data
+    (see Myria.Lib.Core.csproj) and are linked in here rather than duplicated, matching
+    Myria.Wpf.csproj/Myria.Console.csproj. This project used to keep its own hand-copied
+    Data\common\*.json snapshot, which silently drifted out of sync with the canonical copy
+    over time (missing Effects/AggroModifier fields, missing effects.json entirely, and a
+    stale skills.json that granted "aimed_shot" instead of "venomous_shot" as an Archer's
+    2nd skill) — linking instead of copying makes that class of drift structurally impossible.
+  -->
+  <ItemGroup>
+    <Content Include="..\Myria.Lib\Myria.Lib.Core\Data\common\**\*.json" LinkBase="Data\common\">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Myria.Lib\Myria.Lib.Core\Data\locales\**\*.json" LinkBase="Data\locales\">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>
@@ -43,9 +60,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Update="Data\common\rooms.json">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
     <Content Update="Data\guild_config.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
@@ -64,7 +78,5 @@
       <CopyToPublishDirectory>Never</CopyToPublishDirectory>
     </Content>
   </ItemGroup>
-
-  <!-- Copy shared game data so Myria.Lib.Core services can find them at runtime -->
 
 </Project>

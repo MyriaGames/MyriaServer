@@ -13,9 +13,18 @@ namespace Myria.Server.Realm.Models.Dto
         public string Name { get; set; } = string.Empty;
 
         // ── Core progression ─────────────────────────────────────────────────────
+        // Range bounds below aren't "correct earned progression" checks (that would need
+        // re-deriving the whole XP/stat curve server-side) - they're a floor against a crafted
+        // request setting these to negative/absurd values that would corrupt downstream math
+        // (e.g. Level 0 dividing-by-zero in monster XP scaling: baseXp * (monsterLvl/playerLvl)²)
+        // or blow past what the client UI could ever produce (see the 2026-09-10 security audit).
+        [Range(1, int.MaxValue)]
         public int  Level                { get; set; } = 1;
+        [Range(0, long.MaxValue)]
         public long Experience           { get; set; }
+        [Range(0, long.MaxValue)]
         public long ExpForNextLvl        { get; set; }
+        [Range(1, int.MaxValue)]
         public int  PotionTierAvailable  { get; set; } = 1;
 
         // ── Identity ─────────────────────────────────────────────────────────────
@@ -28,26 +37,30 @@ namespace Myria.Server.Realm.Models.Dto
         public int? LastHealerRoomId  { get; set; }
 
         // ── Current state ────────────────────────────────────────────────────────
+        [Range(0, int.MaxValue)]
         public int CurrentHealth { get; set; }
+        [Range(0, int.MaxValue)]
         public int CurrentMana   { get; set; }
 
         // ── Base stats ───────────────────────────────────────────────────────────
-        public int StatStrength     { get; set; } = 10;
-        public int StatDexterity    { get; set; } = 10;
-        public int StatEndurance    { get; set; } = 10;
-        public int StatIntelligence { get; set; } = 10;
-        public int StatSpirit       { get; set; } = 10;
+        [Range(0, int.MaxValue)] public int StatStrength     { get; set; } = 10;
+        [Range(0, int.MaxValue)] public int StatDexterity    { get; set; } = 10;
+        [Range(0, int.MaxValue)] public int StatEndurance    { get; set; } = 10;
+        [Range(0, int.MaxValue)] public int StatIntelligence { get; set; } = 10;
+        [Range(0, int.MaxValue)] public int StatSpirit       { get; set; } = 10;
 
         // ── Invested stat points ─────────────────────────────────────────────────
-        public int StatStrengthBonus     { get; set; }
-        public int StatDexterityBonus    { get; set; }
-        public int StatEnduranceBonus    { get; set; }
-        public int StatIntelligenceBonus { get; set; }
-        public int StatSpiritBonus       { get; set; }
-        public int StatUnusedPoints      { get; set; }
+        [Range(0, int.MaxValue)] public int StatStrengthBonus     { get; set; }
+        [Range(0, int.MaxValue)] public int StatDexterityBonus    { get; set; }
+        [Range(0, int.MaxValue)] public int StatEnduranceBonus    { get; set; }
+        [Range(0, int.MaxValue)] public int StatIntelligenceBonus { get; set; }
+        [Range(0, int.MaxValue)] public int StatSpiritBonus       { get; set; }
+        [Range(0, int.MaxValue)] public int StatUnusedPoints      { get; set; }
 
         // ── HP / MP pool ─────────────────────────────────────────────────────────
+        [Range(1, int.MaxValue)]
         public int StatBaseHealth { get; set; } = 30;
+        [Range(1, int.MaxValue)]
         public int StatBaseMana   { get; set; } = 30;
 
         // ── Equipment ────────────────────────────────────────────────────────────
@@ -56,10 +69,21 @@ namespace Myria.Server.Realm.Models.Dto
         public string? AccessoryItemId { get; set; }
 
         // ── Money ────────────────────────────────────────────────────────────────
+        // MoneyBag.Capacity defaults to 300_000 and there is currently no feature anywhere in
+        // the codebase that ever raises it past that default (grepped - no "IncreaseCapacity" or
+        // similar exists yet), so a client sending anything else is definitionally either a bug
+        // or an attempt to bypass the money cap. Tighten this range if/when a capacity-upgrade
+        // feature is actually added.
+        [Range(0, long.MaxValue)]
         public long MoneyBronze   { get; set; }
+        [Range(1, 300_000)]
         public long MoneyCapacity { get; set; } = 300_000;
 
         // ── Inventory ────────────────────────────────────────────────────────────
+        // No hard page cap exists in the game design today; 50 is a generous sanity ceiling
+        // (the client only ever renders a handful of pages) against a crafted request, not a
+        // real gameplay limit - raise it if a legitimate feature ever needs more.
+        [Range(1, 50)]
         public int InventoryPages { get; set; } = 1;
 
         // ── Class tracking ───────────────────────────────────────────────────────
@@ -90,8 +114,13 @@ namespace Myria.Server.Realm.Models.Dto
 
     public class CharSaveInventoryItem
     {
+        [Required]
         public string ItemId    { get; set; } = "";
+        // Upper bound isn't enforced here since it depends on the specific item's MaxStackSize -
+        // CharactersController.Save cross-checks that per-entry against ItemFactory.
+        [Range(1, int.MaxValue)]
         public int    StackSize { get; set; } = 1;
+        [Range(0, int.MaxValue)]
         public int    SlotIndex { get; set; }
     }
 

@@ -1,7 +1,9 @@
-﻿using System.Text;
+﻿using System.Net;
+using System.Text;
 using System.Text.Json;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -94,12 +96,23 @@ builder.Services.AddSingleton<CharacterSessionService>();
 builder.Services.AddSingleton<TradeService>();
 builder.Services.AddScoped<PlayerShopService>();
 builder.Services.AddSingleton<GroupCombatService>();
+// Registering against IHubFilter (rather than a per-hub HubOptions<T>.AddFilter call) makes
+// SignalR apply this to every hub automatically - there's currently only GameHub, but this way
+// it stays global without needing updating if a second hub is ever added.
+builder.Services.AddSingleton<Microsoft.AspNetCore.SignalR.IHubFilter, UnhandledExceptionLoggingFilter>();
 builder.Services.AddSignalR();
 
 // PublicCharactersController has no [Authorize] by design (see its own doc comment) - it's
 // meant for anonymous browsing/tools like MyriaWeb. Rate limit it anyway so it can't be used to
 // bulk-scrape the entire character registry in a tight loop; generous enough for a real browser
 // paging through results, not for a scraper hammering it.
+//
+// The limiter partitions on Connection.RemoteIpAddress, which - once Myria.Server.Social proxies
+// public character lookups for its visitors through one shared server-to-server HttpClient - would
+// otherwise always be Social's own IP, collapsing every visitor into one 30-req/min bucket. The
+// ForwardedHeaders middleware registered below (trusting only loopback and any IPs listed in
+// ForwardedHeaders:TrustedProxies) resolves RemoteIpAddress back to the original visitor's IP for
+// requests proxied through a trusted host, so this partitions per-visitor again in that case.
 builder.Services.AddRateLimiter(opt =>
 {
     opt.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -111,7 +124,43 @@ builder.Services.AddRateLimiter(opt =>
             Window = TimeSpan.FromMinutes(1),
             QueueLimit = 0
         }));
+
+    // Applied to the authenticated REST controllers (Characters/Guilds/Friends/Blocks) - these
+    // had no throttling at all before the 2026-09-10 security/robustness audit, so a single
+    // compromised or buggy client could hammer them (e.g. repeated character saves) with no
+    // limit. Partitioned per authenticated username (the JWT identity these controllers already
+    // require via [Authorize]) rather than by IP - unlike "public" above, every caller here has
+    // already proven who they are, and IP-partitioning would incorrectly bucket every player
+    // behind the same NAT/VPN together. 60/min is generous enough for real client behavior
+    // (loading a character list + details, a burst of guild/friend actions) while still refusing
+    // a tight spam loop. This does NOT cover SignalR hub methods (GameHub) - ASP.NET Core's
+    // rate-limiter middleware only applies to the HTTP endpoint pipeline, not to individual hub
+    // method invocations over an already-established connection; hub-level throttling needs a
+    // different mechanism and is intentionally left as a follow-up (see TODO.md item 62).
+    opt.AddPolicy("authenticated", ctx => RateLimitPartition.GetFixedWindowLimiter(
+        ctx.User.Identity?.Name ?? ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+        _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 60,
+            Window = TimeSpan.FromMinutes(1),
+            QueueLimit = 0
+        }));
 });
+
+// Loopback is trusted by default (ForwardedHeadersOptions' built-in KnownNetworks/KnownProxies),
+// which covers the common case of Social and this realm on the same host. For a Social instance
+// on a different host, add its IP under ForwardedHeaders:TrustedProxies so its X-Forwarded-For
+// header is honored too - otherwise it's silently ignored and RemoteIpAddress falls back to
+// Social's own connecting IP, same as before this option existed.
+var forwardedHeadersOptions = new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor
+};
+foreach (var proxy in builder.Configuration.GetSection("ForwardedHeaders:TrustedProxies").Get<string[]>() ?? [])
+{
+    if (IPAddress.TryParse(proxy, out var proxyIp))
+        forwardedHeadersOptions.KnownProxies.Add(proxyIp);
+}
 
 // JWT authentication
 var jwtKey = builder.Configuration["Jwt:Key"]!;
@@ -205,6 +254,9 @@ if (app.Environment.IsDevelopment())
 // No app.UseHttpsRedirection() here: Production is now HTTPS-only at the Kestrel level (see
 // the guard above) — there's no plain-HTTP endpoint left to redirect away from. Development
 // keeps its plain Http endpoint from appsettings.json for local-loopback convenience.
+// Must run before UseRateLimiter (which reads Connection.RemoteIpAddress) so a trusted proxy's
+// X-Forwarded-For header has already been applied.
+app.UseForwardedHeaders(forwardedHeadersOptions);
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseRateLimiter();

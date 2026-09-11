@@ -107,42 +107,62 @@ namespace Myria.Server.Realm.Services
             var guild = await db.Guilds.FindAsync(leader.GuildId);
             if (guild is null) return (false, "Guild not found.", null);
 
-            var roomTypes  = StartingRoomsForPrestige(prestigeLevel);
-            var roomIds    = await AllocateRoomIdsAsync(roomTypes.Count);
-            var now        = DateTime.UtcNow;
-
-            treasury.Balance -= price;
-
-            var property = new GuildProperty
+            // Wrapped in a transaction (matching BuyListedHouseAsync's already-established
+            // pattern in this file) for two reasons, both found in the 2026-09-10
+            // security/robustness audit: (1) the property insert and the room insert(s) below
+            // were two separate SaveChangesAsync calls with no atomicity between them - a crash
+            // or exception between them left a guild that had already paid the treasury debit
+            // for a house with zero rooms, with nothing rolling that debit back; (2)
+            // AllocateRoomIdsAsync's own MAX(RoomId)-then-use read has no lock of its own, so two
+            // concurrent purchases could otherwise both read the same MAX and allocate colliding
+            // RoomIds - an explicit transaction spanning the read through the final commit closes
+            // this too, since SQLite serializes concurrent write transactions.
+            await using var tx = await db.Database.BeginTransactionAsync();
+            try
             {
-                GuildId    = leader.GuildId,
-                Type       = GuildPropertyType.House,
-                CityRoomId = cityRoomId,
-                PricePaid  = price,
-                AcquiredAt = now,
-            };
-            db.GuildProperties.Add(property);
-            await db.SaveChangesAsync(); // flush to get property.Id
+                var roomTypes  = StartingRoomsForPrestige(prestigeLevel);
+                var roomIds    = await AllocateRoomIdsAsync(roomTypes.Count);
+                var now        = DateTime.UtcNow;
 
-            for (int i = 0; i < roomTypes.Count; i++)
-            {
-                var rt = roomTypes[i];
-                var (name, description) = RoomText(guild.Name, rt, isBase: false);
-                db.GuildRooms.Add(new GuildRoom
+                treasury.Balance -= price;
+
+                var property = new GuildProperty
                 {
-                    GuildPropertyId = property.Id,
-                    RoomId          = roomIds[i],
-                    RoomType        = rt,
-                    Name            = name,
-                    Description     = description,
-                    MinRankRequired = DefaultMinRankFor(rt),
-                    IsBuilt         = true,
-                    BuiltAt         = now,
-                });
-            }
-            await db.SaveChangesAsync();
+                    GuildId    = leader.GuildId,
+                    Type       = GuildPropertyType.House,
+                    CityRoomId = cityRoomId,
+                    PricePaid  = price,
+                    AcquiredAt = now,
+                };
+                db.GuildProperties.Add(property);
+                await db.SaveChangesAsync(); // flush to get property.Id
 
-            return (true, "", property);
+                for (int i = 0; i < roomTypes.Count; i++)
+                {
+                    var rt = roomTypes[i];
+                    var (name, description) = RoomText(guild.Name, rt, isBase: false);
+                    db.GuildRooms.Add(new GuildRoom
+                    {
+                        GuildPropertyId = property.Id,
+                        RoomId          = roomIds[i],
+                        RoomType        = rt,
+                        Name            = name,
+                        Description     = description,
+                        MinRankRequired = DefaultMinRankFor(rt),
+                        IsBuilt         = true,
+                        BuiltAt         = now,
+                    });
+                }
+                await db.SaveChangesAsync();
+                await tx.CommitAsync();
+
+                return (true, "", property);
+            }
+            catch
+            {
+                await tx.RollbackAsync();
+                return (false, "Transaction failed. Please try again.", null);
+            }
         }
 
         // ── House: add room ────────────────────────────────────────────────────
@@ -179,27 +199,39 @@ namespace Myria.Server.Realm.Services
             var guild = await db.Guilds.FindAsync(member.GuildId);
             if (guild is null) return (false, "Guild not found.", null);
 
-            var ids = await AllocateRoomIdsAsync(1);
-            var now = DateTime.UtcNow;
-
-            treasury.Balance -= cost;
-            var (name, description) = RoomText(guild.Name, roomType, isBase: false);
-
-            var guildRoom = new GuildRoom
+            // See PurchaseHouseAsync's comment - same AllocateRoomIdsAsync TOCTOU exposure,
+            // same fix.
+            await using var tx = await db.Database.BeginTransactionAsync();
+            try
             {
-                GuildPropertyId = property.Id,
-                RoomId          = ids[0],
-                RoomType        = roomType,
-                Name            = name,
-                Description     = description,
-                MinRankRequired = DefaultMinRankFor(roomType),
-                IsBuilt         = true,
-                BuiltAt         = now,
-            };
-            db.GuildRooms.Add(guildRoom);
-            await db.SaveChangesAsync();
+                var ids = await AllocateRoomIdsAsync(1);
+                var now = DateTime.UtcNow;
 
-            return (true, "", guildRoom);
+                treasury.Balance -= cost;
+                var (name, description) = RoomText(guild.Name, roomType, isBase: false);
+
+                var guildRoom = new GuildRoom
+                {
+                    GuildPropertyId = property.Id,
+                    RoomId          = ids[0],
+                    RoomType        = roomType,
+                    Name            = name,
+                    Description     = description,
+                    MinRankRequired = DefaultMinRankFor(roomType),
+                    IsBuilt         = true,
+                    BuiltAt         = now,
+                };
+                db.GuildRooms.Add(guildRoom);
+                await db.SaveChangesAsync();
+                await tx.CommitAsync();
+
+                return (true, "", guildRoom);
+            }
+            catch
+            {
+                await tx.RollbackAsync();
+                return (false, "Transaction failed. Please try again.", null);
+            }
         }
 
         // ── House: sale listing ────────────────────────────────────────────────
@@ -328,34 +360,46 @@ namespace Myria.Server.Realm.Services
             var guild = await db.Guilds.FindAsync(leader.GuildId);
             if (guild is null) return (false, "Guild not found.", null);
 
-            var ids = await AllocateRoomIdsAsync(1);
-            var now = DateTime.UtcNow;
-
-            var property = new GuildProperty
+            // See PurchaseHouseAsync's comment - same two-separate-writes-with-no-atomicity and
+            // AllocateRoomIdsAsync-TOCTOU exposure, same fix.
+            await using var tx = await db.Database.BeginTransactionAsync();
+            try
             {
-                GuildId          = leader.GuildId,
-                Type             = GuildPropertyType.Base,
-                BaseAnchorRoomId = anchorRoomId,
-                AcquiredAt       = now,
-            };
-            db.GuildProperties.Add(property);
-            await db.SaveChangesAsync();
+                var ids = await AllocateRoomIdsAsync(1);
+                var now = DateTime.UtcNow;
 
-            var (baseName, baseDescription) = RoomText(guild.Name, GuildRoomType.GatheringPlace, isBase: true);
-            db.GuildRooms.Add(new GuildRoom
+                var property = new GuildProperty
+                {
+                    GuildId          = leader.GuildId,
+                    Type             = GuildPropertyType.Base,
+                    BaseAnchorRoomId = anchorRoomId,
+                    AcquiredAt       = now,
+                };
+                db.GuildProperties.Add(property);
+                await db.SaveChangesAsync();
+
+                var (baseName, baseDescription) = RoomText(guild.Name, GuildRoomType.GatheringPlace, isBase: true);
+                db.GuildRooms.Add(new GuildRoom
+                {
+                    GuildPropertyId = property.Id,
+                    RoomId          = ids[0],
+                    RoomType        = GuildRoomType.GatheringPlace,
+                    Name            = baseName,
+                    Description     = baseDescription,
+                    MinRankRequired = GuildRank.Member,
+                    IsBuilt         = true,
+                    BuiltAt         = now,
+                });
+                await db.SaveChangesAsync();
+                await tx.CommitAsync();
+
+                return (true, "", property);
+            }
+            catch
             {
-                GuildPropertyId = property.Id,
-                RoomId          = ids[0],
-                RoomType        = GuildRoomType.GatheringPlace,
-                Name            = baseName,
-                Description     = baseDescription,
-                MinRankRequired = GuildRank.Member,
-                IsBuilt         = true,
-                BuiltAt         = now,
-            });
-            await db.SaveChangesAsync();
-
-            return (true, "", property);
+                await tx.RollbackAsync();
+                return (false, "Transaction failed. Please try again.", null);
+            }
         }
 
         // ── Base: build room ───────────────────────────────────────────────────
@@ -418,26 +462,41 @@ namespace Myria.Server.Realm.Services
             var guild = await db.Guilds.FindAsync(member.GuildId);
             if (guild is null) return (false, "Guild not found.", null);
 
-            var ids = await AllocateRoomIdsAsync(1);
-            var now = DateTime.UtcNow;
-
-            var (name, description) = RoomText(guild.Name, roomType, isBase: true);
-
-            var guildRoom = new GuildRoom
+            // See PurchaseHouseAsync's comment - same AllocateRoomIdsAsync TOCTOU exposure, same
+            // fix. Scoped to the DB portion only; the in-memory material deduction above is a
+            // separate, pre-existing concern (already documented on this method's own summary -
+            // it persists on the character's next session save, independent of this DB write)
+            // and out of scope for this specific fix.
+            await using var tx = await db.Database.BeginTransactionAsync();
+            try
             {
-                GuildPropertyId = property.Id,
-                RoomId          = ids[0],
-                RoomType        = roomType,
-                Name            = name,
-                Description     = description,
-                MinRankRequired = DefaultMinRankFor(roomType),
-                IsBuilt         = true,
-                BuiltAt         = now,
-            };
-            db.GuildRooms.Add(guildRoom);
-            await db.SaveChangesAsync();
+                var ids = await AllocateRoomIdsAsync(1);
+                var now = DateTime.UtcNow;
 
-            return (true, "", guildRoom);
+                var (name, description) = RoomText(guild.Name, roomType, isBase: true);
+
+                var guildRoom = new GuildRoom
+                {
+                    GuildPropertyId = property.Id,
+                    RoomId          = ids[0],
+                    RoomType        = roomType,
+                    Name            = name,
+                    Description     = description,
+                    MinRankRequired = DefaultMinRankFor(roomType),
+                    IsBuilt         = true,
+                    BuiltAt         = now,
+                };
+                db.GuildRooms.Add(guildRoom);
+                await db.SaveChangesAsync();
+                await tx.CommitAsync();
+
+                return (true, "", guildRoom);
+            }
+            catch
+            {
+                await tx.RollbackAsync();
+                return (false, "Transaction failed. Please try again.", null);
+            }
         }
 
         // ── Room access ────────────────────────────────────────────────────────

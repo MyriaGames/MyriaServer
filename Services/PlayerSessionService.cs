@@ -17,11 +17,27 @@ namespace Myria.Server.Realm.Services
         // characterName → the connectionId currently holding that character's live session.
         private readonly ConcurrentDictionary<string, string> _connectionByCharacter = new(StringComparer.OrdinalIgnoreCase);
 
+        // TryAdd/Remove/TryReattach each move the same character between multiple dictionaries
+        // as one logical operation - each individual ConcurrentDictionary call is atomic on its
+        // own, but the composite sequence isn't just because the collection type is thread-safe
+        // (found in the 2026-09-10 security/robustness audit: TryReattach's class-doc claim of
+        // "lock-protected per entry" wasn't actually true for it). Two near-simultaneous
+        // reattach attempts for the same character - the method's own doc calls out SignalR
+        // auto-reconnect as an easy way to trigger overlapping attempts - could otherwise
+        // interleave their reads/writes across _players/_connectionByCharacter/_encounters/
+        // _gatherState. Scoped to these three composite methods; the single-dictionary-touching
+        // ones below (Get, GetConnectionId, GetEncounter, SetEncounter, RemoveEncounter) don't
+        // need it, and TryConsumeGather already has its own narrower per-entry lock.
+        private readonly object _lock = new();
+
         public bool TryAdd(string connectionId, Character player)
         {
-            _gatherState[connectionId] = new Dictionary<int, (DateTime, int)>();
-            _connectionByCharacter[player.Name] = connectionId;
-            return _players.TryAdd(connectionId, player);
+            lock (_lock)
+            {
+                _gatherState[connectionId] = new Dictionary<int, (DateTime, int)>();
+                _connectionByCharacter[player.Name] = connectionId;
+                return _players.TryAdd(connectionId, player);
+            }
         }
 
         public Character? Get(string connectionId)
@@ -36,12 +52,15 @@ namespace Myria.Server.Realm.Services
         /// <summary>Removes the session and returns the player for saving, or null if none existed.</summary>
         public Character? Remove(string connectionId)
         {
-            _players.TryRemove(connectionId, out var p);
-            _gatherState.TryRemove(connectionId, out _);
-            _encounters.TryRemove(connectionId, out _);
-            if (p != null)
-                _connectionByCharacter.TryRemove(new KeyValuePair<string, string>(p.Name, connectionId));
-            return p;
+            lock (_lock)
+            {
+                _players.TryRemove(connectionId, out var p);
+                _gatherState.TryRemove(connectionId, out _);
+                _encounters.TryRemove(connectionId, out _);
+                if (p != null)
+                    _connectionByCharacter.TryRemove(new KeyValuePair<string, string>(p.Name, connectionId));
+                return p;
+            }
         }
 
         /// <summary>
@@ -55,24 +74,27 @@ namespace Myria.Server.Realm.Services
         /// </summary>
         public Character? TryReattach(string characterName, string newConnectionId)
         {
-            if (!_connectionByCharacter.TryGetValue(characterName, out var oldConnectionId))
-                return null;
-            if (oldConnectionId == newConnectionId)
-                return Get(newConnectionId);
-            if (!_players.TryRemove(oldConnectionId, out var player))
-                return null;
+            lock (_lock)
+            {
+                if (!_connectionByCharacter.TryGetValue(characterName, out var oldConnectionId))
+                    return null;
+                if (oldConnectionId == newConnectionId)
+                    return Get(newConnectionId);
+                if (!_players.TryRemove(oldConnectionId, out var player))
+                    return null;
 
-            _players[newConnectionId] = player;
-            _connectionByCharacter[characterName] = newConnectionId;
+                _players[newConnectionId] = player;
+                _connectionByCharacter[characterName] = newConnectionId;
 
-            if (_encounters.TryRemove(oldConnectionId, out var encounter))
-                _encounters[newConnectionId] = encounter;
+                if (_encounters.TryRemove(oldConnectionId, out var encounter))
+                    _encounters[newConnectionId] = encounter;
 
-            _gatherState[newConnectionId] = _gatherState.TryRemove(oldConnectionId, out var gather)
-                ? gather
-                : new Dictionary<int, (DateTime, int)>();
+                _gatherState[newConnectionId] = _gatherState.TryRemove(oldConnectionId, out var gather)
+                    ? gather
+                    : new Dictionary<int, (DateTime, int)>();
 
-            return player;
+                return player;
+            }
         }
 
         /// <summary>

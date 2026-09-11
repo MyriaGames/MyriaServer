@@ -1,6 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
+using Myria.Lib.Core.Models;
+using Myria.Lib.Core.Services.Builder;
 using Myria.Server.Realm.Data;
 using Myria.Server.Realm.Models;
 using Myria.Server.Realm.Models.Dto;
@@ -10,6 +13,7 @@ namespace Myria.Server.Realm.Controllers
     [ApiController]
     [Route("api/[controller]")]
     [Authorize]
+    [EnableRateLimiting("authenticated")]
     public class CharactersController(AppDbContext db) : ControllerBase
     {
         // Character ownership is keyed by username (the JWT's authenticated identity name),
@@ -206,6 +210,33 @@ namespace Myria.Server.Realm.Controllers
             var user = await GetUserAsync();
             if (user is null) return Unauthorized();
 
+            // [Range]/[Required] on SaveCharacterRequest's scalar fields (incl. InventoryItems'
+            // StackSize/SlotIndex) are already enforced automatically by [ApiController]'s model
+            // validation before this method even runs. What that can't check is anything that
+            // depends on looking an id up in the server's own item registry - validate that here
+            // so a crafted request can't reference a nonexistent item, or stack one past what it
+            // actually supports (see the 2026-09-10 security audit: this endpoint previously
+            // wrote every client-supplied field straight to the DB unchecked).
+            foreach (var i in req.InventoryItems)
+            {
+                if (!ItemFactory.TryCreateItem(i.ItemId, out var invItem) || invItem is null)
+                    return BadRequest(new { message = $"Unknown item id: {i.ItemId}" });
+                if (i.StackSize > invItem.MaxStackSize)
+                    return BadRequest(new { message = $"Stack size {i.StackSize} exceeds max {invItem.MaxStackSize} for {i.ItemId}" });
+            }
+
+            foreach (var equippedId in new[] { req.WeaponItemId, req.ArmorItemId, req.AccessoryItemId })
+            {
+                if (equippedId is not null && !ItemFactory.TryCreateItem(equippedId, out _))
+                    return BadRequest(new { message = $"Unknown item id: {equippedId}" });
+            }
+
+            // [Range(0, long.MaxValue)] on MoneyBronze alone would let a request set it past its
+            // own MoneyCapacity - that's a cross-field constraint [Range] can't express, so it's
+            // checked here instead.
+            if (req.MoneyBronze > req.MoneyCapacity)
+                return BadRequest(new { message = $"MoneyBronze ({req.MoneyBronze}) exceeds MoneyCapacity ({req.MoneyCapacity})" });
+
             // Load existing record with first-level child collections (ThenInclude not
             // needed for save — SQL Server cascade-delete handles grandchildren).
             var record = await db.Characters
@@ -232,6 +263,15 @@ namespace Myria.Server.Realm.Controllers
                 // GuildService.CreateGuildAsync guards guild-name collisions.
                 if (await db.Characters.AnyAsync(c => c.Name == req.Name))
                     return Conflict(new { message = "That character name is already taken." });
+
+                // Per-account-per-realm cap - each realm has its own DB (see appsettings.json's
+                // _RealmDeploymentNote), so this naturally scopes per realm already. Only gates
+                // creating a *new* character; updates to one of the account's existing characters
+                // always go through. UserAccount.MaxCharacters is also what the character-selection
+                // UI's fixed 5-slot design assumes, so this keeps the two in sync.
+                int existingCount = await db.Characters.CountAsync(c => c.UserId == user);
+                if (existingCount >= UserAccount.MaxCharacters)
+                    return Conflict(new { message = $"You already have the maximum of {UserAccount.MaxCharacters} characters on this realm." });
 
                 record = new Character { UserId = user, Name = req.Name };
                 db.Characters.Add(record);

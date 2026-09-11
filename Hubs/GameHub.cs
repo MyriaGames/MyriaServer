@@ -383,9 +383,9 @@ namespace Myria.Server.Realm.Hubs
         private Task NotifyCharacterUpdate(
             Myria.Lib.Core.Entities.Characters.Character player,
             bool inventory = false, bool money = false, bool vitals = false, bool progress = false,
-            bool questProgress = false, bool jobs = false, bool runes = false)
+            bool questProgress = false, bool jobs = false, bool runes = false, bool equipment = false)
         {
-            var dto = BuildCharacterUpdate(player, inventory, money, vitals, progress, questProgress, jobs, runes);
+            var dto = BuildCharacterUpdate(player, inventory, money, vitals, progress, questProgress, jobs, runes, equipment);
             return dto is null ? Task.CompletedTask : Clients.Caller.SendAsync("CharacterUpdated", dto);
         }
 
@@ -393,18 +393,18 @@ namespace Myria.Server.Realm.Hubs
         /// the caller (e.g. the other side of a completed trade).</summary>
         private Task NotifyCharacterUpdateFor(string connectionId, Myria.Lib.Core.Entities.Characters.Character player,
             bool inventory = false, bool money = false, bool vitals = false, bool progress = false,
-            bool questProgress = false, bool jobs = false, bool runes = false)
+            bool questProgress = false, bool jobs = false, bool runes = false, bool equipment = false)
         {
-            var dto = BuildCharacterUpdate(player, inventory, money, vitals, progress, questProgress, jobs, runes);
+            var dto = BuildCharacterUpdate(player, inventory, money, vitals, progress, questProgress, jobs, runes, equipment);
             return dto is null ? Task.CompletedTask : Clients.Client(connectionId).SendAsync("CharacterUpdated", dto);
         }
 
         private static CharacterUpdateDto? BuildCharacterUpdate(
             Myria.Lib.Core.Entities.Characters.Character player,
             bool inventory, bool money, bool vitals, bool progress, bool questProgress = false,
-            bool jobs = false, bool runes = false)
+            bool jobs = false, bool runes = false, bool equipment = false)
         {
-            if (!inventory && !money && !vitals && !progress && !questProgress && !jobs && !runes) return null;
+            if (!inventory && !money && !vitals && !progress && !questProgress && !jobs && !runes && !equipment) return null;
 
             return new CharacterUpdateDto(
                 inventory ? player.Inventory.Items.Select(i => new InventoryItemSnapshot(i.Id, i.StackSize)).ToList() : null,
@@ -416,7 +416,8 @@ namespace Myria.Server.Realm.Hubs
                 progress ? BuildProgress(player) : null,
                 questProgress ? BuildQuestProgress(player) : null,
                 jobs ? player.Jobs.Select(j => new JobProgressSnapshot(j.JobId, j.SkillXp, j.KnowledgeXp, j.FameXp)).ToList() : null,
-                runes ? player.KnownRunes.Select(r => new RuneSnapshot(r.Id, r.BaseRuneId, new List<string>(r.AddedWordIds))).ToList() : null);
+                runes ? player.KnownRunes.Select(r => new RuneSnapshot(r.Id, r.BaseRuneId, new List<string>(r.AddedWordIds))).ToList() : null,
+                equipment ? new EquippedSnapshot(player.WeaponSlot?.Id, player.ArmorSlot?.Id, player.AccessorySlot?.Id) : null);
         }
 
         /// <summary>
@@ -836,6 +837,8 @@ namespace Myria.Server.Realm.Hubs
 
         public async Task<NpcShopBuyResult> BuyFromNpcShop(string npcId, string itemId, int quantity)
         {
+            if (quantity <= 0) return new NpcShopBuyResult(false, "invalid_quantity", 0, 0);
+
             var player = session.Get(Context.ConnectionId);
             if (player == null) return new NpcShopBuyResult(false, "no_session", 0, 0);
 
@@ -917,8 +920,10 @@ namespace Myria.Server.Realm.Hubs
         /// client's local Character - without this, the server's session copy (what Heal,
         /// combat, etc. actually compute MaxHealth/MaxMana from) keeps whatever stats existed at
         /// LoadCharacter time, so e.g. the Healer would only ever heal to "max HP at login".
-        /// Trusts the client's numbers as-is (matches EquipItem/UnequipItem - no server-side
-        /// recompute), which is fine for a friends-only alpha with no anti-cheat concerns yet.
+        /// Validates the submitted totals against this character's earned level-up points below -
+        /// matches EquipItem/UnequipItem in trusting which items/stats are assigned, but (unlike
+        /// those) still bounds the numbers since unlimited stat points would be a direct power
+        /// cheat rather than just a cosmetic mismatch.
         /// </summary>
         public Task SyncStatAllocation(int strengthAdded, int dexterityAdded, int enduranceAdded,
             int intelligenceAdded, int spiritAdded, int unusedPoints)
@@ -936,7 +941,10 @@ namespace Myria.Server.Realm.Hubs
                 return Task.CompletedTask;
 
             int totalPointsEarned = Math.Max(0, player.Level - 1);
-            int pointsSpent = strengthAdded + dexterityAdded + enduranceAdded + intelligenceAdded + spiritAdded;
+            // Widened to long before summing - the five components are individually >= 0 but
+            // otherwise attacker-controlled, and a plain int sum can wrap negative and slip past
+            // the cap check below (e.g. two components near int.MaxValue).
+            long pointsSpent = (long)strengthAdded + dexterityAdded + enduranceAdded + intelligenceAdded + spiritAdded;
             if (pointsSpent + unusedPoints > totalPointsEarned)
                 return Task.CompletedTask;
 
@@ -967,6 +975,19 @@ namespace Myria.Server.Realm.Hubs
             {
                 var active = player.ActiveQuests.FirstOrDefault(q => q.Id == quest.Id);
                 if (active == null) return false;
+
+                // Re-verify kill/item objectives against this session's own server-tracked
+                // progress before granting rewards - previously trusted the client's claim the
+                // quest was done, so a client that turned in early (bug, desync, or a modified
+                // client) got full rewards for an incomplete quest while the server's own
+                // KillProgress/ItemProgress counters said otherwise. Same check as
+                // Character.ValidateQuestStatuses, which already corrects this after the fact for
+                // saved data; this stops it from happening live.
+                bool killsDone = active.RequiredKills.All(rk =>
+                    active.KillProgress.TryGetValue(rk.Key, out int kills) && kills >= rk.Value);
+                bool itemsDone = active.RequiredItems.All(ri =>
+                    active.ItemProgress.TryGetValue(ri.Key, out int items) && items >= ri.Value);
+                if (!killsDone || !itemsDone) return false;
 
                 active.GrantRewards(player);
 
@@ -1052,11 +1073,12 @@ namespace Myria.Server.Realm.Hubs
             if (player == null) return new EquipItemResult(false, "Not connected to a game session.");
 
             bool ok = player.Inventory.SwapEquipment(itemId, player, out var reason);
-            // Only the loose Items list (item removed from inventory into the equip slot) is
-            // covered here - the Equipped/WeaponSlot assignment itself isn't part of
-            // CharacterUpdateDto, so the client's own base.ExecuteEquip mirror stays the source
-            // of truth for which slot actually holds what.
-            if (ok) await NotifyCharacterUpdate(player, inventory: true);
+            // Echoes back which item id ended up in which slot (equipment: true), not just the
+            // loose Items list - without this, the client's own base.ExecuteEquip mirror was the
+            // only source of truth for what's equipped, and a mismatch (e.g. a rejected swap the
+            // client didn't correctly roll back) would permanently desync MaxHealth/MaxMana/combat
+            // stats (all gear-derived) between client display and server-authoritative combat.
+            if (ok) await NotifyCharacterUpdate(player, inventory: true, equipment: true);
             return new EquipItemResult(ok, reason);
         }
 
@@ -1083,7 +1105,7 @@ namespace Myria.Server.Realm.Hubs
                 case "Armor":     player.ArmorSlot     = null; break;
                 case "Accessory": player.AccessorySlot = null; break;
             }
-            await NotifyCharacterUpdate(player, inventory: true);
+            await NotifyCharacterUpdate(player, inventory: true, equipment: true);
             return true;
         }
 
@@ -1129,7 +1151,8 @@ namespace Myria.Server.Realm.Hubs
         {
             var player = session.Get(Context.ConnectionId);
             if (player == null) return Task.FromResult(false);
-            return Task.FromResult(SkillCombinationService.TryCreateForCharacter(player, skillIds) != null);
+            bool ok = SkillCombinationService.TryCreateForCharacter(player, skillIds) != null;
+            return Task.FromResult(ok);
         }
 
         // ── Combat ────────────────────────────────────────────────────────────
@@ -1305,10 +1328,45 @@ namespace Myria.Server.Realm.Hubs
 
             if (partyId is not null)
             {
-                // Party fight — gather all party members in this room.
-                if (groupCombat.HasEncounter(partyId))
-                    return new StartGroupCombatResult(false, "already_in_combat", [], [], "");
+                // Fights are keyed per (party, room) rather than just per party, so a party that's
+                // spread across two rooms can have two independent fights running at once instead
+                // of the second room's "Start Group Fight" either rejecting outright or - worse -
+                // pulling in members who are still standing in the first room (see GetConnections'
+                // and memberConns' room filters below, and CombatGroupClients).
+                fightId = $"{partyId}:{roomId}";
 
+                // The party already has a live fight in this exact room - join it instead of
+                // rejecting. Reachable when a member arrives in the room (or simply presses the
+                // button) after a roommate already started the fight; the earlier already_in_combat
+                // check above only rejects the caller's *own* connection being mid-fight, not a
+                // fight existing at all, so this is the first point that actually knows one does.
+                if (groupCombat.GetEncounter(fightId) is { } existingEncounter)
+                {
+                    existingEncounter.AddCharacter(caller);
+                    groupCombat.AddConnection(fightId, Context.ConnectionId);
+
+                    var joinResult = new StartGroupCombatResult(
+                        true, null,
+                        BuildCharacterStates(existingEncounter),
+                        BuildMonsterStates(existingEncounter),
+                        existingEncounter.CurrentTurnCharacterName);
+
+                    logger.LogInformation("Combat joined (party, fight {FightId}): {User}", fightId, displayName);
+
+                    // The joiner needs the fight's full current state (their client hasn't seen any
+                    // of it yet), same shape as a fresh start. Everyone already in the fight just
+                    // needs to know a new combatant arrived - GroupCombatUpdated with the "joined"
+                    // log entry AddCharacter just appended covers that without resending everything.
+                    await Clients.Caller.SendAsync("GroupCombatStarted", joinResult);
+                    var joinSnap = BuildGroupSnapshot(existingEncounter, existingEncounter.Log.Count - 1);
+                    await Clients.Clients(groupCombat.GetConnections(fightId)
+                            .Where(c => c != Context.ConnectionId).ToList())
+                        .SendAsync("GroupCombatUpdated", joinSnap);
+
+                    return joinResult;
+                }
+
+                // No fight in this room yet - gather all party members physically present here.
                 var members = party.GetMembers(partyId);
                 players = members
                     .Select(m => presence.GetConnectionByName(m))
@@ -1321,10 +1379,9 @@ namespace Myria.Server.Realm.Hubs
                 memberConns = members
                     .Select(m => presence.GetConnectionByName(m))
                     .Where(c => c != null)
+                    .Where(c => presence.GetRoom(c!) == roomId)
                     .Select(c => c!)
                     .ToList();
-
-                fightId = partyId;
             }
             else
             {
@@ -1369,7 +1426,8 @@ namespace Myria.Server.Realm.Hubs
                 return EmptyGroupSnapshot();
 
             var encounter = groupCombat.GetEncounter(partyId);
-            if (encounter is null) return EmptyGroupSnapshot();
+            if (encounter is null)
+                return EmptyGroupSnapshot();
 
             int logBefore = encounter.Log.Count;
             if (!encounter.CharacterAttack(displayName, targetMonsterIndex))
@@ -1420,14 +1478,32 @@ namespace Myria.Server.Realm.Hubs
                     }
                 }
 
-                groupCombat.RemoveByParty(partyId);
+                // Broadcast BEFORE removing the party's fight registration - CombatGroupClients
+                // resolves recipients via groupCombat.GetConnections(fightId), which reads the
+                // same connection registry RemoveByParty tears down; removing first left that
+                // lookup empty, so the finishing broadcast silently reached nobody and both
+                // clients stayed frozen on the stale mid-fight screen forever (the server had
+                // already saved/respawned everything correctly - only the client notification
+                // was lost).
                 await CombatGroupClients(partyId).SendAsync("GroupCombatFinished", snap);
+                groupCombat.RemoveByParty(partyId);
                 if (!encounter.CharactersWon)
                 {
                     logger.LogInformation("Group combat lost: {Chars}",
                         string.Join(", ", encounter.Characters.Select(c => c.Name)));
-                    await RespawnDeadGroupMembersAsync(encounter);
                 }
+                // Respawn every dead character regardless of whether the fight was won or lost -
+                // CharactersWon only tracks whether the monsters died, not whether every party
+                // member survived getting there (see GroupCombatEncounter.FinishCharactersWon,
+                // which fires purely off Monsters.All(m => !m.IsAlive)). A party member who died
+                // mid-fight while their ally finished the last monster off used to never reach
+                // this call at all - stuck standing at 0 HP wherever the fight took place,
+                // walking around the field but rejected from fighting again ("You cannot fight
+                // while defeated"), since only the RespawnCharacterAsync this method calls
+                // actually moves them to town, heals them, and notifies their client.
+                // RespawnDeadGroupMembersAsync already only touches characters that are actually
+                // dead, so calling it unconditionally is a no-op for a clean win.
+                await RespawnDeadGroupMembersAsync(encounter);
             }
             else
             {
@@ -1500,14 +1576,32 @@ namespace Myria.Server.Realm.Hubs
                     }
                 }
 
-                groupCombat.RemoveByParty(partyId);
+                // Broadcast BEFORE removing the party's fight registration - CombatGroupClients
+                // resolves recipients via groupCombat.GetConnections(fightId), which reads the
+                // same connection registry RemoveByParty tears down; removing first left that
+                // lookup empty, so the finishing broadcast silently reached nobody and both
+                // clients stayed frozen on the stale mid-fight screen forever (the server had
+                // already saved/respawned everything correctly - only the client notification
+                // was lost).
                 await CombatGroupClients(partyId).SendAsync("GroupCombatFinished", snap);
+                groupCombat.RemoveByParty(partyId);
                 if (!encounter.CharactersWon)
                 {
                     logger.LogInformation("Group combat lost: {Chars}",
                         string.Join(", ", encounter.Characters.Select(c => c.Name)));
-                    await RespawnDeadGroupMembersAsync(encounter);
                 }
+                // Respawn every dead character regardless of whether the fight was won or lost -
+                // CharactersWon only tracks whether the monsters died, not whether every party
+                // member survived getting there (see GroupCombatEncounter.FinishCharactersWon,
+                // which fires purely off Monsters.All(m => !m.IsAlive)). A party member who died
+                // mid-fight while their ally finished the last monster off used to never reach
+                // this call at all - stuck standing at 0 HP wherever the fight took place,
+                // walking around the field but rejected from fighting again ("You cannot fight
+                // while defeated"), since only the RespawnCharacterAsync this method calls
+                // actually moves them to town, heals them, and notifies their client.
+                // RespawnDeadGroupMembersAsync already only touches characters that are actually
+                // dead, so calling it unconditionally is a no-op for a clean win.
+                await RespawnDeadGroupMembersAsync(encounter);
             }
             else
             {
@@ -2632,11 +2726,15 @@ namespace Myria.Server.Realm.Hubs
                      string.Equals(s.Name, skillId, StringComparison.OrdinalIgnoreCase)));
         }
 
-        // Returns Clients.Caller for solo group fights, party group for real parties.
+        // Returns Clients.Caller for solo group fights; for real party fights, sends to exactly
+        // the connections registered to this specific fight (see GroupCombatService) rather than
+        // the party's persistent, room-independent PartyGroup - fightId is now scoped per room
+        // (see StartGroupCombat), so a party with fights running in two different rooms at once
+        // must not have both rooms' players receive each other's combat broadcasts.
         private IClientProxy CombatGroupClients(string fightId) =>
             fightId == Context.ConnectionId
                 ? Clients.Caller
-                : Clients.Group(PartyService.PartyGroup(fightId));
+                : Clients.Clients(groupCombat.GetConnections(fightId));
 
         private bool CharacterRoomHasNpc(string npcId)
         {

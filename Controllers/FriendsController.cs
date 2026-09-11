@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Myria.Lib.Core.Systems.Enums;
 using Myria.Server.Realm.Data;
@@ -23,6 +24,7 @@ namespace Myria.Server.Realm.Controllers
     [ApiController]
     [Route("api/[controller]")]
     [Authorize]
+    [EnableRateLimiting("authenticated")]
     public class FriendsController(
         AppDbContext          db,
         CharacterPresenceService presence,
