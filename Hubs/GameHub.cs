@@ -28,6 +28,7 @@ namespace Myria.Server.Realm.Hubs
         PlayerShopService shop,
         GroupCombatService groupCombat,
         IServiceScopeFactory scopeFactory,
+        AllowedVersionsConfig allowedVersions,
         ILogger<GameHub> logger
     ) : Hub
     {
@@ -73,6 +74,22 @@ namespace Myria.Server.Realm.Hubs
         public override async Task OnConnectedAsync()
         {
             var username = Context.User!.Identity!.Name!;
+
+            // Exact-version gate — deliberately stricter than the client's own auto-updater (which
+            // treats same-compat-tier differences as safe to apply silently): once connected, this
+            // realm wants to know the client is running the literal same released build, not just a
+            // compatible one. Only this realm enforces this; MyriaAuthServer deliberately does not,
+            // so a player on a rejected client version can still log in and manage their account.
+            var clientVersion = Context.GetHttpContext()?.Request.Query["clientVersion"].ToString();
+            if (!allowedVersions.IsAllowed(clientVersion))
+            {
+                logger.LogInformation(
+                    "{User} rejected at connect: client version '{ClientVersion}' not in allowed list (conn {Conn})",
+                    username, clientVersion, Context.ConnectionId);
+                await Clients.Caller.SendAsync("VersionMismatch", allowedVersions.AllowedClientVersions);
+                Context.Abort();
+                return;
+            }
 
             var oldConn = presence.GetConnectionByAccount(username);
             if (oldConn != null)

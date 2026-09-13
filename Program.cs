@@ -71,6 +71,17 @@ var guildConfig = File.Exists(guildConfigPath)
     : new GuildConfig();
 builder.Services.AddSingleton(guildConfig);
 
+// Allowed client versions — loaded from Data/allowed_versions.json at startup (same pattern as
+// guildConfig above). Ships fresh with every release (see update-production.sh's exclude list,
+// which deliberately does NOT list this file) so it always reflects what this build actually
+// supports; an operator can still hand-widen it post-deploy without a rebuild if needed.
+var allowedVersionsPath = Path.Combine(AppContext.BaseDirectory, "Data", "allowed_versions.json");
+var allowedVersionsConfig = File.Exists(allowedVersionsPath)
+    ? JsonSerializer.Deserialize<AllowedVersionsConfig>(File.ReadAllText(allowedVersionsPath),
+        new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new AllowedVersionsConfig()
+    : new AllowedVersionsConfig();
+builder.Services.AddSingleton(allowedVersionsConfig);
+
 // Database — local SQLite file, no external server/connection required. The connection
 // string's "Data Source" is resolved against AppContext.BaseDirectory (like guildConfigPath
 // above) so it doesn't depend on the process's current working directory at launch.

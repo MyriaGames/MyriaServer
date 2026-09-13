@@ -9,9 +9,9 @@
          historic "MyriaServer" name: run-production.sh/update-production.sh (shipped inside
          the release zip and run on the production box) hardcode ./MyriaServer. -->
     <AssemblyName>MyriaServer</AssemblyName>
-    <Version>0.2.0</Version>
-    <AssemblyVersion>0.2.0.0</AssemblyVersion>
-    <FileVersion>0.2.0.0</FileVersion>
+    <Version>0.3.0.0</Version>
+    <AssemblyVersion>0.3.0.0</AssemblyVersion>
+    <FileVersion>0.3.0.0</FileVersion>
   </PropertyGroup>
 
   <!--
@@ -61,6 +61,9 @@
 
   <ItemGroup>
     <Content Update="Data\guild_config.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Update="Data\allowed_versions.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <None Include="run-production.sh">
