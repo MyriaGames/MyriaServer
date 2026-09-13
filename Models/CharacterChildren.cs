@@ -106,6 +106,36 @@ namespace Myria.Server.Realm.Models
 
     }
 
+    /// <summary>One character's leveling progress on one specific skill - see Myria.Lib's
+    /// SkillProgress/SkillLevelingService. UsageCount is the only value ever written directly;
+    /// Level/UnspentPoints are always recomputed server-side from it (anti-tamper, same pattern as
+    /// Character.UnusedPoints/RecalculateUnusedPoints).</summary>
+    public class CharacterSkillProgress
+    {
+        [Key] public int Id { get; set; }
+        public int CharacterId { get; set; }
+        [MaxLength(100)] public string SkillId { get; set; } = "";
+        public int UsageCount { get; set; }
+        public int Level { get; set; } = 1;
+        public int UnspentPoints { get; set; }
+
+        [ForeignKey(nameof(CharacterId))]
+        public Character Character { get; set; } = null!;
+
+        public ICollection<CharacterSkillProgressUpgrade> PurchasedUpgrades { get; set; } = new List<CharacterSkillProgressUpgrade>();
+    }
+
+    /// <summary>One purchased upgrade id on a CharacterSkillProgress row.</summary>
+    public class CharacterSkillProgressUpgrade
+    {
+        [Key] public int Id { get; set; }
+        public int SkillProgressId { get; set; }
+        [MaxLength(100)] public string UpgradeId { get; set; } = "";
+
+        [ForeignKey(nameof(SkillProgressId))]
+        public CharacterSkillProgress SkillProgress { get; set; } = null!;
+    }
+
     /// <summary>A composite rune instance the character has built.</summary>
     public class CharacterKnownRune
     {

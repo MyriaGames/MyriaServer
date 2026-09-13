@@ -61,6 +61,7 @@ namespace Myria.Server.Realm.Repositories
                 .Include(c => c.RepeatableQuests)
                 .Include(c => c.Jobs)
                 .Include(c => c.SkillSlots)
+                .Include(c => c.SkillProgress).ThenInclude(sp => sp.PurchasedUpgrades)
                 .Include(c => c.KnownRunes)
                 .Include(c => c.RuneDictionary)
                 .Include(c => c.RoomGatheringStatus)
@@ -105,6 +106,7 @@ namespace Myria.Server.Realm.Repositories
                 .Include(c => c.RepeatableQuests)
                 .Include(c => c.Jobs)
                 .Include(c => c.SkillSlots)
+                .Include(c => c.SkillProgress).ThenInclude(sp => sp.PurchasedUpgrades)
                 .Include(c => c.KnownRunes).ThenInclude(r => r.AddedWords)
                 .Include(c => c.RuneDictionary)
                 .Include(c => c.RoomGatheringStatus)
@@ -244,6 +246,18 @@ namespace Myria.Server.Realm.Repositories
                     SkillId = slot.SkillId
                 });
 
+            // Skill Progress
+            character.SkillProgress.Clear();
+            foreach (var sp in c.SkillProgress)
+                character.SkillProgress.Add(new Myria.Lib.Core.Entities.Skills.SkillProgress
+                {
+                    SkillId = sp.SkillId,
+                    UsageCount = sp.UsageCount,
+                    Level = sp.Level,
+                    UnspentPoints = sp.UnspentPoints,
+                    PurchasedUpgradeIds = sp.PurchasedUpgrades.Select(u => u.UpgradeId).ToList()
+                });
+
             // Known Runes
             character.KnownRunes.Clear();
             foreach (var r in c.KnownRunes)
@@ -282,6 +296,10 @@ namespace Myria.Server.Realm.Repositories
             BaseRuneService.ResolveRunes(character);
             SkillSlotService.ResolveSlots(character);
             SkillSlotService.MigrateIfEmpty(character);
+            // Anti-tamper, same reasoning as RecalculateUnusedPoints above - Level/UnspentPoints are
+            // never trusted from what was persisted, always re-derived from UsageCount.
+            foreach (var sp in character.SkillProgress.ToList())
+                SkillLevelingService.RecalculateLevelAndPoints(character, sp.SkillId);
 
             return character;
         }
@@ -376,6 +394,21 @@ namespace Myria.Server.Realm.Repositories
             {
                 var slot = character.SkillSlots[i];
                 record.SkillSlots.Add(new CharacterSkillSlot { SlotIndex = i, Source = (int)slot.Source, SkillId = slot.SkillId });
+            }
+
+            record.SkillProgress.Clear();
+            foreach (var sp in character.SkillProgress)
+            {
+                var dbSp = new CharacterSkillProgress
+                {
+                    SkillId = sp.SkillId,
+                    UsageCount = sp.UsageCount,
+                    Level = sp.Level,
+                    UnspentPoints = sp.UnspentPoints
+                };
+                foreach (var upgradeId in sp.PurchasedUpgradeIds)
+                    dbSp.PurchasedUpgrades.Add(new CharacterSkillProgressUpgrade { UpgradeId = upgradeId });
+                record.SkillProgress.Add(dbSp);
             }
 
             record.KnownRunes.Clear();

@@ -400,9 +400,10 @@ namespace Myria.Server.Realm.Hubs
         private Task NotifyCharacterUpdate(
             Myria.Lib.Core.Entities.Characters.Character player,
             bool inventory = false, bool money = false, bool vitals = false, bool progress = false,
-            bool questProgress = false, bool jobs = false, bool runes = false, bool equipment = false)
+            bool questProgress = false, bool jobs = false, bool runes = false, bool equipment = false,
+            bool skillProgress = false)
         {
-            var dto = BuildCharacterUpdate(player, inventory, money, vitals, progress, questProgress, jobs, runes, equipment);
+            var dto = BuildCharacterUpdate(player, inventory, money, vitals, progress, questProgress, jobs, runes, equipment, skillProgress);
             return dto is null ? Task.CompletedTask : Clients.Caller.SendAsync("CharacterUpdated", dto);
         }
 
@@ -410,18 +411,19 @@ namespace Myria.Server.Realm.Hubs
         /// the caller (e.g. the other side of a completed trade).</summary>
         private Task NotifyCharacterUpdateFor(string connectionId, Myria.Lib.Core.Entities.Characters.Character player,
             bool inventory = false, bool money = false, bool vitals = false, bool progress = false,
-            bool questProgress = false, bool jobs = false, bool runes = false, bool equipment = false)
+            bool questProgress = false, bool jobs = false, bool runes = false, bool equipment = false,
+            bool skillProgress = false)
         {
-            var dto = BuildCharacterUpdate(player, inventory, money, vitals, progress, questProgress, jobs, runes, equipment);
+            var dto = BuildCharacterUpdate(player, inventory, money, vitals, progress, questProgress, jobs, runes, equipment, skillProgress);
             return dto is null ? Task.CompletedTask : Clients.Client(connectionId).SendAsync("CharacterUpdated", dto);
         }
 
         private static CharacterUpdateDto? BuildCharacterUpdate(
             Myria.Lib.Core.Entities.Characters.Character player,
             bool inventory, bool money, bool vitals, bool progress, bool questProgress = false,
-            bool jobs = false, bool runes = false, bool equipment = false)
+            bool jobs = false, bool runes = false, bool equipment = false, bool skillProgress = false)
         {
-            if (!inventory && !money && !vitals && !progress && !questProgress && !jobs && !runes && !equipment) return null;
+            if (!inventory && !money && !vitals && !progress && !questProgress && !jobs && !runes && !equipment && !skillProgress) return null;
 
             return new CharacterUpdateDto(
                 inventory ? player.Inventory.Items.Select(i => new InventoryItemSnapshot(i.Id, i.StackSize)).ToList() : null,
@@ -434,7 +436,9 @@ namespace Myria.Server.Realm.Hubs
                 questProgress ? BuildQuestProgress(player) : null,
                 jobs ? player.Jobs.Select(j => new JobProgressSnapshot(j.JobId, j.SkillXp, j.KnowledgeXp, j.FameXp)).ToList() : null,
                 runes ? player.KnownRunes.Select(r => new RuneSnapshot(r.Id, r.BaseRuneId, new List<string>(r.AddedWordIds))).ToList() : null,
-                equipment ? new EquippedSnapshot(player.WeaponSlot?.Id, player.ArmorSlot?.Id, player.AccessorySlot?.Id) : null);
+                equipment ? new EquippedSnapshot(player.WeaponSlot?.Id, player.ArmorSlot?.Id, player.AccessorySlot?.Id) : null,
+                skillProgress ? player.SkillProgress.Select(sp => new SkillProgressSnapshot(
+                    sp.SkillId, sp.UsageCount, sp.Level, sp.UnspentPoints, new List<string>(sp.PurchasedUpgradeIds))).ToList() : null);
         }
 
         /// <summary>
@@ -1156,6 +1160,36 @@ namespace Myria.Server.Realm.Hubs
             return Task.FromResult(true);
         }
 
+        /// <summary>Spends one of a skill's own unspent points on one of its upgrade options - see
+        /// SkillLevelingService. Server-authoritative: re-derives UnspentPoints from UsageCount
+        /// before honoring the spend, same anti-tamper approach as stat-point allocation.</summary>
+        public async Task<bool> SpendSkillPoint(string skillId, string upgradeId)
+        {
+            var player = session.Get(Context.ConnectionId);
+            if (player == null) return false;
+
+            var skill = player.Skills.FirstOrDefault(s => s.Id == skillId);
+            if (skill == null) return false;
+
+            bool ok = SkillLevelingService.TrySpendPoint(player, skill, upgradeId, out _);
+            if (ok) await NotifyCharacterUpdate(player, skillProgress: true);
+            return ok;
+        }
+
+        /// <summary>Refunds a skill's purchased upgrades for a flat gold cost
+        /// (SkillLevelingService.RespecCostGold) so the points can be spent differently.</summary>
+        public async Task<bool> RespecSkill(string skillId)
+        {
+            var player = session.Get(Context.ConnectionId);
+            if (player == null) return false;
+
+            if (!player.Money.TrySpend(SkillLevelingService.RespecCostGold)) return false;
+
+            SkillLevelingService.Respec(player, skillId);
+            await NotifyCharacterUpdate(player, money: true, skillProgress: true);
+            return true;
+        }
+
         // ── Combat ────────────────────────────────────────────────────────────
 
         /// <summary>Abandons any active combat (solo or group) without awarding loot or XP.</summary>
@@ -1507,7 +1541,7 @@ namespace Myria.Server.Realm.Hubs
                     foreach (var p in encounter.Characters.Where(p => p.IsAlive))
                     {
                         if (session.GetConnectionId(p.Name) is string connId)
-                            await NotifyCharacterUpdateFor(connId, p, inventory: true, progress: true, questProgress: true);
+                            await NotifyCharacterUpdateFor(connId, p, inventory: true, progress: true, questProgress: true, skillProgress: true);
                     }
                 }
 
@@ -1607,7 +1641,7 @@ namespace Myria.Server.Realm.Hubs
                     foreach (var p in encounter.Characters.Where(p => p.IsAlive))
                     {
                         if (session.GetConnectionId(p.Name) is string connId)
-                            await NotifyCharacterUpdateFor(connId, p, inventory: true, progress: true, questProgress: true);
+                            await NotifyCharacterUpdateFor(connId, p, inventory: true, progress: true, questProgress: true, skillProgress: true);
                     }
                 }
 
@@ -2587,7 +2621,7 @@ namespace Myria.Server.Realm.Hubs
                     // granted, XP/level/stats, quest kill/item progress), replacing what the
                     // client used to have to separately pull via GetCharacterProgress/
                     // GetActiveQuestProgress after every win.
-                    await NotifyCharacterUpdate(player, inventory: true, progress: true, questProgress: true);
+                    await NotifyCharacterUpdate(player, inventory: true, progress: true, questProgress: true, skillProgress: true);
                 }
                 else
                     logger.LogInformation("{Character} lost a solo fight", player.Name);
@@ -2789,10 +2823,17 @@ namespace Myria.Server.Realm.Hubs
         private static string RoomGroup(int roomId) => $"room_{roomId}";
 
         /// <summary>Resolves a cast-skill request by id/name against the character's learned skills.</summary>
-        private static Skill? ResolveCastableSkill(Myria.Lib.Core.Entities.Characters.Character player, string skillId) =>
-            player.Skills.FirstOrDefault(s =>
+        /// <summary>Resolves a cast-skill request by id/name, with this player's own leveling/
+        /// upgrades already applied (see SkillLevelingService.ResolveEffectiveSkill) - matches
+        /// SkillSlotService.ResolveById's client-side resolution so multiplayer combat sees the
+        /// same effective stats the client displays.</summary>
+        private static Skill? ResolveCastableSkill(Myria.Lib.Core.Entities.Characters.Character player, string skillId)
+        {
+            var baseSkill = player.Skills.FirstOrDefault(s =>
                 string.Equals(s.Id, skillId, StringComparison.OrdinalIgnoreCase) ||
                 string.Equals(s.Name, skillId, StringComparison.OrdinalIgnoreCase));
+            return baseSkill == null ? null : SkillLevelingService.ResolveEffectiveSkill(player, baseSkill);
+        }
 
         // Returns Clients.Caller for solo group fights; for real party fights, sends to exactly
         // the connections registered to this specific fight (see GroupCombatService) rather than

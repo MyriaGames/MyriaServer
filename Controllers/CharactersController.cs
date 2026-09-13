@@ -57,6 +57,7 @@ namespace Myria.Server.Realm.Controllers
                 .Include(c => c.RepeatableQuests)
                 .Include(c => c.Jobs)
                 .Include(c => c.SkillSlots)
+                .Include(c => c.SkillProgress).ThenInclude(sp => sp.PurchasedUpgrades)
                 .Include(c => c.KnownRunes).ThenInclude(r => r.AddedWords)
                 .Include(c => c.RuneDictionary)
                 .Include(c => c.RoomGatheringStatus)
@@ -149,6 +150,17 @@ namespace Myria.Server.Realm.Controllers
                     .Select(s => new CharSaveSkillSlot { SlotIndex = s.SlotIndex, Source = s.Source, SkillId = s.SkillId })
                     .ToList(),
 
+                SkillProgress = c.SkillProgress
+                    .Select(sp => new CharSaveSkillProgress
+                    {
+                        SkillId             = sp.SkillId,
+                        UsageCount          = sp.UsageCount,
+                        Level               = sp.Level,
+                        UnspentPoints       = sp.UnspentPoints,
+                        PurchasedUpgradeIds = sp.PurchasedUpgrades.Select(u => u.UpgradeId).ToList()
+                    })
+                    .ToList(),
+
                 KnownRunes = c.KnownRunes
                     .Select(r => new CharSaveKnownRune
                     {
@@ -225,6 +237,7 @@ namespace Myria.Server.Realm.Controllers
                 .Include(c => c.RepeatableQuests)
                 .Include(c => c.Jobs)
                 .Include(c => c.SkillSlots)
+                .Include(c => c.SkillProgress).ThenInclude(sp => sp.PurchasedUpgrades)
                 .Include(c => c.KnownRunes)
                 .Include(c => c.RuneDictionary)
                 .Include(c => c.RoomGatheringStatus)
@@ -341,6 +354,21 @@ namespace Myria.Server.Realm.Controllers
             record.SkillSlots.Clear();
             foreach (var slot in req.SkillSlots)
                 record.SkillSlots.Add(new CharacterSkillSlot { SlotIndex = slot.SlotIndex, Source = slot.Source, SkillId = slot.SkillId });
+
+            record.SkillProgress.Clear();
+            foreach (var sp in req.SkillProgress)
+            {
+                var dbSp = new CharacterSkillProgress
+                {
+                    SkillId = sp.SkillId,
+                    UsageCount = sp.UsageCount,
+                    Level = sp.Level,
+                    UnspentPoints = sp.UnspentPoints
+                };
+                foreach (var upgradeId in sp.PurchasedUpgradeIds)
+                    dbSp.PurchasedUpgrades.Add(new CharacterSkillProgressUpgrade { UpgradeId = upgradeId });
+                record.SkillProgress.Add(dbSp);
+            }
 
             record.KnownRunes.Clear();
             foreach (var rune in req.KnownRunes)

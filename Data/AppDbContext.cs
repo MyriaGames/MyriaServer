@@ -38,6 +38,8 @@ namespace Myria.Server.Realm.Data
         public DbSet<CharacterRepeatableQuest>     CharacterRepeatableQuests    => Set<CharacterRepeatableQuest>();
         public DbSet<CharacterJob>                 CharacterJobs                => Set<CharacterJob>();
         public DbSet<CharacterSkillSlot>           CharacterSkillSlots          => Set<CharacterSkillSlot>();
+        public DbSet<CharacterSkillProgress>       CharacterSkillProgress       => Set<CharacterSkillProgress>();
+        public DbSet<CharacterSkillProgressUpgrade> CharacterSkillProgressUpgrades => Set<CharacterSkillProgressUpgrade>();
         public DbSet<CharacterKnownRune>           CharacterKnownRunes          => Set<CharacterKnownRune>();
         public DbSet<CharacterRuneAddedWord>       CharacterRuneAddedWords      => Set<CharacterRuneAddedWord>();
         public DbSet<CharacterRuneDictEntry>       CharacterRuneDictionary      => Set<CharacterRuneDictEntry>();
@@ -92,6 +94,14 @@ namespace Myria.Server.Realm.Data
             modelBuilder.Entity<CharacterSkillSlot>(e =>
                 e.HasOne(x => x.Character).WithMany(c => c.SkillSlots)
                     .HasForeignKey(x => x.CharacterId).OnDelete(DeleteBehavior.Cascade));
+
+            modelBuilder.Entity<CharacterSkillProgress>(e =>
+                e.HasOne(x => x.Character).WithMany(c => c.SkillProgress)
+                    .HasForeignKey(x => x.CharacterId).OnDelete(DeleteBehavior.Cascade));
+
+            modelBuilder.Entity<CharacterSkillProgressUpgrade>(e =>
+                e.HasOne(x => x.SkillProgress).WithMany(sp => sp.PurchasedUpgrades)
+                    .HasForeignKey(x => x.SkillProgressId).OnDelete(DeleteBehavior.Cascade));
 
             modelBuilder.Entity<CharacterKnownRune>(e =>
                 e.HasOne(x => x.Character).WithMany(c => c.KnownRunes)

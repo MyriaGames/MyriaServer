@@ -102,6 +102,7 @@ namespace Myria.Server.Realm.Models.Dto
         public List<CharSaveRepeatableQuest>  RepeatableQuests    { get; set; } = new();
         public List<CharSaveJob>              Jobs                { get; set; } = new();
         public List<CharSaveSkillSlot>        SkillSlots          { get; set; } = new();
+        public List<CharSaveSkillProgress>    SkillProgress       { get; set; } = new();
         public List<CharSaveKnownRune>        KnownRunes          { get; set; } = new();
         public List<CharSaveRuneDictEntry>    RuneDictionary      { get; set; } = new();
         public List<CharSaveRoomGathering>    RoomGatheringStatus { get; set; } = new();
@@ -157,6 +158,15 @@ namespace Myria.Server.Realm.Models.Dto
         /// <summary>SlottedSkillSource enum value.</summary>
         public int    Source    { get; set; }
         public string SkillId   { get; set; } = "";
+    }
+
+    public class CharSaveSkillProgress
+    {
+        public string       SkillId             { get; set; } = "";
+        public int          UsageCount          { get; set; }
+        public int          Level               { get; set; } = 1;
+        public int          UnspentPoints       { get; set; }
+        public List<string> PurchasedUpgradeIds { get; set; } = new();
     }
 
     public class CharSaveKnownRune
