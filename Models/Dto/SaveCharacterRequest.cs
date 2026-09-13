@@ -102,8 +102,6 @@ namespace Myria.Server.Realm.Models.Dto
         public List<CharSaveRepeatableQuest>  RepeatableQuests    { get; set; } = new();
         public List<CharSaveJob>              Jobs                { get; set; } = new();
         public List<CharSaveSkillSlot>        SkillSlots          { get; set; } = new();
-        public List<CharSaveCompositeSkill>   CompositeSkills     { get; set; } = new();
-        public List<CharSaveCombinedSkill>    CombinedSkills      { get; set; } = new();
         public List<CharSaveKnownRune>        KnownRunes          { get; set; } = new();
         public List<CharSaveRuneDictEntry>    RuneDictionary      { get; set; } = new();
         public List<CharSaveRoomGathering>    RoomGatheringStatus { get; set; } = new();
@@ -159,26 +157,6 @@ namespace Myria.Server.Realm.Models.Dto
         /// <summary>SlottedSkillSource enum value.</summary>
         public int    Source    { get; set; }
         public string SkillId   { get; set; } = "";
-    }
-
-    public class CharSaveCompositeSkill
-    {
-        public string       InstanceId     { get; set; } = "";
-        public List<string> ComponentIds   { get; set; } = new();
-        public bool         IsStashed      { get; set; }
-        
-        public string?      StashedForClass { get; set; }
-        /// <summary>True when this ID is in the player's active fusion slots.</summary>
-        public bool         IsActive       { get; set; }
-    }
-
-    public class CharSaveCombinedSkill
-    {
-        public string       InstanceId      { get; set; } = "";
-        public List<string> SkillIds        { get; set; } = new();
-        public bool         IsStashed       { get; set; }
-        
-        public string?      StashedForClass { get; set; }
     }
 
     public class CharSaveKnownRune

@@ -1156,14 +1156,6 @@ namespace Myria.Server.Realm.Hubs
             return Task.FromResult(true);
         }
 
-        public Task<bool> CombineSkills(List<string> skillIds)
-        {
-            var player = session.Get(Context.ConnectionId);
-            if (player == null) return Task.FromResult(false);
-            bool ok = SkillCombinationService.TryCreateForCharacter(player, skillIds) != null;
-            return Task.FromResult(ok);
-        }
-
         // ── Combat ────────────────────────────────────────────────────────────
 
         /// <summary>Abandons any active combat (solo or group) without awarding loot or XP.</summary>
@@ -2796,35 +2788,11 @@ namespace Myria.Server.Realm.Hubs
 
         private static string RoomGroup(int roomId) => $"room_{roomId}";
 
-        /// <summary>
-        /// Resolves a cast-skill request by id/name against everything the character can
-        /// actually cast in combat - regular learned skills, plus combined and composite-fusion
-        /// skills' resolved forms. Mirrors SkillSlotService.ResolveById/GetCombatSkills, which is
-        /// what the client's skill bar is built from and what its Id/Name it sends here comes
-        /// from; a plain player.Skills-only lookup here silently failed to find combined/fusion
-        /// skills (never added to Skills, only to CombinedSkills/CompositeSkills), making them
-        /// uncastable in multiplayer even though the client fully supports slotting them.
-        /// </summary>
-        private static Skill? ResolveCastableSkill(Myria.Lib.Core.Entities.Characters.Character player, string skillId)
-        {
-            var skill = player.Skills.FirstOrDefault(s =>
+        /// <summary>Resolves a cast-skill request by id/name against the character's learned skills.</summary>
+        private static Skill? ResolveCastableSkill(Myria.Lib.Core.Entities.Characters.Character player, string skillId) =>
+            player.Skills.FirstOrDefault(s =>
                 string.Equals(s.Id, skillId, StringComparison.OrdinalIgnoreCase) ||
                 string.Equals(s.Name, skillId, StringComparison.OrdinalIgnoreCase));
-            if (skill != null) return skill;
-
-            skill = player.CombinedSkills
-                .Select(c => c.ResolvedSkill)
-                .FirstOrDefault(s => s != null &&
-                    (string.Equals(s.Id, skillId, StringComparison.OrdinalIgnoreCase) ||
-                     string.Equals(s.Name, skillId, StringComparison.OrdinalIgnoreCase)));
-            if (skill != null) return skill;
-
-            return player.CompositeSkills
-                .Select(c => c.ResolvedSkill)
-                .FirstOrDefault(s => s != null &&
-                    (string.Equals(s.Id, skillId, StringComparison.OrdinalIgnoreCase) ||
-                     string.Equals(s.Name, skillId, StringComparison.OrdinalIgnoreCase)));
-        }
 
         // Returns Clients.Caller for solo group fights; for real party fights, sends to exactly
         // the connections registered to this specific fight (see GroupCombatService) rather than

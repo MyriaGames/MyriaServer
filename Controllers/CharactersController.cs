@@ -57,8 +57,6 @@ namespace Myria.Server.Realm.Controllers
                 .Include(c => c.RepeatableQuests)
                 .Include(c => c.Jobs)
                 .Include(c => c.SkillSlots)
-                .Include(c => c.CompositeSkills).ThenInclude(cs => cs.Components)
-                .Include(c => c.CombinedSkills).ThenInclude(cs => cs.Inputs)
                 .Include(c => c.KnownRunes).ThenInclude(r => r.AddedWords)
                 .Include(c => c.RuneDictionary)
                 .Include(c => c.RoomGatheringStatus)
@@ -151,27 +149,6 @@ namespace Myria.Server.Realm.Controllers
                     .Select(s => new CharSaveSkillSlot { SlotIndex = s.SlotIndex, Source = s.Source, SkillId = s.SkillId })
                     .ToList(),
 
-                CompositeSkills = c.CompositeSkills
-                    .Select(cs => new CharSaveCompositeSkill
-                    {
-                        InstanceId      = cs.InstanceId,
-                        ComponentIds    = cs.Components.Select(comp => comp.SkillId).ToList(),
-                        IsStashed       = cs.IsStashed,
-                        StashedForClass = cs.StashedForClass,
-                        IsActive        = cs.IsActive
-                    })
-                    .ToList(),
-
-                CombinedSkills = c.CombinedSkills
-                    .Select(cs => new CharSaveCombinedSkill
-                    {
-                        InstanceId      = cs.InstanceId,
-                        SkillIds        = cs.Inputs.Select(inp => inp.SkillId).ToList(),
-                        IsStashed       = cs.IsStashed,
-                        StashedForClass = cs.StashedForClass
-                    })
-                    .ToList(),
-
                 KnownRunes = c.KnownRunes
                     .Select(r => new CharSaveKnownRune
                     {
@@ -248,8 +225,6 @@ namespace Myria.Server.Realm.Controllers
                 .Include(c => c.RepeatableQuests)
                 .Include(c => c.Jobs)
                 .Include(c => c.SkillSlots)
-                .Include(c => c.CompositeSkills)
-                .Include(c => c.CombinedSkills)
                 .Include(c => c.KnownRunes)
                 .Include(c => c.RuneDictionary)
                 .Include(c => c.RoomGatheringStatus)
@@ -366,35 +341,6 @@ namespace Myria.Server.Realm.Controllers
             record.SkillSlots.Clear();
             foreach (var slot in req.SkillSlots)
                 record.SkillSlots.Add(new CharacterSkillSlot { SlotIndex = slot.SlotIndex, Source = slot.Source, SkillId = slot.SkillId });
-
-            record.CompositeSkills.Clear();
-            foreach (var cs in req.CompositeSkills)
-            {
-                var dbCs = new CharacterCompositeSkill
-                {
-                    InstanceId      = cs.InstanceId,
-                    IsStashed       = cs.IsStashed,
-                    StashedForClass = cs.StashedForClass,
-                    IsActive        = cs.IsActive
-                };
-                foreach (var comp in cs.ComponentIds)
-                    dbCs.Components.Add(new CharacterCompositeSkillComponent { SkillId = comp });
-                record.CompositeSkills.Add(dbCs);
-            }
-
-            record.CombinedSkills.Clear();
-            foreach (var cs in req.CombinedSkills)
-            {
-                var dbCs = new CharacterCombinedSkill
-                {
-                    InstanceId      = cs.InstanceId,
-                    IsStashed       = cs.IsStashed,
-                    StashedForClass = cs.StashedForClass
-                };
-                foreach (var sk in cs.SkillIds)
-                    dbCs.Inputs.Add(new CharacterCombinedSkillInput { SkillId = sk });
-                record.CombinedSkills.Add(dbCs);
-            }
 
             record.KnownRunes.Clear();
             foreach (var rune in req.KnownRunes)

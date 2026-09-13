@@ -83,8 +83,6 @@ namespace Myria.Server.Realm.Models
         public ICollection<CharacterRepeatableQuest>RepeatableQuests    { get; set; } = new List<CharacterRepeatableQuest>();
         public ICollection<CharacterJob>            Jobs                { get; set; } = new List<CharacterJob>();
         public ICollection<CharacterSkillSlot>      SkillSlots          { get; set; } = new List<CharacterSkillSlot>();
-        public ICollection<CharacterCompositeSkill> CompositeSkills     { get; set; } = new List<CharacterCompositeSkill>();
-        public ICollection<CharacterCombinedSkill>  CombinedSkills      { get; set; } = new List<CharacterCombinedSkill>();
         public ICollection<CharacterKnownRune>      KnownRunes          { get; set; } = new List<CharacterKnownRune>();
         public ICollection<CharacterRuneDictEntry>  RuneDictionary      { get; set; } = new List<CharacterRuneDictEntry>();
         public ICollection<CharacterRoomGathering>  RoomGatheringStatus { get; set; } = new List<CharacterRoomGathering>();

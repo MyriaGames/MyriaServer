@@ -71,8 +71,6 @@ namespace Myria.Server.Realm.Models.Dto
         public List<CharSaveRepeatableQuest> RepeatableQuests    { get; set; } = new();
         public List<CharSaveJob>             Jobs                { get; set; } = new();
         public List<CharSaveSkillSlot>       SkillSlots          { get; set; } = new();
-        public List<CharSaveCompositeSkill>  CompositeSkills     { get; set; } = new();
-        public List<CharSaveCombinedSkill>   CombinedSkills      { get; set; } = new();
         public List<CharSaveKnownRune>       KnownRunes          { get; set; } = new();
         public List<CharSaveRuneDictEntry>   RuneDictionary      { get; set; } = new();
         public List<CharSaveRoomGathering>   RoomGatheringStatus { get; set; } = new();

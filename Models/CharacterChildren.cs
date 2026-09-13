@@ -106,65 +106,6 @@ namespace Myria.Server.Realm.Models
 
     }
 
-    /// <summary>A fusion (composite) skill instance. Covers active and all per-class stashes.</summary>
-    public class CharacterCompositeSkill
-    {
-        [Key] public int Id { get; set; }
-        public int CharacterId { get; set; }
-        /// <summary>Guid string assigned at fusion time.</summary>
-        [MaxLength(100)] public string InstanceId { get; set; } = "";
-        public bool IsStashed { get; set; }
-        /// <summary>When stashed, the class string ID it was stashed under; null otherwise.</summary>
-        [MaxLength(50)] public string? StashedForClass { get; set; }
-        /// <summary>True when this ID is in the player's ActiveCompositeSkillIds list.</summary>
-        public bool IsActive { get; set; }
-
-        [ForeignKey(nameof(CharacterId))]
-        public Character Character { get; set; } = null!;
-
-        public ICollection<CharacterCompositeSkillComponent> Components { get; set; } = new List<CharacterCompositeSkillComponent>();
-    }
-
-    /// <summary>One base-skill component of a composite fusion skill.</summary>
-    public class CharacterCompositeSkillComponent
-    {
-        [Key] public int Id { get; set; }
-        public int CompositeSkillId { get; set; }
-        [MaxLength(100)] public string SkillId { get; set; } = "";
-
-        [ForeignKey(nameof(CompositeSkillId))]
-        public CharacterCompositeSkill CompositeSkill { get; set; } = null!;
-
-    }
-
-    /// <summary>A combined skill instance (2–5 base skills paired together).</summary>
-    public class CharacterCombinedSkill
-    {
-        [Key] public int Id { get; set; }
-        public int CharacterId { get; set; }
-        [MaxLength(100)] public string InstanceId { get; set; } = "";
-        public bool IsStashed { get; set; }
-        /// <summary>When stashed, the class string ID; null otherwise.</summary>
-        [MaxLength(50)] public string? StashedForClass { get; set; }
-
-        [ForeignKey(nameof(CharacterId))]
-        public Character Character { get; set; } = null!;
-
-        public ICollection<CharacterCombinedSkillInput> Inputs { get; set; } = new List<CharacterCombinedSkillInput>();
-    }
-
-    /// <summary>One input skill of a combined skill.</summary>
-    public class CharacterCombinedSkillInput
-    {
-        [Key] public int Id { get; set; }
-        public int CombinedSkillId { get; set; }
-        [MaxLength(100)] public string SkillId { get; set; } = "";
-
-        [ForeignKey(nameof(CombinedSkillId))]
-        public CharacterCombinedSkill CombinedSkill { get; set; } = null!;
-
-    }
-
     /// <summary>A composite rune instance the character has built.</summary>
     public class CharacterKnownRune
     {

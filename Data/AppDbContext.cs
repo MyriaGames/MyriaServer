@@ -38,10 +38,6 @@ namespace Myria.Server.Realm.Data
         public DbSet<CharacterRepeatableQuest>     CharacterRepeatableQuests    => Set<CharacterRepeatableQuest>();
         public DbSet<CharacterJob>                 CharacterJobs                => Set<CharacterJob>();
         public DbSet<CharacterSkillSlot>           CharacterSkillSlots          => Set<CharacterSkillSlot>();
-        public DbSet<CharacterCompositeSkill>      CharacterCompositeSkills     => Set<CharacterCompositeSkill>();
-        public DbSet<CharacterCompositeSkillComponent> CharacterCompositeSkillComponents => Set<CharacterCompositeSkillComponent>();
-        public DbSet<CharacterCombinedSkill>       CharacterCombinedSkills      => Set<CharacterCombinedSkill>();
-        public DbSet<CharacterCombinedSkillInput>  CharacterCombinedSkillInputs => Set<CharacterCombinedSkillInput>();
         public DbSet<CharacterKnownRune>           CharacterKnownRunes          => Set<CharacterKnownRune>();
         public DbSet<CharacterRuneAddedWord>       CharacterRuneAddedWords      => Set<CharacterRuneAddedWord>();
         public DbSet<CharacterRuneDictEntry>       CharacterRuneDictionary      => Set<CharacterRuneDictEntry>();
@@ -96,22 +92,6 @@ namespace Myria.Server.Realm.Data
             modelBuilder.Entity<CharacterSkillSlot>(e =>
                 e.HasOne(x => x.Character).WithMany(c => c.SkillSlots)
                     .HasForeignKey(x => x.CharacterId).OnDelete(DeleteBehavior.Cascade));
-
-            modelBuilder.Entity<CharacterCompositeSkill>(e =>
-                e.HasOne(x => x.Character).WithMany(c => c.CompositeSkills)
-                    .HasForeignKey(x => x.CharacterId).OnDelete(DeleteBehavior.Cascade));
-
-            modelBuilder.Entity<CharacterCompositeSkillComponent>(e =>
-                e.HasOne(x => x.CompositeSkill).WithMany(cs => cs.Components)
-                    .HasForeignKey(x => x.CompositeSkillId).OnDelete(DeleteBehavior.Cascade));
-
-            modelBuilder.Entity<CharacterCombinedSkill>(e =>
-                e.HasOne(x => x.Character).WithMany(c => c.CombinedSkills)
-                    .HasForeignKey(x => x.CharacterId).OnDelete(DeleteBehavior.Cascade));
-
-            modelBuilder.Entity<CharacterCombinedSkillInput>(e =>
-                e.HasOne(x => x.CombinedSkill).WithMany(cs => cs.Inputs)
-                    .HasForeignKey(x => x.CombinedSkillId).OnDelete(DeleteBehavior.Cascade));
 
             modelBuilder.Entity<CharacterKnownRune>(e =>
                 e.HasOne(x => x.Character).WithMany(c => c.KnownRunes)

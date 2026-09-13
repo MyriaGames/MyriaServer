@@ -61,8 +61,6 @@ namespace Myria.Server.Realm.Repositories
                 .Include(c => c.RepeatableQuests)
                 .Include(c => c.Jobs)
                 .Include(c => c.SkillSlots)
-                .Include(c => c.CompositeSkills)
-                .Include(c => c.CombinedSkills)
                 .Include(c => c.KnownRunes)
                 .Include(c => c.RuneDictionary)
                 .Include(c => c.RoomGatheringStatus)
@@ -107,8 +105,6 @@ namespace Myria.Server.Realm.Repositories
                 .Include(c => c.RepeatableQuests)
                 .Include(c => c.Jobs)
                 .Include(c => c.SkillSlots)
-                .Include(c => c.CompositeSkills).ThenInclude(cs => cs.Components)
-                .Include(c => c.CombinedSkills).ThenInclude(cs => cs.Inputs)
                 .Include(c => c.KnownRunes).ThenInclude(r => r.AddedWords)
                 .Include(c => c.RuneDictionary)
                 .Include(c => c.RoomGatheringStatus)
@@ -248,55 +244,6 @@ namespace Myria.Server.Realm.Repositories
                     SkillId = slot.SkillId
                 });
 
-            // Composite Skills
-            character.CompositeSkills.Clear();
-            character.ActiveCompositeSkillIds.Clear();
-            character.StashedCompositeSkills.Clear();
-            foreach (var cs in c.CompositeSkills)
-            {
-                var composite = new CompositeSkill
-                {
-                    Id           = cs.InstanceId,
-                    ComponentIds = cs.Components.Select(x => x.SkillId).ToList()
-                };
-                if (cs.IsStashed && !string.IsNullOrEmpty(cs.StashedForClass))
-                {
-                    var cls = cs.StashedForClass;
-                    if (!character.StashedCompositeSkills.ContainsKey(cls))
-                        character.StashedCompositeSkills[cls] = new();
-                    character.StashedCompositeSkills[cls].Add(composite);
-                }
-                else
-                {
-                    character.CompositeSkills.Add(composite);
-                    if (cs.IsActive)
-                        character.ActiveCompositeSkillIds.Add(cs.InstanceId);
-                }
-            }
-
-            // Combined Skills
-            character.CombinedSkills.Clear();
-            character.StashedCombinedSkills.Clear();
-            foreach (var cs in c.CombinedSkills)
-            {
-                var combined = new CombinedSkill
-                {
-                    Id       = cs.InstanceId,
-                    SkillIds = cs.Inputs.Select(x => x.SkillId).ToList()
-                };
-                if (cs.IsStashed && !string.IsNullOrEmpty(cs.StashedForClass))
-                {
-                    var cls = cs.StashedForClass;
-                    if (!character.StashedCombinedSkills.ContainsKey(cls))
-                        character.StashedCombinedSkills[cls] = new();
-                    character.StashedCombinedSkills[cls].Add(combined);
-                }
-                else
-                {
-                    character.CombinedSkills.Add(combined);
-                }
-            }
-
             // Known Runes
             character.KnownRunes.Clear();
             foreach (var r in c.KnownRunes)
@@ -333,8 +280,6 @@ namespace Myria.Server.Realm.Repositories
             character.ValidateQuestStatuses();
             SkillFactory.UpdateSkills(character);
             BaseRuneService.ResolveRunes(character);
-            SkillFusionSystem.ResolveCompositeSkills(character);
-            SkillCombinationService.ResolveCombinedSkills(character);
             SkillSlotService.ResolveSlots(character);
             SkillSlotService.MigrateIfEmpty(character);
 
@@ -432,52 +377,6 @@ namespace Myria.Server.Realm.Repositories
                 var slot = character.SkillSlots[i];
                 record.SkillSlots.Add(new CharacterSkillSlot { SlotIndex = i, Source = (int)slot.Source, SkillId = slot.SkillId });
             }
-
-            record.CompositeSkills.Clear();
-            foreach (var cs in character.CompositeSkills)
-            {
-                var dbCs = new CharacterCompositeSkill
-                {
-                    InstanceId      = cs.Id,
-                    IsStashed       = false,
-                    StashedForClass = null,
-                    IsActive        = character.ActiveCompositeSkillIds.Contains(cs.Id)
-                };
-                foreach (var comp in cs.ComponentIds)
-                    dbCs.Components.Add(new CharacterCompositeSkillComponent { SkillId = comp });
-                record.CompositeSkills.Add(dbCs);
-            }
-            foreach (var (cls, list) in character.StashedCompositeSkills)
-                foreach (var cs in list)
-                {
-                    var dbCs = new CharacterCompositeSkill
-                    {
-                        InstanceId      = cs.Id,
-                        IsStashed       = true,
-                        StashedForClass = cls,
-                        IsActive        = false
-                    };
-                    foreach (var comp in cs.ComponentIds)
-                        dbCs.Components.Add(new CharacterCompositeSkillComponent { SkillId = comp });
-                    record.CompositeSkills.Add(dbCs);
-                }
-
-            record.CombinedSkills.Clear();
-            foreach (var cs in character.CombinedSkills)
-            {
-                var dbCs = new CharacterCombinedSkill { InstanceId = cs.Id, IsStashed = false, StashedForClass = null };
-                foreach (var sk in cs.SkillIds)
-                    dbCs.Inputs.Add(new CharacterCombinedSkillInput { SkillId = sk });
-                record.CombinedSkills.Add(dbCs);
-            }
-            foreach (var (cls, list) in character.StashedCombinedSkills)
-                foreach (var cs in list)
-                {
-                    var dbCs = new CharacterCombinedSkill { InstanceId = cs.Id, IsStashed = true, StashedForClass = cls };
-                    foreach (var sk in cs.SkillIds)
-                        dbCs.Inputs.Add(new CharacterCombinedSkillInput { SkillId = sk });
-                    record.CombinedSkills.Add(dbCs);
-                }
 
             record.KnownRunes.Clear();
             foreach (var r in character.KnownRunes)
