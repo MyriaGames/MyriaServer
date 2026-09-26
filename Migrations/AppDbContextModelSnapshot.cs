@@ -17,6 +17,35 @@ namespace Myria.Server.Realm.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "8.0.11");
 
+            modelBuilder.Entity("Myria.Server.Realm.Models.AccountBan", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("BannedUntil")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Username")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Username")
+                        .IsUnique();
+
+                    b.ToTable("AccountBans");
+                });
+
             modelBuilder.Entity("Myria.Server.Realm.Models.Block", b =>
                 {
                     b.Property<int>("Id")
@@ -58,6 +87,13 @@ namespace Myria.Server.Realm.Migrations
 
                     b.Property<string>("ArmorItemId")
                         .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("BanReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("BannedUntil")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Class")

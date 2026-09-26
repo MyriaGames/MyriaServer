@@ -80,6 +80,14 @@ namespace Myria.Server.Realm.Services
             return null;
         }
 
+        // Snapshot for the operator API: one row per live connection (CharacterName is null until a
+        // character has been loaded on it).
+        public IReadOnlyList<(string Account, string? Character)> GetOnline() =>
+            _connections.Values
+                .Select(s => (s.AccountUsername, string.IsNullOrEmpty(s.CharacterName) ? null : s.CharacterName))
+                .OrderBy(s => s.AccountUsername, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
         public bool IsAccountOnline(string accountUsername) =>
             _connections.Values.Any(s =>
                 string.Equals(s.AccountUsername, accountUsername, StringComparison.OrdinalIgnoreCase));
