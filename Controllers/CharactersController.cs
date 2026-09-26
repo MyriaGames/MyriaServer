@@ -8,6 +8,7 @@ using Myria.Server.Realm.Data;
 using Myria.Server.Realm.Models;
 using Myria.Server.Realm.Models.Dto;
 using Myria.Server.Realm.Repositories;
+using Myria.Server.Realm.Services;
 
 namespace Myria.Server.Realm.Controllers
 {
@@ -15,12 +16,31 @@ namespace Myria.Server.Realm.Controllers
     [Route("api/[controller]")]
     [Authorize]
     [EnableRateLimiting("authenticated")]
-    public class CharactersController(AppDbContext db) : ControllerBase
+    public class CharactersController(AppDbContext db, BanService bans) : ControllerBase
     {
         // Character ownership is keyed by username (the JWT's authenticated identity name),
         // not a numeric auth-service user id — Character.UserId lives in this realm's own
         // database and no longer joins against a Users table (users now live in MyriaAuthServer).
         private Task<string?> GetUserAsync() => Task.FromResult(User.Identity!.Name);
+
+        // Per-character operator ban (see BanService): the character can't be loaded, saved over or
+        // deleted (deleting would be a way to dodge the ban) until it expires. The account's other
+        // characters are unaffected.
+        private async Task<IActionResult?> RejectIfCharacterBannedAsync(string user, string characterName)
+        {
+            if (await bans.GetActiveCharacterBanAsync(user, characterName) is not { } ban)
+                return null;
+
+            return StatusCode(StatusCodes.Status403Forbidden, new
+            {
+                code = "CharacterBanned",
+                message = "This character is banned" +
+                          (Models.Bans.IsPermanent(ban.Until) ? "." : $" until {ban.Until:u}.") +
+                          (string.IsNullOrEmpty(ban.Reason) ? "" : $" Reason: {ban.Reason}"),
+                bannedUntil = Models.Bans.IsPermanent(ban.Until) ? (DateTime?)null : ban.Until,
+                reason = ban.Reason
+            });
+        }
 
         // ── GET /api/characters — list of character names ─────────────────────────
 
@@ -48,6 +68,7 @@ namespace Myria.Server.Realm.Controllers
         {
             var user = await GetUserAsync();
             if (user is null) return Unauthorized();
+            if (await RejectIfCharacterBannedAsync(user, name) is { } banned) return banned;
 
             var c = await db.Characters
                 .Include(c => c.InventoryItems)
@@ -210,6 +231,7 @@ namespace Myria.Server.Realm.Controllers
         {
             var user = await GetUserAsync();
             if (user is null) return Unauthorized();
+            if (await RejectIfCharacterBannedAsync(user, req.Name) is { } banned) return banned;
 
             // [Range]/[Required] on SaveCharacterRequest's scalar fields (incl. InventoryItems'
             // StackSize/SlotIndex) are already enforced automatically by [ApiController]'s model
@@ -451,6 +473,7 @@ namespace Myria.Server.Realm.Controllers
         {
             var user = await GetUserAsync();
             if (user is null) return Unauthorized();
+            if (await RejectIfCharacterBannedAsync(user, name) is { } banned) return banned;
 
             var record = await db.Characters
                 .SingleOrDefaultAsync(c => c.UserId == user && c.Name == name);

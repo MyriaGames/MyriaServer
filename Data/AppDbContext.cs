@@ -12,6 +12,7 @@ namespace Myria.Server.Realm.Data
         public DbSet<Character>  Characters  => Set<Character>();
         public DbSet<Friendship> Friendships => Set<Friendship>();
         public DbSet<Block>      Blocks      => Set<Block>();
+        public DbSet<AccountBan> AccountBans => Set<AccountBan>();
 
         // ── Guild tables ─────────────────────────────────────────────────────────
         public DbSet<Guild>             Guilds             => Set<Guild>();
@@ -63,6 +64,15 @@ namespace Myria.Server.Realm.Data
                 // real owner resolve to an impersonator instead.
                 e.Property(c => c.Name).HasMaxLength(50).UseCollation("NOCASE");
                 e.HasIndex(c => c.Name).IsUnique();
+            });
+
+            // Default (binary) collation on purpose, matching Character.UserId and the auth service's
+            // own unique Username index: "Alice" and "alice" are distinct accounts, so banning one
+            // must not ban the other.
+            modelBuilder.Entity<AccountBan>(e =>
+            {
+                e.Property(b => b.Username).HasMaxLength(50);
+                e.HasIndex(b => b.Username).IsUnique();
             });
 
             // ── Character children — all cascade-delete when Character is removed ─

@@ -74,6 +74,23 @@ namespace Myria.Server.Realm.Hubs
         {
             var username = Context.User!.Identity!.Name!;
 
+            // Operator account ban (admin site) - realm-only: the account can still log in to the
+            // auth service and manage itself, it just can't play here. Checked before this
+            // connection is registered anywhere, so a banned account never appears online.
+            using (var banScope = scopeFactory.CreateScope())
+            {
+                var bans = banScope.ServiceProvider.GetRequiredService<BanService>();
+                if (await bans.GetActiveAccountBanAsync(username) is { } accountBan)
+                {
+                    logger.LogInformation("{User} rejected at connect: account banned until {Until} (conn {Conn})",
+                        username, accountBan.Until, Context.ConnectionId);
+                    await Clients.Caller.SendAsync("AccountBanned",
+                        Bans.IsPermanent(accountBan.Until) ? (DateTime?)null : accountBan.Until, accountBan.Reason);
+                    Context.Abort();
+                    return;
+                }
+            }
+
             var oldConn = presence.GetConnectionByAccount(username);
             if (oldConn != null)
             {
@@ -233,6 +250,16 @@ namespace Myria.Server.Realm.Hubs
             // live session (inventory/gold/gear) onto their own connection.
             var owns = await db.Characters.AnyAsync(c => c.UserId == username && c.Name == characterName);
             if (!owns) return false;
+
+            // Per-character operator ban. Must come before TryReattach below, or a banned character
+            // whose session is still live could just be picked back up.
+            if (await scope.ServiceProvider.GetRequiredService<BanService>()
+                    .GetActiveCharacterBanAsync(username, characterName) is { } characterBan)
+            {
+                await Clients.Caller.SendAsync("CharacterBanned", characterName,
+                    Bans.IsPermanent(characterBan.Until) ? (DateTime?)null : characterBan.Until, characterBan.Reason);
+                return false;
+            }
 
             // Prefer reattaching an already-live session for this character (see
             // CharacterSessionService.TryReattach) over a fresh DB read - a reload here would

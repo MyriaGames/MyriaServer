@@ -15,6 +15,13 @@ namespace Myria.Server.Realm.Models
 
         public DateTime LastSaved { get; set; } = DateTime.UtcNow;
 
+        // Operator ban (admin site): this one character can't be loaded/played until then; the
+        // account's other characters are unaffected. See Bans for the permanent sentinel.
+        public DateTime? BannedUntil { get; set; }
+
+        [MaxLength(500)]
+        public string? BanReason { get; set; }
+
         // ── Core progression ─────────────────────────────────────────────────────
         public int Level { get; set; } = 1;
         public long Experience { get; set; }

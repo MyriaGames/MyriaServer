@@ -11,6 +11,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Myria.Lib.Core.Repositories;
 using Myria.Lib.Core.Services;
+using Myria.Server.Realm.Controllers;
 using Myria.Server.Realm.Data;
 using Myria.Server.Realm.Hubs;
 using Myria.Server.Realm.Models;
@@ -212,8 +213,9 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 
 builder.Services.AddAuthorization();
-builder.Services.AddControllers().AddJsonOptions(opt =>
-    opt.JsonSerializerOptions.PropertyNameCaseInsensitive = true);
+builder.Services.AddScoped<BanService>();
+builder.Services.AddControllers(opt => opt.Filters.Add<RejectBannedAccountFilter>())
+    .AddJsonOptions(opt => opt.JsonSerializerOptions.PropertyNameCaseInsensitive = true);
 builder.Services.AddEndpointsApiExplorer();
 
 builder.Services.AddSwaggerGen(c =>
