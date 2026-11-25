@@ -144,7 +144,12 @@ namespace Myria.Server.Realm.Controllers
             var rows = await db.Characters.AsNoTracking()
                 .Where(c => c.UserId == username)
                 .OrderBy(c => c.Name)
-                .Select(c => new { c.Name, c.Level, c.Class, c.Race, c.LastSaved, c.BannedUntil, c.BanReason })
+                .Select(c => new
+                {
+                    c.Name, c.Level, c.Class, c.Race, c.LastSaved, c.BannedUntil, c.BanReason,
+                    Membership = db.GuildMembers.Where(m => m.CharacterId == c.Id)
+                        .Select(m => new { m.Guild.Name, m.Rank }).FirstOrDefault()
+                })
                 .ToListAsync();
             var accountBan = await db.AccountBans.AsNoTracking().SingleOrDefaultAsync(b => b.Username == username);
             var onlineCharacter = presence.GetCharacterNameByAccount(username);
@@ -157,7 +162,8 @@ namespace Myria.Server.Realm.Controllers
                 rows.Select(c => new RealmCharacterInfo(
                     c.Name, username, c.Level, c.Class, c.Race, c.LastSaved,
                     string.Equals(c.Name, onlineCharacter, StringComparison.OrdinalIgnoreCase),
-                    RealmBanInfo.From(c.BannedUntil, c.BanReason, now))).ToList()));
+                    RealmBanInfo.From(c.BannedUntil, c.BanReason, now),
+                    c.Membership is null ? null : $"{c.Membership.Name} ({c.Membership.Rank})")).ToList()));
         }
 
         [HttpGet("characters/search")]

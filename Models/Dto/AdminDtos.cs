@@ -11,9 +11,11 @@ namespace Myria.Server.Realm.Models.Dto
             Bans.IsActive(until, nowUtc) ? new RealmBanInfo(until!.Value, Bans.IsPermanent(until.Value), reason) : null;
     }
 
+    // Guild ("Name (Rank)") is only filled by the single-account lookup - the admin site shows it as
+    // one of the facts to check a password-reset request against (security review 2026-11-25, A07 F3).
     public record RealmCharacterInfo(
         string Name, string Username, int Level, string Class, string Race,
-        DateTime LastSaved, bool Online, RealmBanInfo? Ban);
+        DateTime LastSaved, bool Online, RealmBanInfo? Ban, string? Guild = null);
 
     public record RealmAccountInfo(
         string Username, bool Online, string? OnlineCharacter,
