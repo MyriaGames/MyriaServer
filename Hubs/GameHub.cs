@@ -1724,6 +1724,8 @@ namespace Myria.Server.Realm.Hubs
             // there's no reason to leave this path fragile too.
             await Groups.AddToGroupAsync(Context.ConnectionId, PartyService.PartyGroup(partyId));
 
+            // Only the invited character can use this invite (PartyService.AcceptInvite).
+            party.Invite(partyId, presence.GetDisplayName(targetConn) ?? targetName);
             await Clients.Client(targetConn).SendAsync("PartyInvite", displayName, partyId);
             await Clients.Caller.SendAsync("ChatMessage", "System",
                 $"Party invite sent to {targetName}.", "party");
@@ -1732,12 +1734,12 @@ namespace Myria.Server.Realm.Hubs
         public async Task AcceptPartyInvite(string partyId)
         {
             var displayName = DisplayName();
-            var (success, members, leader) = party.Join(partyId, displayName);
+            var (success, members, leader) = party.AcceptInvite(partyId, displayName);
 
             if (!success)
             {
                 await Clients.Caller.SendAsync("ChatMessage", "System",
-                    "Could not join party — it may be full or no longer exists.", "party");
+                    "Could not join party — the invite may have expired, or the party is full or gone.", "party");
                 return;
             }
 
@@ -1751,6 +1753,7 @@ namespace Myria.Server.Realm.Hubs
         public async Task DeclinePartyInvite(string partyId, string fromName)
         {
             var displayName = DisplayName();
+            party.DeclineInvite(partyId, displayName);
             var fromConn    = presence.GetConnectionByName(fromName);
             if (fromConn is not null)
                 await Clients.Client(fromConn).SendAsync("ChatMessage", "System",
@@ -1862,7 +1865,9 @@ namespace Myria.Server.Realm.Hubs
                 return;
             }
 
-            var (tradeId, ok) = trade.Propose(Context.ConnectionId, displayName);
+            // Bind the proposal to the target's actual in-game name (not the client's spelling of it).
+            var targetDisplayName = presence.GetDisplayName(targetConn) ?? targetName;
+            var (tradeId, ok) = trade.Propose(Context.ConnectionId, displayName, targetDisplayName);
             if (!ok)
             {
                 await Clients.Caller.SendAsync("ChatMessage", "System",
@@ -1877,7 +1882,7 @@ namespace Myria.Server.Realm.Hubs
 
         public async Task DeclineTrade(string tradeId)
         {
-            trade.CancelPending(tradeId);
+            trade.CancelPending(tradeId, DisplayName());
             await Clients.Caller.SendAsync("ChatMessage", "System", "Trade declined.", "room");
         }
 

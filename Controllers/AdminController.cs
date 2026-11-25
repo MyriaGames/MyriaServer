@@ -31,8 +31,24 @@ namespace Myria.Server.Realm.Controllers
     {
         private const string SecretHeader = "X-Internal-Secret";
 
+        // Two independent gates, both required - same as the auth server's InternalAdminOnlyAttribute:
+        // 1. the caller is on this machine: loopback, or the peer address equals the address it
+        //    connected to. Behind the same-host reverse proxy, RemoteIpAddress is the real visitor's
+        //    IP (ForwardedHeaders, see Program.cs), so proxied requests never count - callers must
+        //    use the realm's internal address (auth server / admin site: Realms[].InternalUrl).
+        //    The secret alone used to be enough, from anywhere (security review 2026-11-25, A01 F4).
+        // 2. the shared Admin:InternalSecret, compared in constant time.
+        // Not rate limited: only this machine can get past gate 1, and a per-IP limit would just
+        // throttle the operator's own admin site.
+        public static bool IsOnThisMachine(System.Net.IPAddress? remote, System.Net.IPAddress? local) =>
+            remote is not null &&
+            (System.Net.IPAddress.IsLoopback(remote) || (local is not null && remote.Equals(local)));
+
         private bool IsAuthorized()
         {
+            if (!IsOnThisMachine(HttpContext.Connection.RemoteIpAddress, HttpContext.Connection.LocalIpAddress))
+                return false;
+
             var expected = config["Admin:InternalSecret"];
             if (string.IsNullOrWhiteSpace(expected))
                 return false;

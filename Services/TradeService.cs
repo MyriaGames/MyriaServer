@@ -35,26 +35,35 @@ namespace Myria.Server.Realm.Services
             public bool ReadyB { get; set; }
         }
 
-        private readonly Dictionary<string, (string ProposerConn, string ProposerName)> _pending  = new();
+        // A pending proposal is bound to the character it was sent to: only that character may accept
+        // it, only the two of them may cancel it. The 8-char id alone used to be enough (security
+        // review 2026-11-25, A01 F5).
+        private readonly Dictionary<string, (string ProposerConn, string ProposerName, string TargetName)> _pending = new();
         private readonly Dictionary<string, Session>                                     _byConn   = new();
         private readonly object _lock = new();
 
         // Returns (tradeId, ok). Fails if proposer is already in a trade.
-        public (string TradeId, bool Ok) Propose(string proposerConn, string proposerName)
+        public (string TradeId, bool Ok) Propose(string proposerConn, string proposerName, string targetName)
         {
             lock (_lock)
             {
                 if (_byConn.ContainsKey(proposerConn)) return ("", false);
                 var tradeId = Guid.NewGuid().ToString("N")[..8];
-                _pending[tradeId] = (proposerConn, proposerName);
+                _pending[tradeId] = (proposerConn, proposerName, targetName);
                 return (tradeId, true);
             }
         }
 
-        public void CancelPending(string tradeId)
+        /// <summary>Withdraws/declines a proposal; only its proposer or its target can.</summary>
+        public void CancelPending(string tradeId, string callerName)
         {
             lock (_lock)
-                _pending.Remove(tradeId);
+            {
+                if (_pending.TryGetValue(tradeId, out var p) &&
+                    (string.Equals(p.TargetName, callerName, StringComparison.OrdinalIgnoreCase) ||
+                     string.Equals(p.ProposerName, callerName, StringComparison.OrdinalIgnoreCase)))
+                    _pending.Remove(tradeId);
+            }
         }
 
         // Returns (ok, proposerConn, proposerName, session)
@@ -64,6 +73,8 @@ namespace Myria.Server.Realm.Services
             lock (_lock)
             {
                 if (!_pending.TryGetValue(tradeId, out var p)) return (false, "", "", "");
+                if (!string.Equals(p.TargetName, acceptorName, StringComparison.OrdinalIgnoreCase))
+                    return (false, "", "", "");
                 if (_byConn.ContainsKey(acceptorConn) || _byConn.ContainsKey(p.ProposerConn))
                     return (false, "", "", "");
 
