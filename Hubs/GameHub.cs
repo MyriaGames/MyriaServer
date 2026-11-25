@@ -189,11 +189,26 @@ namespace Myria.Server.Realm.Hubs
 
         // ── Session ───────────────────────────────────────────────────────────
 
+        // The presence name is what DisplayName() - and through it ~45 hub methods (guild, shop,
+        // trade, party, chat) - treat as "who is calling", and what GetConnectionByName routes
+        // whispers/invites to. It must therefore only ever be the character this connection has
+        // loaded via LoadCharacter (which verifies ownership and sets the name itself). Accepting
+        // an arbitrary name here let any player act as any other character (security review
+        // 2026-11-25, A01 F1). Kept as a method because clients call it after LoadCharacter; a
+        // name other than the loaded character's is ignored.
         public Task SetCharacterName(string characterName)
         {
-            if (!string.IsNullOrWhiteSpace(characterName))
-                presence.SetCharacterName(Context.ConnectionId, characterName.Trim());
-            return NotifyShopReopenIfSealedAsync(characterName?.Trim());
+            var loaded = session.Get(Context.ConnectionId);
+            if (loaded is null ||
+                !string.Equals(loaded.Name, characterName?.Trim(), StringComparison.OrdinalIgnoreCase))
+            {
+                logger.LogWarning("{User} tried to set character name {Requested} on conn {Conn} but has {Loaded} loaded - ignored",
+                    Context.User?.Identity?.Name, characterName, Context.ConnectionId, loaded?.Name ?? "nothing");
+                return Task.CompletedTask;
+            }
+
+            presence.SetCharacterName(Context.ConnectionId, loaded.Name);
+            return NotifyShopReopenIfSealedAsync(loaded.Name);
         }
 
         // "The shop reopens automatically on login" - the DB row/storage never went away on
@@ -284,6 +299,11 @@ namespace Myria.Server.Realm.Hubs
                     "{Character} reattached to a live session on conn {Conn} (Level {Level}) - reconnect during play",
                     characterName, Context.ConnectionId, reattached.Level);
             }
+
+            // Ownership is verified above, so this is the one place the connection's in-game name
+            // is set (see SetCharacterName). Uses the loaded character's own spelling, not the
+            // request's, since character names match case-insensitively.
+            presence.SetCharacterName(Context.ConnectionId, session.Get(Context.ConnectionId)!.Name);
 
             // Join guild SignalR group if the character belongs to one
             var charId = await GetCharacterIdByNameAsync(db, characterName);
@@ -2532,8 +2552,12 @@ namespace Myria.Server.Realm.Hubs
 
         // ── Helpers ───────────────────────────────────────────────────────────
 
+        // "Who is calling": the ownership-verified loaded character first (defence in depth -
+        // see SetCharacterName), then the presence name, then the account.
         private string DisplayName() =>
-            presence.GetDisplayName(Context.ConnectionId) ?? Context.User!.Identity!.Name!;
+            session.Get(Context.ConnectionId)?.Name
+            ?? presence.GetDisplayName(Context.ConnectionId)
+            ?? Context.User!.Identity!.Name!;
 
         private static List<GroupCombatantState> BuildCharacterStates(GroupCombatEncounter enc) =>
             enc.Characters.Select(p => new GroupCombatantState(
