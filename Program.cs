@@ -208,9 +208,26 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                     ctx.HttpContext.Request.Path.StartsWithSegments("/hubs"))
                     ctx.Token = token;
                 return Task.CompletedTask;
+            },
+            // Signature and lifetime are fine - now check the account's sessions weren't revoked after
+            // this token was issued (password changed or reset; security review 2026-11-25, A07 F1).
+            OnTokenValidated = ctx =>
+            {
+                var issuedAt = ctx.SecurityToken switch
+                {
+                    Microsoft.IdentityModel.JsonWebTokens.JsonWebToken j => j.IssuedAt,
+                    System.IdentityModel.Tokens.Jwt.JwtSecurityToken t => t.IssuedAt,
+                    _ => DateTime.MinValue
+                };
+                var revocations = ctx.HttpContext.RequestServices.GetRequiredService<SessionRevocationService>();
+                if (!revocations.IsTokenAccepted(ctx.Principal?.Identity?.Name,
+                        issuedAt == DateTime.MinValue ? null : issuedAt))
+                    ctx.Fail("Session revoked (password changed).");
+                return Task.CompletedTask;
             }
         };
     });
+builder.Services.AddSingleton<SessionRevocationService>();
 
 builder.Services.AddAuthorization();
 builder.Services.AddScoped<BanService>();
@@ -259,6 +276,7 @@ using (var scope = app.Services.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     db.Database.Migrate();
 }
+await app.Services.GetRequiredService<SessionRevocationService>().LoadAsync();
 
 // Load all static game content (items, monsters, quests, rooms, ...) from the shared
 // JSON files into in-memory services — same source and code path the WPF client uses.
@@ -282,6 +300,9 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.UseRateLimiter();
 app.MapControllers();
-app.MapHub<GameHub>("/hubs/game");
+// A game connection is authenticated once, at connect. Without this it would outlive its token
+// (24 h) indefinitely; with it, the connection closes when the token expires and the client has to
+// log in again (security review 2026-11-25, A07 F1). Revocation drops the connection directly.
+app.MapHub<GameHub>("/hubs/game", o => o.CloseOnAuthenticationExpiration = true);
 
 app.Run();

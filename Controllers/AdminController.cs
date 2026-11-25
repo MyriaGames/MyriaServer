@@ -15,6 +15,12 @@ namespace Myria.Server.Realm.Controllers
         public string NewUsername { get; set; } = string.Empty;
     }
 
+    public class RevokeSessionsRequest
+    {
+        /// <summary>Unix seconds (auth server clock): tokens issued before this are rejected.</summary>
+        public long TokensValidAfter { get; set; }
+    }
+
 
     // Internal, service-to-service only — called by MyriaAuthServer (account delete/rename, GDPR
     // Art. 17) and by the localhost admin site (Myria.Server.Admin: bans, kicks, lookups), never by
@@ -27,6 +33,7 @@ namespace Myria.Server.Realm.Controllers
         IConfiguration config,
         BanService bans,
         CharacterPresenceService presence,
+        SessionRevocationService revocations,
         IHubContext<GameHub> hub) : ControllerBase
     {
         private const string SecretHeader = "X-Internal-Secret";
@@ -231,6 +238,33 @@ namespace Myria.Server.Realm.Controllers
         [HttpDelete("characters/{name}/ban")]
         public async Task<IActionResult> LiftCharacterBan(string name) =>
             !IsAuthorized() ? Forbid() : await bans.LiftCharacterBanAsync(name) is null ? NotFound() : NoContent();
+
+        // ── POST /api/admin/accounts/{username}/revoke-sessions ──
+        // Called by the auth server after a password change/reset or a forced password change: every
+        // token of the account issued before TokensValidAfter (auth server's clock, Unix seconds) stops
+        // working here, and the live game connection - which may belong to whoever had the old
+        // password - is dropped. The owner's own client isn't connected at that moment (the password is
+        // changed from the menu or the website), and reconnects with the fresh token it got.
+        [HttpPost("accounts/{username}/revoke-sessions")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        public async Task<IActionResult> RevokeSessions(string username, RevokeSessionsRequest req)
+        {
+            if (!IsAuthorized())
+                return Forbid();
+
+            // Not in the future beyond normal clock drift: a bogus far-future value would lock the
+            // account out of this realm until the row expires.
+            if (req.TokensValidAfter <= 0 || req.TokensValidAfter > DateTimeOffset.MaxValue.ToUnixTimeSeconds())
+                return BadRequest();
+            var validAfter = DateTimeOffset.FromUnixTimeSeconds(req.TokensValidAfter).UtcDateTime;
+            if (string.IsNullOrWhiteSpace(username) || validAfter > DateTime.UtcNow.AddMinutes(5))
+                return BadRequest();
+
+            await revocations.RevokeAsync(username, validAfter);
+            return Ok(new { kicked = await KickAsync(username, "ForceLogout") });
+        }
 
         [HttpPost("accounts/{username}/kick")]
         public async Task<IActionResult> Kick(string username) =>

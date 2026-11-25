@@ -13,6 +13,7 @@ namespace Myria.Server.Realm.Data
         public DbSet<Friendship> Friendships => Set<Friendship>();
         public DbSet<Block>      Blocks      => Set<Block>();
         public DbSet<AccountBan> AccountBans => Set<AccountBan>();
+        public DbSet<SessionRevocation> SessionRevocations => Set<SessionRevocation>();
 
         // ── Guild tables ─────────────────────────────────────────────────────────
         public DbSet<Guild>             Guilds             => Set<Guild>();
@@ -74,6 +75,9 @@ namespace Myria.Server.Realm.Data
                 e.Property(b => b.Username).HasMaxLength(50);
                 e.HasIndex(b => b.Username).IsUnique();
             });
+
+            modelBuilder.Entity<SessionRevocation>(e =>
+                e.Property(r => r.Username).HasMaxLength(50).UseCollation("NOCASE"));
 
             // ── Character children — all cascade-delete when Character is removed ─
             // Item/skill/quest/job/room references on these are plain unconstrained
