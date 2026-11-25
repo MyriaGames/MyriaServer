@@ -203,7 +203,7 @@ namespace Myria.Server.Realm.Hubs
                 !string.Equals(loaded.Name, characterName?.Trim(), StringComparison.OrdinalIgnoreCase))
             {
                 logger.LogWarning("{User} tried to set character name {Requested} on conn {Conn} but has {Loaded} loaded - ignored",
-                    Context.User?.Identity?.Name, characterName, Context.ConnectionId, loaded?.Name ?? "nothing");
+                    Context.User?.Identity?.Name, LogSafe.Text(characterName), Context.ConnectionId, loaded?.Name ?? "nothing");
                 return Task.CompletedTask;
             }
 
