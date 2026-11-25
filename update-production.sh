@@ -14,8 +14,10 @@
 #          these are excluded from the published zip in the first place, but the check is kept
 #          here too in case that ever changes)
 #        - certs/ / auth/certs/ (your TLS certificate/key — not part of the published zip either)
-#   4. Restarts the systemd service if one named myriarpg.service is active; otherwise just
-#      tells you to restart run-production.sh yourself.
+#        - logs/               (local log files, e.g. from a cron job redirect)
+#   4. Restarts the systemd services (user services myria-auth + myria-realm, or a combined
+#      myriarpg.service as user or system service); otherwise tells you to restart
+#      run-production.sh yourself.
 #
 # Usage: ./update-production.sh [version]
 #   No argument -> updates to the latest published release.
@@ -98,6 +100,8 @@ rsync -a --delete \
     --exclude 'auth/certs/***' \
     --exclude '.installed_version' \
     --exclude 'auth/.installed_version' \
+    --exclude 'logs' \
+    --exclude 'logs/***' \
     "$STAGE_DIR"/ "$SCRIPT_DIR"/
 
 chmod +x ./MyriaServer 2>/dev/null || true
@@ -110,10 +114,21 @@ echo "$TARGET_VERSION" > "$VERSION_MARKER"
 [ -d "./auth" ] && echo "$TARGET_VERSION" > "./auth/$VERSION_MARKER"
 echo "Updated to $TARGET_VERSION."
 
-if systemctl is-enabled --quiet myriarpg.service 2>/dev/null; then
-    echo "Restarting myriarpg.service..."
+# Restart whichever service layout this host uses. Preferred: separate systemd *user* services
+# for auth and realm (each restarted independently if it crashes; no sudo needed, so this also
+# works from a timer/cron job). Older layouts with one combined myriarpg.service still work.
+if systemctl --user is-enabled --quiet myria-realm.service 2>/dev/null; then
+    echo "Restarting myria-auth.service + myria-realm.service (systemd user services)..."
+    systemctl --user restart myria-auth.service myria-realm.service
+    echo "Done. Check status with: systemctl --user status myria-auth myria-realm"
+elif systemctl --user is-enabled --quiet myriarpg.service 2>/dev/null; then
+    echo "Restarting myriarpg.service (systemd user service)..."
+    systemctl --user restart myriarpg.service
+    echo "Done. Check status with: systemctl --user status myriarpg.service"
+elif systemctl is-enabled --quiet myriarpg.service 2>/dev/null; then
+    echo "Restarting myriarpg.service (system service)..."
     sudo systemctl restart myriarpg.service
     echo "Done. Check status with: systemctl status myriarpg.service"
 else
-    echo "No myriarpg.service found - restart manually: stop the running ./run-production.sh and start it again."
+    echo "No Myria systemd service found - restart manually: stop the running ./run-production.sh and start it again."
 fi
