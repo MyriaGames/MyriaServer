@@ -265,7 +265,13 @@ namespace Myria.Server.Realm.Hubs
             // who knows another player's online character name could reattach that character's
             // live session (inventory/gold/gear) onto their own connection.
             var owns = await db.Characters.AnyAsync(c => c.UserId == username && c.Name == characterName);
-            if (!owns) return false;
+            if (!owns)
+            {
+                // Trying to take over another player's character (the A01 F1 attack class) used to leave no trace
+                // (security review 2026-11-26, A09 F2).
+                await SecurityLog.NoteForeignCharacterAsync(db, logger, username, characterName, "hub:LoadCharacter");
+                return false;
+            }
 
             // Per-character operator ban. Must come before TryReattach below, or a banned character
             // whose session is still live could just be picked back up.

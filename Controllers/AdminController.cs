@@ -54,20 +54,35 @@ namespace Myria.Server.Realm.Controllers
             remote is not null &&
             (System.Net.IPAddress.IsLoopback(remote) || (local is not null && remote.Equals(local)));
 
+        // Refusals and allowed changes are logged (security review 2026-11-26, A09 F2) - this API can
+        // delete and rename accounts' characters, ban and kick.
         private bool IsAuthorized()
         {
+            var log = SecurityLog.For(HttpContext);
+            var call = $"{Request.Method}:{Request.Path}";
             if (!IsOnThisMachine(HttpContext.Connection.RemoteIpAddress, HttpContext.Connection.LocalIpAddress))
+            {
+                SecurityLog.Warn(log, "realm.admin.denied", null, "refused", $"not-on-this-machine;{call}");
                 return false;
+            }
 
             var expected = config["Admin:InternalSecret"];
-            if (string.IsNullOrWhiteSpace(expected))
-                return false;
-
             var provided = Request.Headers[SecretHeader].ToString();
-            return !string.IsNullOrEmpty(provided) &&
-                   System.Security.Cryptography.CryptographicOperations.FixedTimeEquals(
-                       System.Text.Encoding.UTF8.GetBytes(provided),
-                       System.Text.Encoding.UTF8.GetBytes(expected));
+            var ok = !string.IsNullOrWhiteSpace(expected) && !string.IsNullOrEmpty(provided) &&
+                     System.Security.Cryptography.CryptographicOperations.FixedTimeEquals(
+                         System.Text.Encoding.UTF8.GetBytes(provided),
+                         System.Text.Encoding.UTF8.GetBytes(expected));
+            if (!ok)
+            {
+                SecurityLog.Warn(log, "realm.admin.denied", null, "refused",
+                    $"{(string.IsNullOrEmpty(provided) ? "no-secret" : "wrong-secret")};{call}");
+                return false;
+            }
+
+            // Reads (lookups, ban lists) happen on every admin-site page view; only changes get a line.
+            if (!HttpMethods.IsGet(Request.Method))
+                SecurityLog.Info(log, "realm.admin.call", null, "allowed", call);
+            return true;
         }
 
         // ── DELETE /api/admin/characters/{username} — purge all characters for a user ──

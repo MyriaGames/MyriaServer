@@ -138,8 +138,14 @@ namespace Myria.Server.Realm.Controllers
     {
         private Task<string?> GetUserAsync() => Task.FromResult(User.Identity!.Name);
 
-        private async Task<Character?> GetMyCharacterAsync(string characterName, string me) =>
-            await db.Characters.SingleOrDefaultAsync(c => c.UserId == me && c.Name == characterName);
+        private async Task<Character?> GetMyCharacterAsync(string characterName, string me)
+        {
+            var mine = await db.Characters.SingleOrDefaultAsync(c => c.UserId == me && c.Name == characterName);
+            // Asking for someone else's character is worth a trace (security review 2026-11-26, A09 F2).
+            if (mine is null)
+                await SecurityLog.NoteForeignCharacterAsync(db, SecurityLog.For(HttpContext), me, characterName, "rest:guilds");
+            return mine;
+        }
 
         private async Task<Character?> GetCharacterByNameAsync(string name) =>
             await db.Characters.FirstOrDefaultAsync(c => c.Name == name);

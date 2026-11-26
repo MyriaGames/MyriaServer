@@ -226,7 +226,26 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 var revocations = ctx.HttpContext.RequestServices.GetRequiredService<SessionRevocationService>();
                 if (!revocations.IsTokenAccepted(ctx.Principal?.Identity?.Name,
                         issuedAt == DateTime.MinValue ? null : issuedAt))
+                {
+                    // An old session after a password change/reset: possibly whoever had the old password.
+                    SecurityLog.Warn(SecurityLog.For(ctx.HttpContext), "realm.token.rejected",
+                        ctx.Principal?.Identity?.Name, "refused", "revoked");
                     ctx.Fail("Session revoked (password changed).");
+                }
+                return Task.CompletedTask;
+            },
+            // Rejected tokens used to vanish below the Microsoft.AspNetCore log level (security review
+            // 2026-11-26, A09 F2). An expired one is routine (24 h lifetime) - Information; a bad
+            // signature or wrong issuer means a forged or foreign token - Warning. The name inside an
+            // unvalidated token proves nothing, so none is logged.
+            OnAuthenticationFailed = ctx =>
+            {
+                var reason = SecurityLog.TokenRejectionReason(ctx.Exception);
+                var log = SecurityLog.For(ctx.HttpContext);
+                if (reason == "expired")
+                    SecurityLog.Info(log, "realm.token.rejected", null, "refused", reason);
+                else
+                    SecurityLog.Warn(log, "realm.token.rejected", null, "refused", reason);
                 return Task.CompletedTask;
             }
         };
@@ -289,3 +308,4 @@ app.MapControllers();
 app.MapHub<GameHub>("/hubs/game", o => o.CloseOnAuthenticationExpiration = true);
 
 app.Run();
+
