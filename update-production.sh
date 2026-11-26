@@ -29,6 +29,10 @@
 #   MYRIA_RELEASES_URL  release server base URL (default: the official Myria server). Set it on
 #                       the release server itself if it can't reach its own public address
 #                       (e.g. https://myria.myria-games.duckdns.org:8443/downloads behind NAT).
+#   MYRIA_UPDATE_NO_RESTART  set (any value) to skip the service restart - for testing in a copy.
+#
+# Release signature: once ./release-signers exists (installed by the first signed release), every
+# update must come with SHA256SUMS.sig made by that key, or nothing is installed.
 
 set -euo pipefail
 
@@ -90,6 +94,28 @@ echo "Downloading $LINUX_URL ..."
 curl -fsSL -o "$ZIP_PATH" "$LINUX_URL"
 curl -fsSL -o "$WORKDIR/SHA256SUMS" "$SUMS_URL"
 
+# Who made this release? SHA256SUMS comes from the same server as the zip, so on its own it only
+# proves the download isn't corrupted. Releases are signed on the developer's PC (release.ps1,
+# `ssh-keygen -Y sign`, namespace myria-release); the public key is ./release-signers, installed
+# with the first signed release and never replaced by an update (security review 2026-11-26, A08 F2).
+SIGNERS="$SCRIPT_DIR/release-signers"
+if [ -f "$SIGNERS" ]; then
+    echo "Verifying release signature..."
+    curl -fsSL -o "$WORKDIR/SHA256SUMS.sig" "$SUMS_URL.sig" || {
+        echo "ERROR: release $TARGET_VERSION has no signature (SHA256SUMS.sig) - not installing" >&2
+        exit 1
+    }
+    ssh-keygen -Y verify -f "$SIGNERS" -I myria-release -n myria-release \
+        -s "$WORKDIR/SHA256SUMS.sig" < "$WORKDIR/SHA256SUMS" > /dev/null || {
+        echo "ERROR: SHA256SUMS is not signed by the trusted release key ($SIGNERS) - not installing" >&2
+        exit 1
+    }
+    echo "Release signature OK."
+else
+    echo "WARNING: no $SIGNERS installed yet - the release signature can't be checked this time." >&2
+    echo "         The key that comes with this release will be trusted for every later update." >&2
+fi
+
 echo "Verifying checksum..."
 grep -E "^[0-9a-f]{64}  $ZIP_NAME\$" "$WORKDIR/SHA256SUMS" > "$WORKDIR/zip.sha256" || {
     echo "ERROR: $ZIP_NAME is not listed in SHA256SUMS" >&2
@@ -119,7 +145,16 @@ rsync -a --delete \
     --exclude 'auth/.installed_version' \
     --exclude 'logs' \
     --exclude 'logs/***' \
+    --exclude 'release-signers' \
     "$STAGE_DIR"/ "$SCRIPT_DIR"/
+
+# Trust on first install: the release key is taken from the first release that brings one and then
+# kept - an update can neither replace nor delete it (rsync excludes it above). To change the key,
+# replace ./release-signers by hand.
+if [ ! -f "$SIGNERS" ] && [ -f "$STAGE_DIR/release-signers" ]; then
+    cp "$STAGE_DIR/release-signers" "$SIGNERS"
+    echo "Installed the release signing key ($SIGNERS)."
+fi
 
 chmod +x ./MyriaServer 2>/dev/null || true
 chmod +x ./auth/MyriaAuthServer 2>/dev/null || true
@@ -130,6 +165,12 @@ echo "$TARGET_VERSION" > "$VERSION_MARKER"
 # copy of the marker to log its version at startup - not just the top-level one.
 [ -d "./auth" ] && echo "$TARGET_VERSION" > "./auth/$VERSION_MARKER"
 echo "Updated to $TARGET_VERSION."
+
+# For testing the download/verify/apply steps in a scratch copy without touching running services.
+if [ -n "${MYRIA_UPDATE_NO_RESTART:-}" ]; then
+    echo "(test mode: services not restarted)"
+    exit 0
+fi
 
 # Restart whichever service layout this host uses. Preferred: separate systemd *user* services
 # for auth and realm (each restarted independently if it crashes; no sudo needed, so this also
