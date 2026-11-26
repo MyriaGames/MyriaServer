@@ -127,6 +127,8 @@ internal sealed class HubHarness : IDisposable
     public PvpCombatService PvpCombat { get; } = new();
     /// <summary>v0.3 world state (NPC stock, room populations), loaded from the test database in CreateAsync.</summary>
     public WorldStateService World { get; private set; } = null!;
+    /// <summary>v0.3 dynamic quests (grants), loaded from the test database in CreateAsync.</summary>
+    public DynamicQuestService Quests { get; private set; } = null!;
 
     /// <summary>The logger hubs get; replace to capture log output.</summary>
     public ILogger<GameHub> Logger { get; set; } = NullLogger<GameHub>.Instance;
@@ -163,6 +165,9 @@ internal sealed class HubHarness : IDisposable
         harness.World = new WorldStateService(harness._services.GetRequiredService<IServiceScopeFactory>(),
             Microsoft.Extensions.Logging.Abstractions.NullLogger<WorldStateService>.Instance);
         await harness.World.LoadAsync();
+        harness.Quests = new DynamicQuestService(harness._services.GetRequiredService<IServiceScopeFactory>(),
+            Microsoft.Extensions.Logging.Abstractions.NullLogger<DynamicQuestService>.Instance);
+        await harness.Quests.LoadAsync();
         var repo = new SqlCharacterRepository(harness._db.Db);
         await repo.SaveAsync("alice", new Character("Alicechar", new Stats()));
         await repo.SaveAsync("bob", new Character("Bobchar", new Stats()));
@@ -186,6 +191,7 @@ internal sealed class HubHarness : IDisposable
             GroupCombat,
             PvpCombat,
             World,
+            Quests,
             _services.GetRequiredService<IServiceScopeFactory>(),
             AllowedVersions,
             Logger,

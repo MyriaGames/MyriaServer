@@ -157,7 +157,8 @@ namespace Myria.Server.Realm.Repositories
                 PvpRating               = c.PvpRating,
                 PvpCurrency             = c.PvpCurrency,
                 PvpWins                 = c.PvpWins,
-                PvpLosses               = c.PvpLosses
+                PvpLosses               = c.PvpLosses,
+                AdventurersGuildMember  = c.AdventurersGuildMember
             };
 
             character.CurrentRoom = RoomService.AllRooms.FirstOrDefault(r => r.Id == c.CurrentRoomId);
@@ -349,6 +350,7 @@ namespace Myria.Server.Realm.Repositories
             record.PvpCurrency              = character.PvpCurrency;
             record.PvpWins                  = character.PvpWins;
             record.PvpLosses                = character.PvpLosses;
+            record.AdventurersGuildMember   = character.AdventurersGuildMember;
 
             record.InventoryItems.Clear();
             for (int i = 0; i < character.Inventory.Items.Count; i++)

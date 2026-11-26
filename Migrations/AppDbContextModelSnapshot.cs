@@ -85,6 +85,9 @@ namespace Myria.Server.Realm.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
+                    b.Property<bool>("AdventurersGuildMember")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("ArmorItemId")
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
@@ -981,6 +984,54 @@ namespace Myria.Server.Realm.Migrations
                         .IsUnique();
 
                     b.ToTable("PlayerShopItems");
+                });
+
+            modelBuilder.Entity("Myria.Server.Realm.Models.QuestGrantRecord", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(40)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("AcceptedUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("Completed")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("HolderName")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ItemId")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Kind")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("MonsterId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("NpcId")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("RewardGold")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("RewardXp")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("RoomId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Target")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("QuestGrants");
                 });
 
             modelBuilder.Entity("Myria.Server.Realm.Models.SessionRevocation", b =>

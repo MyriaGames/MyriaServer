@@ -35,6 +35,7 @@ namespace Myria.Server.Realm.Data
         // ── World state (v0.3 quest rework) ──
         public DbSet<WorldNpcStock>       WorldNpcStock        => Set<WorldNpcStock>();
         public DbSet<WorldRoomPopulation> WorldRoomPopulations => Set<WorldRoomPopulation>();
+        public DbSet<QuestGrantRecord>    QuestGrants          => Set<QuestGrantRecord>();
 
         // ── Character child tables ───────────────────────────────────────────────
         public DbSet<CharacterInventoryItem>       CharacterInventoryItems      => Set<CharacterInventoryItem>();

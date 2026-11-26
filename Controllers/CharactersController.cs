@@ -128,6 +128,13 @@ namespace Myria.Server.Realm.Controllers
                 PvpCurrency             = c.PvpCurrency,
                 PvpWins                 = c.PvpWins,
                 PvpLosses               = c.PvpLosses,
+                AdventurersGuildMember  = c.AdventurersGuildMember,
+                DynamicQuests = c.ActiveQuests
+                    .Where(q => Myria.Lib.Core.Systems.World.DynamicQuests.IsDynamicQuestId(q.QuestId))
+                    .Select(q => Myria.Lib.Core.Services.Manager.QuestManager.GetQuestById(q.QuestId))
+                    .Where(q => q is not null)
+                    .Select(q => Myria.Lib.Core.Systems.World.DynamicQuests.ToDto(q!))
+                    .ToList(),
 
                 InventoryItems = c.InventoryItems
                     .OrderBy(i => i.SlotIndex)

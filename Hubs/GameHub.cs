@@ -17,6 +17,8 @@ using Myria.Server.Realm.Data;
 using Myria.Server.Realm.Models;
 using Myria.Server.Realm.Services;
 
+using Myria.Lib.Core.Systems.World;
+
 namespace Myria.Server.Realm.Hubs
 {
     [Authorize]
@@ -29,6 +31,7 @@ namespace Myria.Server.Realm.Hubs
         GroupCombatService groupCombat,
         PvpCombatService pvp,
         WorldStateService world,
+        DynamicQuestService quests,
         IServiceScopeFactory scopeFactory,
         AllowedVersionsConfig allowedVersions,
         ILogger<GameHub> logger,
@@ -1135,6 +1138,9 @@ namespace Myria.Server.Realm.Hubs
                 // Handed in at the NPC that takes it back (like the client's quest dialog).
                 if (!string.IsNullOrEmpty(active.ReturnNpcIdResolved) && !CharacterRoomHasNpc(active.ReturnNpcIdResolved))
                     return false;
+                // Dynamic fetch quests belong to one NPC instance (NPC ids repeat across rooms).
+                if (active.ReturnRoomId is int returnRoom && presence.GetRoom(Context.ConnectionId) != returnRoom)
+                    return false;
 
                 // Re-verify kill/item objectives against this session's own server-tracked
                 // progress before granting rewards - previously trusted the client's claim the
@@ -1147,6 +1153,13 @@ namespace Myria.Server.Realm.Hubs
                 // only ever went up, so items sold or used up after the counter was full still counted.
                 QuestManager.UpdateItemProgress(player);
                 if (!QuestManager.ObjectivesMet(active)) return false;
+
+                if (active.IsDynamic)
+                {
+                    await CompleteDynamicQuestAsync(player, active);
+                    await NotifyCharacterUpdate(player, inventory: true, money: true, progress: true, questProgress: true);
+                    return true;
+                }
 
                 active.GrantRewards(player);
 
@@ -1176,6 +1189,7 @@ namespace Myria.Server.Realm.Hubs
                 // All acceptance conditions, server-side: only "not already active" used to be checked,
                 // so completed quests (talk-only ones complete instantly) could be accepted and handed
                 // in again in a loop, paying out every time (A06 F5). Plus: the giver must be here.
+                if (quest.IsDynamic) return false; // taken via AcceptDynamicQuest (sized against the live gap)
                 var partyId = party.GetPartyId(DisplayName());
                 int partySize = partyId is null ? 1 : party.GetMembers(partyId).Count;
                 if (!QuestManager.IsAcceptable(quest, player, partySize))
@@ -1844,6 +1858,96 @@ namespace Myria.Server.Realm.Hubs
             await RespawnDeadGroupMembersAsync(encounter);
 
             return snap;
+        }
+
+        // ── Adventurers' Guild and dynamic quests (v0.3 quest rework) ──────────
+
+        /// <summary>Joins the Adventurers' Guild at a guild house (free; separate from player guilds,
+        /// so it doesn't affect guild membership). Members can take bounties.</summary>
+        public async Task<bool> JoinAdventurersGuild()
+        {
+            if (session.Get(Context.ConnectionId) is not { } player) return false;
+            if (!CharacterRoomHasNpc(DynamicQuestRules.GuildNpcId)) return false;
+            player.AdventurersGuildMember = true;
+            await SaveCombatParticipantsAsync(new[] { player });
+            return true;
+        }
+
+        /// <summary>Leaves the Adventurers' Guild. Bounties already taken stay completable.</summary>
+        public async Task<bool> LeaveAdventurersGuild()
+        {
+            if (session.Get(Context.ConnectionId) is not { } player) return false;
+            player.AdventurersGuildMember = false;
+            await SaveCombatParticipantsAsync(new[] { player });
+            return true;
+        }
+
+        /// <summary>
+        /// What an NPC in the caller's room is asking for right now: supply requests from a normal
+        /// NPC (its stock below threshold), or - at a guild house, for members - bounties for overrun
+        /// rooms nearby. Computed from the live world state; nothing is reserved until accepted.
+        /// </summary>
+        public Task<List<DynamicQuestOfferDto>> GetDynamicQuestOffers(string npcId)
+        {
+            var none = Task.FromResult(new List<DynamicQuestOfferDto>());
+            if (session.Get(Context.ConnectionId) is not { } player || world.State is not { } state) return none;
+            if (presence.GetRoom(Context.ConnectionId) is not int roomId || !CharacterRoomHasNpc(npcId)) return none;
+
+            var offers = npcId == DynamicQuestRules.GuildNpcId
+                ? (player.AdventurersGuildMember ? quests.BountyOffers(state, roomId, player.Name) : new())
+                : quests.FetchOffers(state, roomId, npcId, player.Name);
+            return Task.FromResult(offers.Select(o => new DynamicQuestOfferDto(o.Token, DynamicQuests.ToDto(o.Preview))).ToList());
+        }
+
+        /// <summary>Takes an offer (by its token) as a quest, sized against what's still open now.
+        /// Null if it's gone, already held, or not takeable from where the caller stands.</summary>
+        public async Task<DynamicQuestDto?> AcceptDynamicQuest(string token)
+        {
+            if (session.Get(Context.ConnectionId) is not { } player || world.State is not { } state) return null;
+            if (presence.GetRoom(Context.ConnectionId) is not int roomId) return null;
+            if (!DynamicQuests.TryParseToken(token, out var stock, out var pop)) return null;
+
+            bool allowedHere = stock is { } s
+                ? s.RoomId == roomId && CharacterRoomHasNpc(s.NpcId)
+                : player.AdventurersGuildMember && CharacterRoomHasNpc(DynamicQuestRules.GuildNpcId)
+                  && DynamicQuests.RoomsWithin(roomId, DynamicQuestRules.GuildRadius).Contains(pop!.Value.RoomId);
+            if (!allowedHere) return null;
+
+            using var held = await locks.AcquireAsync(player.Name);
+            var grant = await quests.AcceptAsync(state, token, player.Name);
+            if (grant is null || QuestManager.GetQuestById(grant.QuestId) is not { } quest) return null;
+
+            var active = QuestManager.StartQuest(player, quest);
+            logger.LogInformation("{Character} took dynamic quest {Quest} ({Kind}, target {Target})", player.Name, grant.Id, grant.Kind, grant.Target);
+            return DynamicQuests.ToDto(active);
+        }
+
+        /// <summary>Hands in a finished dynamic quest: a fetch quest's items leave the bag and go into
+        /// the NPC's stock (the same deposit a shop sale makes), rewards are paid, and the grant stops
+        /// counting as promised. Not kept in CompletedQuests - these aren't one-time story quests.</summary>
+        private async Task CompleteDynamicQuestAsync(Myria.Lib.Core.Entities.Characters.Character player, Quest active)
+        {
+            var grantId = DynamicQuests.GrantIdOf(active.Id);
+            var grant = quests.Get(grantId);
+
+            foreach (var (itemId, amount) in active.RequiredItems)
+            {
+                int remaining = amount;
+                foreach (var stack in player.Inventory.Items.Where(i => i.Id == itemId).ToList())
+                {
+                    if (remaining <= 0) break;
+                    int take = Math.Min(stack.StackSize, remaining);
+                    stack.StackSize -= take;
+                    remaining -= take;
+                    if (stack.StackSize <= 0) player.Inventory.RemoveItem(stack);
+                }
+                if (grant?.StockKey is { } key) world.State?.Deposit(key, amount);
+            }
+
+            active.GrantRewards(player);
+            player.ActiveQuests.Remove(active);
+            await quests.CompleteAsync(grantId);
+            logger.LogInformation("{Character} completed dynamic quest {Quest}", player.Name, grantId);
         }
 
         // ── PvP (v0.3: arena rooms only, party vs party, rating + PvP currency stakes) ──

@@ -69,6 +69,12 @@ namespace Myria.Server.Realm.Models.Dto
         public int  PvpWins     { get; set; }
         public int  PvpLosses   { get; set; }
 
+        // ── v0.3 quest rework ──
+        public bool AdventurersGuildMember { get; set; }
+        /// <summary>Definitions of the generated quests among ActiveQuests - clients can't look
+        /// those up in quests.json, so they register these before rebuilding the active list.</summary>
+        public List<Myria.Lib.Core.Models.Dto.DynamicQuestDto> DynamicQuests { get; set; } = new();
+
         // ── Collections ──────────────────────────────────────────────────────────
         public List<CharSaveInventoryItem>   InventoryItems      { get; set; } = new();
         public List<string>                  SkillIds            { get; set; } = new();

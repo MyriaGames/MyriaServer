@@ -89,6 +89,9 @@ namespace Myria.Server.Realm.Models
         public int  PvpWins     { get; set; }
         public int  PvpLosses   { get; set; }
 
+        // ── Adventurers' Guild (v0.3; server-authoritative, changed only via the hub) ──
+        public bool AdventurersGuildMember { get; set; }
+
         // ── Navigation properties (child tables) ─────────────────────────────────
         public ICollection<CharacterInventoryItem>  InventoryItems      { get; set; } = new List<CharacterInventoryItem>();
         public ICollection<CharacterSkill>          Skills              { get; set; } = new List<CharacterSkill>();

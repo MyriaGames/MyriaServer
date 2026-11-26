@@ -115,6 +115,7 @@ builder.Services.AddScoped<PlayerShopService>();
 builder.Services.AddSingleton<GroupCombatService>();
 builder.Services.AddSingleton<PvpCombatService>();
 builder.Services.AddSingleton<WorldStateService>();
+builder.Services.AddSingleton<DynamicQuestService>();
 builder.Services.AddHostedService<WorldTickService>();
 // Global hub filters: registered via AddSignalR(options => options.AddFilter<T>()) plus a plain
 // DI registration of the filter type itself - this applies the filter to every hub (there's
@@ -308,6 +309,8 @@ GameService.InitializeGame();
 
 // The living world (NPC stock, room populations) is derived from that content plus its saved values.
 await app.Services.GetRequiredService<WorldStateService>().LoadAsync();
+// Open dynamic-quest grants - registered with QuestManager so held "dyn.*" quests load with characters.
+await app.Services.GetRequiredService<DynamicQuestService>().LoadAsync();
 
 // No app.UseHttpsRedirection() here: Production is now HTTPS-only at the Kestrel level (see
 // the guard above) — there's no plain-HTTP endpoint left to redirect away from. Development
