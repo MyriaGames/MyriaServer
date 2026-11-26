@@ -80,4 +80,13 @@
     </Content>
   </ItemGroup>
 
+  <!-- The repo's own test project lives in tests/ (security review 2026-11-26, A11 F1) - never part of this build. -->
+  <ItemGroup>
+    <Compile Remove="tests\**" />
+    <Content Remove="tests\**" />
+    <None Remove="tests\**" />
+    <EmbeddedResource Remove="tests\**" />
+    <Page Remove="tests\**" Condition="'$(UseWPF)' == 'true'" />
+  </ItemGroup>
+
 </Project>
