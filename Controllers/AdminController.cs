@@ -15,6 +15,12 @@ namespace Myria.Server.Realm.Controllers
         public string NewUsername { get; set; } = string.Empty;
     }
 
+    public class RevokeSessionsRequest
+    {
+        /// <summary>Unix seconds (auth server clock): tokens issued before this are rejected.</summary>
+        public long TokensValidAfter { get; set; }
+    }
+
 
     // Internal, service-to-service only — called by MyriaAuthServer (account delete/rename, GDPR
     // Art. 17) and by the localhost admin site (Myria.Server.Admin: bans, kicks, lookups), never by
@@ -27,21 +33,56 @@ namespace Myria.Server.Realm.Controllers
         IConfiguration config,
         BanService bans,
         CharacterPresenceService presence,
-        IHubContext<GameHub> hub) : ControllerBase
+        SessionRevocationService revocations,
+        IHubContext<GameHub> hub,
+        CharacterSessionService session,
+        Myria.Lib.Core.Repositories.ICharacterRepository repo,
+        CharacterLocks locks) : ControllerBase
     {
         private const string SecretHeader = "X-Internal-Secret";
 
+        // Two independent gates, both required - same as the auth server's InternalAdminOnlyAttribute:
+        // 1. the caller is on this machine: loopback, or the peer address equals the address it
+        //    connected to. Behind the same-host reverse proxy, RemoteIpAddress is the real visitor's
+        //    IP (ForwardedHeaders, see Program.cs), so proxied requests never count - callers must
+        //    use the realm's internal address (auth server / admin site: Realms[].InternalUrl).
+        //    The secret alone used to be enough, from anywhere (security review 2026-11-25, A01 F4).
+        // 2. the shared Admin:InternalSecret, compared in constant time.
+        // Not rate limited: only this machine can get past gate 1, and a per-IP limit would just
+        // throttle the operator's own admin site.
+        public static bool IsOnThisMachine(System.Net.IPAddress? remote, System.Net.IPAddress? local) =>
+            remote is not null &&
+            (System.Net.IPAddress.IsLoopback(remote) || (local is not null && remote.Equals(local)));
+
+        // Refusals and allowed changes are logged (security review 2026-11-26, A09 F2) - this API can
+        // delete and rename accounts' characters, ban and kick.
         private bool IsAuthorized()
         {
-            var expected = config["Admin:InternalSecret"];
-            if (string.IsNullOrWhiteSpace(expected))
+            var log = SecurityLog.For(HttpContext);
+            var call = $"{Request.Method}:{Request.Path}";
+            if (!IsOnThisMachine(HttpContext.Connection.RemoteIpAddress, HttpContext.Connection.LocalIpAddress))
+            {
+                SecurityLog.Warn(log, "realm.admin.denied", null, "refused", $"not-on-this-machine;{call}");
                 return false;
+            }
 
+            var expected = config["Admin:InternalSecret"];
             var provided = Request.Headers[SecretHeader].ToString();
-            return !string.IsNullOrEmpty(provided) &&
-                   System.Security.Cryptography.CryptographicOperations.FixedTimeEquals(
-                       System.Text.Encoding.UTF8.GetBytes(provided),
-                       System.Text.Encoding.UTF8.GetBytes(expected));
+            var ok = !string.IsNullOrWhiteSpace(expected) && !string.IsNullOrEmpty(provided) &&
+                     System.Security.Cryptography.CryptographicOperations.FixedTimeEquals(
+                         System.Text.Encoding.UTF8.GetBytes(provided),
+                         System.Text.Encoding.UTF8.GetBytes(expected));
+            if (!ok)
+            {
+                SecurityLog.Warn(log, "realm.admin.denied", null, "refused",
+                    $"{(string.IsNullOrEmpty(provided) ? "no-secret" : "wrong-secret")};{call}");
+                return false;
+            }
+
+            // Reads (lookups, ban lists) happen on every admin-site page view; only changes get a line.
+            if (!HttpMethods.IsGet(Request.Method))
+                SecurityLog.Info(log, "realm.admin.call", null, "allowed", call);
+            return true;
         }
 
         // ── DELETE /api/admin/characters/{username} — purge all characters for a user ──
@@ -78,7 +119,26 @@ namespace Myria.Server.Realm.Controllers
         {
             if (!IsAuthorized())
                 return Forbid();
+            if (string.IsNullOrWhiteSpace(req.OldUsername) || string.IsNullOrWhiteSpace(req.NewUsername))
+                return BadRequest();
 
+            // A character of this account in play: save it under the OLD name and end its session
+            // first. Otherwise the live session later saved under the old name after its rows had
+            // moved - the save failed and the progress since the last save was lost (security review
+            // 2026-11-26, A10 F4). The connection is dropped after the rename (ForceLogout); the
+            // client logs in again with the token issued for the new name.
+            var liveConn = presence.GetConnectionByAccount(req.OldUsername);
+            if (liveConn is not null && session.Get(liveConn) is { } live)
+            {
+                using (await locks.AcquireAsync(live.Name))
+                {
+                    await repo.SaveAsync(req.OldUsername, live);
+                    session.Remove(liveConn);
+                }
+            }
+
+            // One transaction: the stale-ban removal and the move used to be two separate saves.
+            await using var tx = await db.Database.BeginTransactionAsync();
             var records = await db.Characters.Where(c => c.UserId == req.OldUsername).ToListAsync();
             foreach (var record in records)
                 record.UserId = req.NewUsername;
@@ -100,7 +160,10 @@ namespace Myria.Server.Realm.Controllers
 
             if (records.Count > 0 || ban is not null)
                 await db.SaveChangesAsync();
+            await tx.CommitAsync();
 
+            if (liveConn is not null)
+                await KickAsync(req.OldUsername, "ForceLogout");
             return NoContent();
         }
 
@@ -121,7 +184,12 @@ namespace Myria.Server.Realm.Controllers
             var rows = await db.Characters.AsNoTracking()
                 .Where(c => c.UserId == username)
                 .OrderBy(c => c.Name)
-                .Select(c => new { c.Name, c.Level, c.Class, c.Race, c.LastSaved, c.BannedUntil, c.BanReason })
+                .Select(c => new
+                {
+                    c.Name, c.Level, c.Class, c.Race, c.LastSaved, c.BannedUntil, c.BanReason,
+                    Membership = db.GuildMembers.Where(m => m.CharacterId == c.Id)
+                        .Select(m => new { m.Guild.Name, m.Rank }).FirstOrDefault()
+                })
                 .ToListAsync();
             var accountBan = await db.AccountBans.AsNoTracking().SingleOrDefaultAsync(b => b.Username == username);
             var onlineCharacter = presence.GetCharacterNameByAccount(username);
@@ -134,7 +202,8 @@ namespace Myria.Server.Realm.Controllers
                 rows.Select(c => new RealmCharacterInfo(
                     c.Name, username, c.Level, c.Class, c.Race, c.LastSaved,
                     string.Equals(c.Name, onlineCharacter, StringComparison.OrdinalIgnoreCase),
-                    RealmBanInfo.From(c.BannedUntil, c.BanReason, now))).ToList()));
+                    RealmBanInfo.From(c.BannedUntil, c.BanReason, now),
+                    c.Membership is null ? null : $"{c.Membership.Name} ({c.Membership.Rank})")).ToList()));
         }
 
         [HttpGet("characters/search")]
@@ -215,6 +284,33 @@ namespace Myria.Server.Realm.Controllers
         [HttpDelete("characters/{name}/ban")]
         public async Task<IActionResult> LiftCharacterBan(string name) =>
             !IsAuthorized() ? Forbid() : await bans.LiftCharacterBanAsync(name) is null ? NotFound() : NoContent();
+
+        // ── POST /api/admin/accounts/{username}/revoke-sessions ──
+        // Called by the auth server after a password change/reset or a forced password change: every
+        // token of the account issued before TokensValidAfter (auth server's clock, Unix seconds) stops
+        // working here, and the live game connection - which may belong to whoever had the old
+        // password - is dropped. The owner's own client isn't connected at that moment (the password is
+        // changed from the menu or the website), and reconnects with the fresh token it got.
+        [HttpPost("accounts/{username}/revoke-sessions")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        public async Task<IActionResult> RevokeSessions(string username, RevokeSessionsRequest req)
+        {
+            if (!IsAuthorized())
+                return Forbid();
+
+            // Not in the future beyond normal clock drift: a bogus far-future value would lock the
+            // account out of this realm until the row expires.
+            if (req.TokensValidAfter <= 0 || req.TokensValidAfter > DateTimeOffset.MaxValue.ToUnixTimeSeconds())
+                return BadRequest();
+            var validAfter = DateTimeOffset.FromUnixTimeSeconds(req.TokensValidAfter).UtcDateTime;
+            if (string.IsNullOrWhiteSpace(username) || validAfter > DateTime.UtcNow.AddMinutes(5))
+                return BadRequest();
+
+            await revocations.RevokeAsync(username, validAfter);
+            return Ok(new { kicked = await KickAsync(username, "ForceLogout") });
+        }
 
         [HttpPost("accounts/{username}/kick")]
         public async Task<IActionResult> Kick(string username) =>

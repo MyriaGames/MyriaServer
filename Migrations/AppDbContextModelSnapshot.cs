@@ -911,6 +911,7 @@ namespace Myria.Server.Realm.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<long>("Balance")
+                        .IsConcurrencyToken()
                         .HasColumnType("INTEGER");
 
                     b.HasKey("GuildId");
@@ -968,6 +969,21 @@ namespace Myria.Server.Realm.Migrations
                         .IsUnique();
 
                     b.ToTable("PlayerShopItems");
+                });
+
+            modelBuilder.Entity("Myria.Server.Realm.Models.SessionRevocation", b =>
+                {
+                    b.Property<string>("Username")
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT")
+                        .UseCollation("NOCASE");
+
+                    b.Property<DateTime>("TokensValidAfter")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Username");
+
+                    b.ToTable("SessionRevocations");
                 });
 
             modelBuilder.Entity("Myria.Server.Realm.Models.Block", b =>

@@ -1,0 +1,47 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Myria.Server.Realm.csproj" />
+  </ItemGroup>
+
+  <!-- Myria.Server.Realm is a Web SDK project; its services and hub touch ASP.NET Core and
+       SignalR types. A plain Microsoft.NET.Sdk test project doesn't get those implicitly. -->
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <!--
+    Anything that reconstructs a Character (SqlCharacterRepository) needs the real game content
+    that GameService.InitializeGame() loads — ItemFactory, QuestManager and friends resolve ids
+    against it. Linked from the single canonical copy in Myria.Lib.Core\Data, exactly as
+    Myria.Lib.Tests.csproj does, so the test content can never drift from the shipped content.
+  -->
+  <ItemGroup>
+    <Content Include="..\..\..\Myria.Lib\Myria.Lib.Core\Data\common\**\*.json" LinkBase="Data\common\">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <!-- GuildConfig is deserialized from this file at startup; GuildPropertyService's pricing
+       rules are meaningless without the real values. -->
+  <ItemGroup>
+    <Content Include="..\..\Data\guild_config.json" LinkBase="Data\">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+</Project>

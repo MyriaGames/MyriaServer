@@ -8,7 +8,6 @@ using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi.Models;
 using Myria.Lib.Core.Repositories;
 using Myria.Lib.Core.Services;
 using Myria.Server.Realm.Controllers;
@@ -30,13 +29,17 @@ var builder = WebApplication.CreateBuilder(args);
 if (builder.Environment.IsProduction())
 {
     var configuredJwtKey = builder.Configuration["Jwt:Key"];
-    if (configuredJwtKey == "REPLACE_ME_DEV_PLACEHOLDER_KEY" || string.IsNullOrWhiteSpace(configuredJwtKey))
+    if (ProductionSecrets.IsPlaceholder(configuredJwtKey))
         throw new InvalidOperationException(
             "Jwt:Key is still the dev placeholder (or unset) while running in Production. " +
             "Set a real secret via the Jwt__Key environment variable before starting this realm.");
+    // Same minimum as the auth server: HMAC-SHA256 wants a key at least as long as its output.
+    if (Encoding.UTF8.GetByteCount(configuredJwtKey!) < 32)
+        throw new InvalidOperationException(
+            "Jwt:Key is shorter than 32 bytes while running in Production. Use the same long secret as the auth server.");
 
     var configuredAdminSecret = builder.Configuration["Admin:InternalSecret"];
-    if (configuredAdminSecret == "REPLACE_ME_DEV_PLACEHOLDER_ADMIN_SECRET" || string.IsNullOrWhiteSpace(configuredAdminSecret))
+    if (ProductionSecrets.IsPlaceholder(configuredAdminSecret))
         throw new InvalidOperationException(
             "Admin:InternalSecret is still the dev placeholder (or unset) while running in Production. " +
             "Set a real secret via the Admin__InternalSecret environment variable before starting this realm.");
@@ -107,6 +110,7 @@ builder.Services.AddSingleton<CharacterPresenceService>();
 builder.Services.AddSingleton<PartyService>();
 builder.Services.AddSingleton<CharacterSessionService>();
 builder.Services.AddSingleton<TradeService>();
+builder.Services.AddSingleton<CharacterLocks>();
 builder.Services.AddScoped<PlayerShopService>();
 builder.Services.AddSingleton<GroupCombatService>();
 // Global hub filters: registered via AddSignalR(options => options.AddFilter<T>()) plus a plain
@@ -219,38 +223,50 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                     ctx.HttpContext.Request.Path.StartsWithSegments("/hubs"))
                     ctx.Token = token;
                 return Task.CompletedTask;
+            },
+            // Signature and lifetime are fine - now check the account's sessions weren't revoked after
+            // this token was issued (password changed or reset; security review 2026-11-25, A07 F1).
+            OnTokenValidated = ctx =>
+            {
+                var issuedAt = ctx.SecurityToken switch
+                {
+                    Microsoft.IdentityModel.JsonWebTokens.JsonWebToken j => j.IssuedAt,
+                    System.IdentityModel.Tokens.Jwt.JwtSecurityToken t => t.IssuedAt,
+                    _ => DateTime.MinValue
+                };
+                var revocations = ctx.HttpContext.RequestServices.GetRequiredService<SessionRevocationService>();
+                if (!revocations.IsTokenAccepted(ctx.Principal?.Identity?.Name,
+                        issuedAt == DateTime.MinValue ? null : issuedAt))
+                {
+                    // An old session after a password change/reset: possibly whoever had the old password.
+                    SecurityLog.Warn(SecurityLog.For(ctx.HttpContext), "realm.token.rejected",
+                        ctx.Principal?.Identity?.Name, "refused", "revoked");
+                    ctx.Fail("Session revoked (password changed).");
+                }
+                return Task.CompletedTask;
+            },
+            // Rejected tokens used to vanish below the Microsoft.AspNetCore log level (security review
+            // 2026-11-26, A09 F2). An expired one is routine (24 h lifetime) - Information; a bad
+            // signature or wrong issuer means a forged or foreign token - Warning. The name inside an
+            // unvalidated token proves nothing, so none is logged.
+            OnAuthenticationFailed = ctx =>
+            {
+                var reason = SecurityLog.TokenRejectionReason(ctx.Exception);
+                var log = SecurityLog.For(ctx.HttpContext);
+                if (reason == "expired")
+                    SecurityLog.Info(log, "realm.token.rejected", null, "refused", reason);
+                else
+                    SecurityLog.Warn(log, "realm.token.rejected", null, "refused", reason);
+                return Task.CompletedTask;
             }
         };
     });
+builder.Services.AddSingleton<SessionRevocationService>();
 
 builder.Services.AddAuthorization();
 builder.Services.AddScoped<BanService>();
 builder.Services.AddControllers(opt => opt.Filters.Add<RejectBannedAccountFilter>())
     .AddJsonOptions(opt => opt.JsonSerializerOptions.PropertyNameCaseInsensitive = true);
-builder.Services.AddEndpointsApiExplorer();
-
-builder.Services.AddSwaggerGen(c =>
-{
-    c.SwaggerDoc("v1", new OpenApiInfo { Title = "Myria.Server.Realm API", Version = "v1" });
-    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
-    {
-        Name         = "Authorization",
-        Type         = SecuritySchemeType.Http,
-        Scheme       = "bearer",
-        BearerFormat = "JWT",
-        In           = ParameterLocation.Header
-    });
-    c.AddSecurityRequirement(new OpenApiSecurityRequirement
-    {
-        {
-            new OpenApiSecurityScheme
-            {
-                Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
-            },
-            []
-        }
-    });
-});
 
 var app = builder.Build();
 
@@ -264,24 +280,28 @@ var runningVersion = File.Exists(versionMarkerPath)
     : "dev (no .installed_version marker — not deployed via update-production.sh)";
 app.Logger.LogInformation("Myria.Server.Realm starting — version: {Version}", runningVersion);
 
+// Plain HTTP is fine behind a reverse proxy on this machine - but then it belongs on loopback, not
+// on every interface where only the firewall stands in front of it (security review 2026-11-26, A02 F2).
+if (app.Environment.IsProduction())
+    foreach (var url in PlainHttpEndpoints.ReachableFromNetwork(builder.Configuration))
+        app.Logger.LogWarning(
+            "PLAIN HTTP ON THE NETWORK: endpoint {Url} is unencrypted and not bound to loopback. If a reverse " +
+            "proxy on this machine terminates TLS, bind it to 127.0.0.1 instead; otherwise passwords and " +
+            "session tokens can cross the network in clear text.", url);
+
 // Apply pending DB migrations for the player/account data (SQLite)
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     db.Database.Migrate();
 }
+await app.Services.GetRequiredService<SessionRevocationService>().LoadAsync();
 
 // Load all static game content (items, monsters, quests, rooms, ...) from the shared
 // JSON files into in-memory services — same source and code path the WPF client uses.
 // This is the sole source of truth for game content; nothing about it is persisted to
 // the database, which only holds player/account state (characters, guilds, friendships).
 GameService.InitializeGame();
-
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
 
 // No app.UseHttpsRedirection() here: Production is now HTTPS-only at the Kestrel level (see
 // the guard above) — there's no plain-HTTP endpoint left to redirect away from. Development
@@ -293,6 +313,10 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.UseRateLimiter();
 app.MapControllers();
-app.MapHub<GameHub>("/hubs/game");
+// A game connection is authenticated once, at connect. Without this it would outlive its token
+// (24 h) indefinitely; with it, the connection closes when the token expires and the client has to
+// log in again (security review 2026-11-25, A07 F1). Revocation drops the connection directly.
+app.MapHub<GameHub>("/hubs/game", o => o.CloseOnAuthenticationExpiration = true);
 
 app.Run();
+

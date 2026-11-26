@@ -88,7 +88,7 @@ GitHub org:
 
 ## Requirements
 
-- .NET 8 SDK (`net8.0` target framework)
+- .NET 10 SDK (`net10.0` target framework)
 
 ## Getting started / local development
 

@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Myria.Lib.Core.Entities.Items;
@@ -29,7 +29,8 @@ namespace Myria.Server.Realm.Hubs
         GroupCombatService groupCombat,
         IServiceScopeFactory scopeFactory,
         AllowedVersionsConfig allowedVersions,
-        ILogger<GameHub> logger
+        ILogger<GameHub> logger,
+        CharacterLocks locks
     ) : Hub
     {
         /// <summary>
@@ -206,11 +207,26 @@ namespace Myria.Server.Realm.Hubs
 
         // ── Session ───────────────────────────────────────────────────────────
 
+        // The presence name is what DisplayName() - and through it ~45 hub methods (guild, shop,
+        // trade, party, chat) - treat as "who is calling", and what GetConnectionByName routes
+        // whispers/invites to. It must therefore only ever be the character this connection has
+        // loaded via LoadCharacter (which verifies ownership and sets the name itself). Accepting
+        // an arbitrary name here let any player act as any other character (security review
+        // 2026-11-25, A01 F1). Kept as a method because clients call it after LoadCharacter; a
+        // name other than the loaded character's is ignored.
         public Task SetCharacterName(string characterName)
         {
-            if (!string.IsNullOrWhiteSpace(characterName))
-                presence.SetCharacterName(Context.ConnectionId, characterName.Trim());
-            return NotifyShopReopenIfSealedAsync(characterName?.Trim());
+            var loaded = session.Get(Context.ConnectionId);
+            if (loaded is null ||
+                !string.Equals(loaded.Name, characterName?.Trim(), StringComparison.OrdinalIgnoreCase))
+            {
+                logger.LogWarning("{User} tried to set character name {Requested} on conn {Conn} but has {Loaded} loaded - ignored",
+                    Context.User?.Identity?.Name, LogSafe.Text(characterName), Context.ConnectionId, loaded?.Name ?? "nothing");
+                return Task.CompletedTask;
+            }
+
+            presence.SetCharacterName(Context.ConnectionId, loaded.Name);
+            return NotifyShopReopenIfSealedAsync(loaded.Name);
         }
 
         // "The shop reopens automatically on login" - the DB row/storage never went away on
@@ -266,7 +282,13 @@ namespace Myria.Server.Realm.Hubs
             // who knows another player's online character name could reattach that character's
             // live session (inventory/gold/gear) onto their own connection.
             var owns = await db.Characters.AnyAsync(c => c.UserId == username && c.Name == characterName);
-            if (!owns) return false;
+            if (!owns)
+            {
+                // Trying to take over another player's character (the A01 F1 attack class) used to leave no trace
+                // (security review 2026-11-26, A09 F2).
+                await SecurityLog.NoteForeignCharacterAsync(db, logger, username, characterName, "hub:LoadCharacter");
+                return false;
+            }
 
             // Per-character operator ban. Must come before TryReattach below, or a banned character
             // whose session is still live could just be picked back up.
@@ -285,6 +307,15 @@ namespace Myria.Server.Realm.Hubs
             if (reattached is null)
             {
                 var repo = scope.ServiceProvider.GetRequiredService<ICharacterRepository>();
+                // Switching from another character on this connection: save it first. It used to be
+                // dropped unsaved while its trades/shop deposits had already reached the other side or
+                // the database - switch away and back, and the item existed twice (A06 F6).
+                if (session.Get(Context.ConnectionId) is { } previous)
+                {
+                    using (await locks.AcquireAsync(previous.Name))
+                        await SaveCharacterReliablyAsync(repo, username, previous, "character-switch");
+                }
+
                 var player = await repo.LoadAsync(username, characterName);
                 if (player == null) return false;
 
@@ -301,6 +332,11 @@ namespace Myria.Server.Realm.Hubs
                     "{Character} reattached to a live session on conn {Conn} (Level {Level}) - reconnect during play",
                     characterName, Context.ConnectionId, reattached.Level);
             }
+
+            // Ownership is verified above, so this is the one place the connection's in-game name
+            // is set (see SetCharacterName). Uses the loaded character's own spelling, not the
+            // request's, since character names match case-insensitively.
+            presence.SetCharacterName(Context.ConnectionId, session.Get(Context.ConnectionId)!.Name);
 
             // Join guild SignalR group if the character belongs to one
             var charId = await GetCharacterIdByNameAsync(db, characterName);
@@ -374,6 +410,15 @@ namespace Myria.Server.Realm.Hubs
             var player = session.Get(Context.ConnectionId);
             if (player is null)
                 return new HealActionResult(false, "Not in session", 0, 0, 0, 0);
+
+            // Only at a healer, and never mid-fight: this used to work anywhere, any time - a free
+            // full restore during combat made dying practically impossible (A06 F8).
+            var roomId = presence.GetRoom(Context.ConnectionId);
+            var room = roomId is null ? null : RoomService.AllRooms.FirstOrDefault(r => r.Id == roomId.Value);
+            if (room is null || !room.NpcRefs.Any(n => n?.Type == NpcType.Healer))
+                return new HealActionResult(false, "no_healer_here", player.CurrentHealth, player.MaxHealth, player.CurrentMana, player.MaxMana);
+            if (session.GetEncounter(Context.ConnectionId) is not null || groupCombat.GetPartyId(Context.ConnectionId) is not null)
+                return new HealActionResult(false, "in_combat", player.CurrentHealth, player.MaxHealth, player.CurrentMana, player.MaxMana);
 
             player.Heal(int.MaxValue, "Healer");
             player.RestoreMana(int.MaxValue, "Healer");
@@ -483,11 +528,16 @@ namespace Myria.Server.Realm.Hubs
             return Task.FromResult(BuildQuestProgress(player));
         }
 
-        private static List<QuestProgressState> BuildQuestProgress(Myria.Lib.Core.Entities.Characters.Character player) =>
-            player.ActiveQuests.Select(q => new QuestProgressState(
+        private static List<QuestProgressState> BuildQuestProgress(Myria.Lib.Core.Entities.Characters.Character player)
+        {
+            // Item counters from the current inventory (sold/used items count down), so the client shows
+            // and decides on what the hand-in will actually check.
+            QuestManager.UpdateItemProgress(player);
+            return player.ActiveQuests.Select(q => new QuestProgressState(
                 q.Id,
                 new Dictionary<int, int>(q.KillProgress),
                 new Dictionary<string, int>(q.ItemProgress))).ToList();
+        }
 
         // ── Room presence ─────────────────────────────────────────────────────
 
@@ -644,6 +694,7 @@ namespace Myria.Server.Realm.Hubs
             var player = session.Get(Context.ConnectionId);
             if (player == null)
                 return new GatherActionResult(false, "no_session", null, 0, 0, null);
+            using var held = await locks.AcquireAsync(player.Name);
 
             if (presence.GetRoom(Context.ConnectionId) != roomId)
                 return new GatherActionResult(false, "wrong_room", null, 0, 0, null);
@@ -655,7 +706,7 @@ namespace Myria.Server.Realm.Hubs
             if (room == null || room.GatheringSpots.Count == 0)
                 return new GatherActionResult(false, "no_spots", null, 0, 0, null);
 
-            if (!session.TryConsumeGather(Context.ConnectionId, roomId, room.DailyGatherLimit + JobManager.GetGatherKnowledgeBonus(player), out int remaining))
+            if (!session.TryConsumeGather(player.Name, roomId, room.DailyGatherLimit + JobManager.GetGatherKnowledgeBonus(player), out int remaining))
                 return new GatherActionResult(false, "depleted", null, 0, 0, null, 0);
 
             foreach (var spot in room.GatheringSpots)
@@ -704,13 +755,16 @@ namespace Myria.Server.Realm.Hubs
         /// <summary>Crafts <paramref name="quantity"/> of <paramref name="recipeId"/> at <paramref name="npcId"/>.</summary>
         public async Task<CraftActionResult> Craft(string npcId, string recipeId, int quantity)
         {
-            if (quantity <= 0)
+            // Bounded batch: Amount * quantity used to overflow int (quantity 2^30), which passed the
+            // ingredient check, consumed nothing and produced ~10^9 items (A06 F3).
+            if (quantity <= 0 || quantity > MaxCraftBatch)
                 return new CraftActionResult(false, "invalid_quantity", null, 0, 0, null);
 
             var player = session.Get(Context.ConnectionId);
             if (player == null)
                 return new CraftActionResult(false, "no_session", null, 0, 0, null);
 
+            using var held = await locks.AcquireAsync(player.Name);
             if (!CharacterRoomHasNpc(npcId))
                 return new CraftActionResult(false, "npc_not_here", null, 0, 0, null);
 
@@ -726,18 +780,24 @@ namespace Myria.Server.Realm.Hubs
                     return new CraftActionResult(false, "knowledge_required", null, 0, 0, null);
             }
 
-            // Validate ingredients
+            // Validate ingredients (in long - no overflow even with odd recipe data)
             foreach (var ing in recipe.Ingredients)
             {
-                int owned = player.Inventory.Items.Where(i => i.Id == ing.ItemId).Sum(i => i.StackSize);
-                if (owned < ing.Amount * quantity)
+                long owned = player.Inventory.Items.Where(i => i.Id == ing.ItemId).Sum(i => (long)i.StackSize);
+                if (ing.Amount <= 0 || owned < (long)ing.Amount * quantity)
                     return new CraftActionResult(false, "missing_ingredients", null, 0, 0, null);
             }
+
+            // The product must exist and fit before anything is consumed (it used to be lost silently).
+            if (!ItemFactory.TryCreateItem(recipeId, out var output) || output is null)
+                return new CraftActionResult(false, "item_not_found", null, 0, 0, null);
+            if (!player.Inventory.CanAdd(output, quantity))
+                return new CraftActionResult(false, "inventory_full", null, 0, 0, null);
 
             // Consume ingredients
             foreach (var ing in recipe.Ingredients)
             {
-                int remaining = ing.Amount * quantity;
+                int remaining = ing.Amount * quantity;   // bounded: owned >= this, checked above
                 foreach (var stack in player.Inventory.Items.Where(i => i.Id == ing.ItemId).ToList())
                 {
                     if (remaining <= 0) break;
@@ -746,20 +806,6 @@ namespace Myria.Server.Realm.Hubs
                     remaining -= take;
                     if (stack.StackSize <= 0) player.Inventory.RemoveItem(stack);
                 }
-            }
-
-            if (!ItemFactory.TryCreateItem(recipeId, out var output))
-            {
-                // Refund on factory failure
-                foreach (var ing in recipe.Ingredients)
-                {
-                    if (ItemFactory.TryCreateItem(ing.ItemId, out var refund))
-                    {
-                        refund.StackSize = ing.Amount * quantity;
-                        player.Inventory.AddItem(refund, player);
-                    }
-                }
-                return new CraftActionResult(false, "item_not_found", null, 0, 0, null);
             }
 
             // Apply craft quality from smith skill level
@@ -794,6 +840,7 @@ namespace Myria.Server.Realm.Hubs
             var player = session.Get(Context.ConnectionId);
             if (player == null)
                 return new UpgradeActionResult(false, "no_session", null, 0, 0, null);
+            using var held = await locks.AcquireAsync(player.Name);
 
             if (!CharacterRoomHasNpc(npcId))
                 return new UpgradeActionResult(false, "npc_not_here", null, 0, 0, null);
@@ -899,15 +946,21 @@ namespace Myria.Server.Realm.Hubs
             if (item is EquipmentItem eq && !eq.IsTool && !eq.IsUsableBy(player))
                 return new NpcShopBuyResult(false, "wrong_class", 0, 0);
 
+            using var held = await locks.AcquireAsync(player.Name);
+
             long totalCost = (long)item.BuyPrice * quantity;
-            if (player.Money.Balance.BronzeTotal < totalCost)
+            if (!player.Money.CanAfford(totalCost))
+                return new NpcShopBuyResult(false, "not_enough_money", totalCost, quantity);
+
+            // Space for the whole amount first, then pay, then add. A full inventory used to top up an
+            // existing stack and return "full" before paying - free items (A06 F4).
+            if (!player.Inventory.CanAdd(item, quantity))
+                return new NpcShopBuyResult(false, "inventory_full", totalCost, quantity);
+            if (!player.Money.TrySpend(totalCost))
                 return new NpcShopBuyResult(false, "not_enough_money", totalCost, quantity);
 
             item.StackSize = quantity;
-            if (!player.Inventory.AddItem(item, player))
-                return new NpcShopBuyResult(false, "inventory_full", totalCost, quantity);
-
-            player.Money.TrySpend(totalCost);
+            player.Inventory.AddItem(item, player);
 
             // Credit guild treasury if buyer is a rookie
             await TryApplyPurchaseCommissionAsync(player, totalCost);
@@ -929,6 +982,7 @@ namespace Myria.Server.Realm.Hubs
             var player = session.Get(Context.ConnectionId);
             if (player == null) return new NpcSellResult(false, "no_session", 0, 0);
 
+            using var held = await locks.AcquireAsync(player.Name);
             var invItem = player.Inventory.Items.FirstOrDefault(i => i.Id == itemId);
             if (invItem == null)
                 return new NpcSellResult(false, "not_owned", 0, 0);
@@ -937,6 +991,8 @@ namespace Myria.Server.Realm.Hubs
                 return new NpcSellResult(false, "not_enough_amount", 0, 0);
 
             long totalGain = (long)Myria.Lib.Core.Services.Manager.JobManager.GetSellValue(invItem, player) * quantity;
+            if (!player.Money.CanHold(totalGain))
+                return new NpcSellResult(false, "money_full", 0, 0);   // items used to vanish unpaid
 
             if (invItem.StackSize == quantity)
                 player.Inventory.RemoveItem(invItem);
@@ -1011,10 +1067,16 @@ namespace Myria.Server.Realm.Hubs
             var quest = QuestManager.GetQuestById(questId);
             if (quest == null) return false;
 
+            using var held = await locks.AcquireAsync(player.Name);
+
             if (isReturn)
             {
                 var active = player.ActiveQuests.FirstOrDefault(q => q.Id == quest.Id);
                 if (active == null) return false;
+
+                // Handed in at the NPC that takes it back (like the client's quest dialog).
+                if (!string.IsNullOrEmpty(active.ReturnNpcIdResolved) && !CharacterRoomHasNpc(active.ReturnNpcIdResolved))
+                    return false;
 
                 // Re-verify kill/item objectives against this session's own server-tracked
                 // progress before granting rewards - previously trusted the client's claim the
@@ -1023,11 +1085,10 @@ namespace Myria.Server.Realm.Hubs
                 // KillProgress/ItemProgress counters said otherwise. Same check as
                 // Character.ValidateQuestStatuses, which already corrects this after the fact for
                 // saved data; this stops it from happening live.
-                bool killsDone = active.RequiredKills.All(rk =>
-                    active.KillProgress.TryGetValue(rk.Key, out int kills) && kills >= rk.Value);
-                bool itemsDone = active.RequiredItems.All(ri =>
-                    active.ItemProgress.TryGetValue(ri.Key, out int items) && items >= ri.Value);
-                if (!killsDone || !itemsDone) return false;
+                // Item counters are recounted from what the character actually carries right now - they
+                // only ever went up, so items sold or used up after the counter was full still counted.
+                QuestManager.UpdateItemProgress(player);
+                if (!QuestManager.ObjectivesMet(active)) return false;
 
                 active.GrantRewards(player);
 
@@ -1054,13 +1115,19 @@ namespace Myria.Server.Realm.Hubs
             }
             else
             {
-                if (!player.ActiveQuests.Any(q => q.Id == quest.Id))
-                {
-                    var clone = quest.Clone();
-                    clone.Status = clone.IsTalkOnly ? QuestStatus.Completed : QuestStatus.InProgress;
-                    clone.GrantAcceptItems(player);
-                    player.ActiveQuests.Add(clone);
-                }
+                // All acceptance conditions, server-side: only "not already active" used to be checked,
+                // so completed quests (talk-only ones complete instantly) could be accepted and handed
+                // in again in a loop, paying out every time (A06 F5). Plus: the giver must be here.
+                var partyId = party.GetPartyId(DisplayName());
+                int partySize = partyId is null ? 1 : party.GetMembers(partyId).Count;
+                if (!QuestManager.IsAcceptable(quest, player, partySize))
+                    return false;
+                if (!string.IsNullOrEmpty(quest.GiverNpcId) && !CharacterRoomHasNpc(quest.GiverNpcId))
+                    return false;
+
+                // Also counts items the character already carries (they used to show 0/N until a new one
+                // was picked up).
+                QuestManager.StartQuest(player, quest);
             }
 
             // Covers both directions: a turn-in's item/gold/XP rewards, and an accept's
@@ -1111,6 +1178,7 @@ namespace Myria.Server.Realm.Hubs
         {
             var player = session.Get(Context.ConnectionId);
             if (player == null) return new EquipItemResult(false, "Not connected to a game session.");
+            using var held = await locks.AcquireAsync(player.Name);
 
             bool ok = player.Inventory.SwapEquipment(itemId, player, out var reason);
             // Echoes back which item id ended up in which slot (equipment: true), not just the
@@ -1126,6 +1194,7 @@ namespace Myria.Server.Realm.Hubs
         {
             var player = session.Get(Context.ConnectionId);
             if (player == null) return false;
+            using var held = await locks.AcquireAsync(player.Name);
 
             EquipmentItem? item = slotType switch
             {
@@ -1153,6 +1222,7 @@ namespace Myria.Server.Realm.Hubs
         {
             var player = session.Get(Context.ConnectionId);
             if (player == null) return false;
+            using var held = await locks.AcquireAsync(player.Name);
             bool used = player.Inventory.UseItem(itemId, player);
             // Covers both the consumed item leaving the inventory and any HP/MP a healing potion
             // etc. restored (Inventory.UseItem already ran the consumable's effect on this same
@@ -1747,6 +1817,8 @@ namespace Myria.Server.Realm.Hubs
             // there's no reason to leave this path fragile too.
             await Groups.AddToGroupAsync(Context.ConnectionId, PartyService.PartyGroup(partyId));
 
+            // Only the invited character can use this invite (PartyService.AcceptInvite).
+            party.Invite(partyId, presence.GetDisplayName(targetConn) ?? targetName);
             await Clients.Client(targetConn).SendAsync("PartyInvite", displayName, partyId);
             await Clients.Caller.SendAsync("ChatMessage", "System",
                 $"Party invite sent to {targetName}.", "party");
@@ -1755,12 +1827,12 @@ namespace Myria.Server.Realm.Hubs
         public async Task AcceptPartyInvite(string partyId)
         {
             var displayName = DisplayName();
-            var (success, members, leader) = party.Join(partyId, displayName);
+            var (success, members, leader) = party.AcceptInvite(partyId, displayName);
 
             if (!success)
             {
                 await Clients.Caller.SendAsync("ChatMessage", "System",
-                    "Could not join party — it may be full or no longer exists.", "party");
+                    "Could not join party — the invite may have expired, or the party is full or gone.", "party");
                 return;
             }
 
@@ -1774,6 +1846,7 @@ namespace Myria.Server.Realm.Hubs
         public async Task DeclinePartyInvite(string partyId, string fromName)
         {
             var displayName = DisplayName();
+            party.DeclineInvite(partyId, displayName);
             var fromConn    = presence.GetConnectionByName(fromName);
             if (fromConn is not null)
                 await Clients.Client(fromConn).SendAsync("ChatMessage", "System",
@@ -1885,7 +1958,9 @@ namespace Myria.Server.Realm.Hubs
                 return;
             }
 
-            var (tradeId, ok) = trade.Propose(Context.ConnectionId, displayName);
+            // Bind the proposal to the target's actual in-game name (not the client's spelling of it).
+            var targetDisplayName = presence.GetDisplayName(targetConn) ?? targetName;
+            var (tradeId, ok) = trade.Propose(Context.ConnectionId, displayName, targetDisplayName);
             if (!ok)
             {
                 await Clients.Caller.SendAsync("ChatMessage", "System",
@@ -1900,7 +1975,7 @@ namespace Myria.Server.Realm.Hubs
 
         public async Task DeclineTrade(string tradeId)
         {
-            trade.CancelPending(tradeId);
+            trade.CancelPending(tradeId, DisplayName());
             await Clients.Caller.SendAsync("ChatMessage", "System", "Trade declined.", "room");
         }
 
@@ -1964,59 +2039,110 @@ namespace Myria.Server.Realm.Hubs
                 return;
             }
 
-            // Execute the swap
-            var snap = trade.Snapshot(Context.ConnectionId)!;
-            var partnerConn = trade.PartnerConn(Context.ConnectionId)!;
-            var partner = session.Get(partnerConn);
-            if (partner is null) { await CancelTradeInternal("partner_offline"); return; }
+            // Both characters are locked for the whole swap, and the trade is claimed atomically - an
+            // offer change or a second ConfirmTrade can't slip in (security review 2026-11-26, A06 F10).
+            var peekConn = trade.PartnerConn(Context.ConnectionId);
+            var peekPartner = peekConn is null ? null : session.Get(peekConn);
+            using var held = await locks.AcquireAsync(player.Name, peekPartner?.Name);
 
-            // Validate both sides still have the items and gold
-            foreach (var offer in snap.TheirItems)
-            {
-                int owned = partner.Inventory.Items.Where(i => i.Id == offer.ItemId).Sum(i => i.StackSize);
-                if (owned < offer.Quantity) { await CancelTradeInternal("item_not_available"); return; }
-            }
-            if (!partner.Money.CanAfford(snap.TheirGold))
-            { await CancelTradeInternal("gold_not_available"); return; }
+            if (!trade.TryClaimCompleted(Context.ConnectionId, out var snap, out var partnerConn) || snap is null)
+                return; // offer changed meanwhile (both flags reset) or the partner's call already executed it
+            var partner = session.Get(partnerConn!);
+            if (partner is null || !ReferenceEquals(partner, peekPartner))
+            { await NotifyTradeCancelledAsync(partnerConn, "partner_offline"); return; }
 
-            foreach (var offer in snap.MyItems)
-            {
-                int owned = player.Inventory.Items.Where(i => i.Id == offer.ItemId).Sum(i => i.StackSize);
-                if (owned < offer.Quantity) { await CancelTradeInternal("item_not_available"); return; }
-            }
-            if (!player.Money.CanAfford(snap.MyGold))
-            { await CancelTradeInternal("gold_not_available"); return; }
+            if (TradeProblem(player, partner, snap) is { } problem)
+            { await NotifyTradeCancelledAsync(partnerConn, problem); return; }
 
-            // Transfer items: mine → partner, theirs → me
+            // Transfer items: mine → partner, theirs → me (space checked above, so every add succeeds)
             TransferItems(player, partner, snap.MyItems);
             TransferItems(partner, player, snap.TheirItems);
 
-            // Transfer gold with J23 fame bonus applied to the seller (recipient)
-            if (snap.MyGold > 0)
-            {
-                player.Money.TrySpend(snap.MyGold);
-                long receipt = Myria.Lib.Core.Services.Manager.JobManager.GetCharacterSellReceipt(
-                    partner, (int)Math.Min(snap.MyGold, int.MaxValue));
-                partner.Money.TryAdd(receipt);
-            }
-            if (snap.TheirGold > 0)
-            {
-                partner.Money.TrySpend(snap.TheirGold);
-                long receipt = Myria.Lib.Core.Services.Manager.JobManager.GetCharacterSellReceipt(
-                    player, (int)Math.Min(snap.TheirGold, int.MaxValue));
-                player.Money.TryAdd(receipt);
-            }
+            // Gold moves 1:1. It used to arrive multiplied by the receiver's fame bonus (up to x2.5),
+            // so two accounts passing gold back and forth created gold (A06 F7). The fame bonus
+            // belongs to selling goods to NPCs, not to gifts between players.
+            if (snap.MyGold > 0 && player.Money.TrySpend(snap.MyGold)) partner.Money.TryAdd(snap.MyGold);
+            if (snap.TheirGold > 0 && partner.Money.TrySpend(snap.TheirGold)) player.Money.TryAdd(snap.TheirGold);
 
-            trade.End(Context.ConnectionId);
             logger.LogInformation("Trade completed between {A} and {B} ({AGold}/{BGold} gold, {AItems}/{BItems} item stacks)",
                 player.Name, partner.Name, snap.MyGold, snap.TheirGold, snap.MyItems.Count, snap.TheirItems.Count);
 
+            // Both sides persisted right away: an unsaved side could otherwise be dropped (character
+            // switch, crash) while the other keeps what it received - duplication (A06 F6).
+            await SaveLiveCharactersAsync((player, Context.ConnectionId), (partner, partnerConn!));
+
             // Both sides' inventory/gold changed - each connection only gets its own update.
             await NotifyCharacterUpdate(player, inventory: true, money: true);
-            await NotifyCharacterUpdateFor(partnerConn, partner, inventory: true, money: true);
+            await NotifyCharacterUpdateFor(partnerConn!, partner, inventory: true, money: true);
 
             await Clients.Client(Context.ConnectionId).SendAsync("TradeCompleted");
-            await Clients.Client(partnerConn).SendAsync("TradeCompleted");
+            await Clients.Client(partnerConn!).SendAsync("TradeCompleted");
+        }
+
+        // Re-checks a claimed trade against both live characters: items and gold still there, and
+        // everything fits on the receiving side (inventory slots and money capacity).
+        private static string? TradeProblem(
+            Myria.Lib.Core.Entities.Characters.Character me,
+            Myria.Lib.Core.Entities.Characters.Character them,
+            TradeSnapshot snap)
+        {
+            static bool Owns(Myria.Lib.Core.Entities.Characters.Character c, List<TradeItem> items) =>
+                items.All(o => o.Quantity > 0 &&
+                               c.Inventory.Items.Where(i => i.Id == o.ItemId).Sum(i => (long)i.StackSize) >= o.Quantity);
+
+            if (!Owns(me, snap.MyItems) || !Owns(them, snap.TheirItems)) return "item_not_available";
+            if (!me.Money.CanAfford(snap.MyGold) || !them.Money.CanAfford(snap.TheirGold)) return "gold_not_available";
+
+            // Money capacity after the own payment leaves.
+            static bool CanReceive(Myria.Lib.Core.Entities.Characters.Character c, long pays, long gets) =>
+                c.Money.IsUnlimited || gets <= c.Money.Capacity - (c.Money.Balance.BronzeTotal - pays);
+            if (!CanReceive(me, snap.MyGold, snap.TheirGold) || !CanReceive(them, snap.TheirGold, snap.MyGold))
+                return "gold_capacity";
+
+            if (!FitsAll(them, snap.MyItems) || !FitsAll(me, snap.TheirItems)) return "inventory_full";
+            return null;
+        }
+
+        // Whether all these items fit together (not just each one on its own): space in matching
+        // stacks first, then the new slots they'd need, against the free slots.
+        private static bool FitsAll(Myria.Lib.Core.Entities.Characters.Character c, IEnumerable<TradeItem> items)
+        {
+            long slotsNeeded = 0;
+            foreach (var o in items)
+            {
+                if (!Myria.Lib.Core.Services.Builder.ItemFactory.TryCreateItem(o.ItemId, out var template) || template is null)
+                    return false;
+                long left = o.Quantity - c.Inventory.Items.Where(e => e.CanStackWith(template))
+                                         .Sum(e => (long)Math.Max(0, e.MaxStackSize - e.StackSize));
+                if (left > 0)
+                {
+                    int max = Math.Max(1, template.MaxStackSize);
+                    slotsNeeded += (left + max - 1) / max;
+                }
+            }
+            return slotsNeeded <= c.Inventory.Capacity - c.Inventory.Items.Count;
+        }
+
+        private async Task NotifyTradeCancelledAsync(string? partnerConn, string reason)
+        {
+            await Clients.Caller.SendAsync("TradeCancelled", reason);
+            if (!string.IsNullOrEmpty(partnerConn) && partnerConn != Context.ConnectionId)
+                await Clients.Client(partnerConn).SendAsync("TradeCancelled", reason);
+        }
+
+        // Saves live session characters right away (each under its own account), e.g. both sides of a
+        // trade or a shop sale. Best effort with retries, like every other save path.
+        private async Task SaveLiveCharactersAsync(
+            params (Myria.Lib.Core.Entities.Characters.Character Character, string Conn)[] characters)
+        {
+            using var scope = scopeFactory.CreateScope();
+            var repo = scope.ServiceProvider.GetRequiredService<ICharacterRepository>();
+            foreach (var (character, conn) in characters)
+            {
+                var username = presence.GetAccountUsername(conn);
+                if (username is not null)
+                    await SaveCharacterReliablyAsync(repo, username, character, "exchange");
+            }
         }
 
         public async Task CancelTrade()
@@ -2103,24 +2229,37 @@ namespace Myria.Server.Realm.Hubs
         public async Task CloseShop()
         {
             var displayName = DisplayName();
+            var player = session.Get(Context.ConnectionId);
+            if (player is null) return;   // stock goes back into the live character, so one is needed
+
+            // Locked like a purchase from this shop (which locks the owner too), so no sale can land
+            // between reading the stock and deleting the shop (A06 F10).
+            using var held = await locks.AcquireAsync(player.Name);
             var existing = await shop.GetShopByOwnerNameAsync(displayName);
             if (existing is null) return;
 
-            var player = session.Get(Context.ConnectionId);
-            if (player is not null)
+            // Everything must fit, or nothing is closed - items used to vanish on a full inventory (A06 F14).
+            var stock = existing.Items.Select(s => new TradeItem(s.ItemId, s.ItemId, s.Quantity)).ToList();
+            if (!FitsAll(player, stock))
             {
-                foreach (var stored in existing.Items)
-                {
-                    if (!Myria.Lib.Core.Services.Builder.ItemFactory.TryCreateItem(stored.ItemId, out var restored) || restored is null)
-                        continue;
-                    restored.StackSize = stored.Quantity;
-                    player.Inventory.AddItem(restored, player);
-                }
+                await Clients.Caller.SendAsync("ShopError", "inventory_full");
+                return;
             }
 
             var roomId = await shop.CloseShopAsync(displayName);
-            if (roomId is int rid)
-                await Clients.Group(RoomGroup(rid)).SendAsync("ShopClosed", displayName);
+            if (roomId is null) return;
+
+            foreach (var stored in stock)
+            {
+                if (!Myria.Lib.Core.Services.Builder.ItemFactory.TryCreateItem(stored.ItemId, out var restored) || restored is null)
+                    continue;
+                restored.StackSize = stored.Quantity;
+                player.Inventory.AddItem(restored, player);
+            }
+            await SaveLiveCharactersAsync((player, Context.ConnectionId));
+            await NotifyCharacterUpdate(player, inventory: true);
+
+            await Clients.Group(RoomGroup(roomId.Value)).SendAsync("ShopClosed", displayName);
         }
 
         public async Task<List<PlayerShopItemDto>> GetMyShop()
@@ -2136,6 +2275,8 @@ namespace Myria.Server.Realm.Hubs
             var player = session.Get(Context.ConnectionId);
             if (player is null) return false;
 
+            // Locked so a trade can't move the item away while the shop write is awaited (A06 F10).
+            using var held = await locks.AcquireAsync(player.Name);
             int owned = player.Inventory.Items.Where(i => i.Id == itemId).Sum(i => i.StackSize);
             if (owned < quantity)
             {
@@ -2177,6 +2318,9 @@ namespace Myria.Server.Realm.Hubs
                 remaining -= take;
             }
 
+            // The shop row is already in the database - the inventory must be too, or a character
+            // switch would bring the deposited items back (A06 F6).
+            await SaveLiveCharactersAsync((player, Context.ConnectionId));
             await NotifyCharacterUpdate(player, inventory: true);
             await Clients.Caller.SendAsync("MyShopUpdated", items);
 
@@ -2192,9 +2336,18 @@ namespace Myria.Server.Realm.Hubs
             var player = session.Get(Context.ConnectionId);
             if (player is null) return 0;
 
+            using var held = await locks.AcquireAsync(player.Name);
             var displayName = DisplayName();
             var beforeShop   = await shop.GetShopByOwnerNameAsync(displayName);
             if (beforeShop is null) return 0;
+
+            // Check space before anything leaves storage (items used to vanish on a full inventory, A06 F14).
+            int canTake = Math.Min(quantity, beforeShop.Items.FirstOrDefault(i => i.ItemId == itemId)?.Quantity ?? 0);
+            if (canTake > 0 && !FitsAll(player, [new TradeItem(itemId, itemId, canTake)]))
+            {
+                await Clients.Caller.SendAsync("ShopError", "inventory_full");
+                return 0;
+            }
 
             // Withdrawing the last seal while away from the shop's room hides it again.
             bool mayHideShop = itemId == PlayerShopService.SealItemId
@@ -2216,6 +2369,7 @@ namespace Myria.Server.Realm.Hubs
                 player.Inventory.AddItem(restored, player);
             }
 
+            await SaveLiveCharactersAsync((player, Context.ConnectionId));
             await NotifyCharacterUpdate(player, inventory: true);
             await Clients.Caller.SendAsync("MyShopUpdated", items);
 
@@ -2258,6 +2412,10 @@ namespace Myria.Server.Realm.Hubs
             var buyer = session.Get(Context.ConnectionId);
             if (buyer is null) return;
 
+            // Buyer and seller locked for the whole purchase: no trade or second purchase can move the
+            // buyer's gold or the seller's stock in between (A06 F10). The seller's name is the shop's.
+            using var held = await locks.AcquireAsync(buyer.Name, ownerName);
+
             var (item, state) = await shop.ValidatePurchaseAsync(ownerName, itemId, qty);
             if (item is null)
             {
@@ -2266,7 +2424,16 @@ namespace Myria.Server.Realm.Hubs
                 return;
             }
 
-            long totalCost = item.Price!.Value * qty;
+            // Price capped (also for listings priced before the cap existed) and the total computed
+            // without overflow: an overflowed total used to become a huge credit (A06 F2).
+            long unitPrice = item.Price ?? 0;
+            if (unitPrice <= 0 || unitPrice > PlayerShopService.MaxUnitPrice)
+            {
+                await Clients.Caller.SendAsync("ShopBuyResult", false, "no_listing", itemId, 0, 0L);
+                return;
+            }
+            long totalCost = unitPrice * qty;   // <= 10^9 * int.MaxValue, far below long.MaxValue
+
             if (!buyer.Money.CanAfford(totalCost))
             {
                 await Clients.Caller.SendAsync("ShopBuyResult", false, "insufficient_gold", itemId, 0, 0L);
@@ -2278,16 +2445,39 @@ namespace Myria.Server.Realm.Hubs
                 await Clients.Caller.SendAsync("ShopBuyResult", false, "item_unavailable", itemId, 0, 0L);
                 return;
             }
-
-            if (!await shop.CommitSaleAsync(ownerName, itemId, qty))
+            if (!buyer.Inventory.CanAdd(newItem, qty))
             {
+                await Clients.Caller.SendAsync("ShopBuyResult", false, "inventory_full", itemId, 0, 0L);
+                return;
+            }
+
+            // Pay first; the result counts (it used to be ignored). Refund if the stock is gone.
+            if (!buyer.Money.TrySpend(totalCost))
+            {
+                await Clients.Caller.SendAsync("ShopBuyResult", false, "insufficient_gold", itemId, 0, 0L);
+                return;
+            }
+            bool sold;
+            try
+            {
+                sold = await shop.CommitSaleAsync(ownerName, itemId, qty);
+            }
+            catch
+            {
+                // Paid already: any database error here (not only "sold out") must give the gold back
+                // before the error propagates (security review 2026-11-26, A10 F2).
+                buyer.Money.TryAdd(totalCost);
+                throw;
+            }
+            if (!sold)
+            {
+                buyer.Money.TryAdd(totalCost);
                 await Clients.Caller.SendAsync("ShopBuyResult", false, "insufficient_stock", itemId, 0, 0L);
                 return;
             }
 
             newItem.StackSize = qty;
-            buyer.Inventory.AddItem(newItem, buyer);
-            buyer.Money.TrySpend(totalCost);
+            buyer.Inventory.AddItem(newItem, buyer);   // space checked above, under the lock
 
             long fee = state.Remote
                 ? (long)Math.Round(totalCost * PlayerShopService.RemoteSaleFeeRate, MidpointRounding.AwayFromZero)
@@ -2302,6 +2492,12 @@ namespace Myria.Server.Realm.Hubs
             var sellerConn = presence.GetConnectionByName(ownerName);
             var seller      = sellerConn is not null ? session.Get(sellerConn) : null;
             seller?.Money.TryAdd(payout);
+
+            // Stock is already sold in the database - both characters must be saved now (A06 F6).
+            if (seller is not null && sellerConn is not null)
+                await SaveLiveCharactersAsync((buyer, Context.ConnectionId), (seller, sellerConn));
+            else
+                await SaveLiveCharactersAsync((buyer, Context.ConnectionId));
             if (sellerConn is not null)
                 await Clients.Client(sellerConn).SendAsync("ShopSale", buyerName, itemId, qty, totalCost, fee);
 
@@ -2575,8 +2771,12 @@ namespace Myria.Server.Realm.Hubs
 
         // ── Helpers ───────────────────────────────────────────────────────────
 
+        // "Who is calling": the ownership-verified loaded character first (defence in depth -
+        // see SetCharacterName), then the presence name, then the account.
         private string DisplayName() =>
-            presence.GetDisplayName(Context.ConnectionId) ?? Context.User!.Identity!.Name!;
+            session.Get(Context.ConnectionId)?.Name
+            ?? presence.GetDisplayName(Context.ConnectionId)
+            ?? Context.User!.Identity!.Name!;
 
         private static List<GroupCombatantState> BuildCharacterStates(GroupCombatEncounter enc) =>
             enc.Characters.Select(p => new GroupCombatantState(
@@ -2786,7 +2986,8 @@ namespace Myria.Server.Realm.Hubs
                 var conn = presence.GetConnectionByName(p.Name);
                 var username = conn != null ? presence.GetAccountUsername(conn) : null;
                 if (username == null) continue;
-                try { await repo.SaveAsync(username, p); } catch { /* best-effort */ }
+                // Retries and logs like every other save path - a silent catch hid lost combat progress (A10 F5).
+                await SaveCharacterReliablyAsync(repo, username, p, "combat");
             }
         }
 
@@ -2871,6 +3072,10 @@ namespace Myria.Server.Realm.Hubs
             fightId == Context.ConnectionId
                 ? Clients.Caller
                 : Clients.Clients(groupCombat.GetConnections(fightId));
+
+        // Upper bound for one Craft call. Far above what the client offers ("max" = what the
+        // ingredients allow), small enough that ingredient Amount * quantity can't overflow (A06 F3).
+        public const int MaxCraftBatch = 10_000;
 
         private bool CharacterRoomHasNpc(string npcId)
         {

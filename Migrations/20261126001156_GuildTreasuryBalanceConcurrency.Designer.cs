@@ -11,8 +11,8 @@ using Myria.Server.Realm.Data;
 namespace Myria.Server.Realm.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260926153835_AddOperatorBans")]
-    partial class AddOperatorBans
+    [Migration("20261126001156_GuildTreasuryBalanceConcurrency")]
+    partial class GuildTreasuryBalanceConcurrency
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -275,6 +275,55 @@ namespace Myria.Server.Realm.Migrations
                     b.ToTable("CharacterClassXp");
                 });
 
+            modelBuilder.Entity("Myria.Server.Realm.Models.CharacterCombinedSkill", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("CharacterId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("InstanceId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsStashed")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("StashedForClass")
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CharacterId");
+
+                    b.ToTable("CharacterCombinedSkills");
+                });
+
+            modelBuilder.Entity("Myria.Server.Realm.Models.CharacterCombinedSkillInput", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("CombinedSkillId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("SkillId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CombinedSkillId");
+
+                    b.ToTable("CharacterCombinedSkillInputs");
+                });
+
             modelBuilder.Entity("Myria.Server.Realm.Models.CharacterCompletedQuest", b =>
                 {
                     b.Property<int>("Id")
@@ -294,6 +343,58 @@ namespace Myria.Server.Realm.Migrations
                     b.HasIndex("CharacterId");
 
                     b.ToTable("CharacterCompletedQuests");
+                });
+
+            modelBuilder.Entity("Myria.Server.Realm.Models.CharacterCompositeSkill", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("CharacterId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("InstanceId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsStashed")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("StashedForClass")
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CharacterId");
+
+                    b.ToTable("CharacterCompositeSkills");
+                });
+
+            modelBuilder.Entity("Myria.Server.Realm.Models.CharacterCompositeSkillComponent", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("CompositeSkillId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("SkillId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CompositeSkillId");
+
+                    b.ToTable("CharacterCompositeSkillComponents");
                 });
 
             modelBuilder.Entity("Myria.Server.Realm.Models.CharacterInventoryItem", b =>
@@ -505,57 +606,6 @@ namespace Myria.Server.Realm.Migrations
                     b.HasIndex("CharacterId");
 
                     b.ToTable("CharacterSkills");
-                });
-
-            modelBuilder.Entity("Myria.Server.Realm.Models.CharacterSkillProgress", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("CharacterId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("Level")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("SkillId")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("UnspentPoints")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("UsageCount")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CharacterId");
-
-                    b.ToTable("CharacterSkillProgress");
-                });
-
-            modelBuilder.Entity("Myria.Server.Realm.Models.CharacterSkillProgressUpgrade", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("SkillProgressId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("UpgradeId")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("SkillProgressId");
-
-                    b.ToTable("CharacterSkillProgressUpgrades");
                 });
 
             modelBuilder.Entity("Myria.Server.Realm.Models.CharacterSkillSlot", b =>
@@ -914,6 +964,7 @@ namespace Myria.Server.Realm.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<long>("Balance")
+                        .IsConcurrencyToken()
                         .HasColumnType("INTEGER");
 
                     b.HasKey("GuildId");
@@ -973,6 +1024,21 @@ namespace Myria.Server.Realm.Migrations
                     b.ToTable("PlayerShopItems");
                 });
 
+            modelBuilder.Entity("Myria.Server.Realm.Models.SessionRevocation", b =>
+                {
+                    b.Property<string>("Username")
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT")
+                        .UseCollation("NOCASE");
+
+                    b.Property<DateTime>("TokensValidAfter")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Username");
+
+                    b.ToTable("SessionRevocations");
+                });
+
             modelBuilder.Entity("Myria.Server.Realm.Models.Block", b =>
                 {
                     b.HasOne("Myria.Server.Realm.Models.Character", "BlockedCharacter")
@@ -1014,6 +1080,28 @@ namespace Myria.Server.Realm.Migrations
                     b.Navigation("Character");
                 });
 
+            modelBuilder.Entity("Myria.Server.Realm.Models.CharacterCombinedSkill", b =>
+                {
+                    b.HasOne("Myria.Server.Realm.Models.Character", "Character")
+                        .WithMany("CombinedSkills")
+                        .HasForeignKey("CharacterId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Character");
+                });
+
+            modelBuilder.Entity("Myria.Server.Realm.Models.CharacterCombinedSkillInput", b =>
+                {
+                    b.HasOne("Myria.Server.Realm.Models.CharacterCombinedSkill", "CombinedSkill")
+                        .WithMany("Inputs")
+                        .HasForeignKey("CombinedSkillId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CombinedSkill");
+                });
+
             modelBuilder.Entity("Myria.Server.Realm.Models.CharacterCompletedQuest", b =>
                 {
                     b.HasOne("Myria.Server.Realm.Models.Character", "Character")
@@ -1023,6 +1111,28 @@ namespace Myria.Server.Realm.Migrations
                         .IsRequired();
 
                     b.Navigation("Character");
+                });
+
+            modelBuilder.Entity("Myria.Server.Realm.Models.CharacterCompositeSkill", b =>
+                {
+                    b.HasOne("Myria.Server.Realm.Models.Character", "Character")
+                        .WithMany("CompositeSkills")
+                        .HasForeignKey("CharacterId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Character");
+                });
+
+            modelBuilder.Entity("Myria.Server.Realm.Models.CharacterCompositeSkillComponent", b =>
+                {
+                    b.HasOne("Myria.Server.Realm.Models.CharacterCompositeSkill", "CompositeSkill")
+                        .WithMany("Components")
+                        .HasForeignKey("CompositeSkillId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CompositeSkill");
                 });
 
             modelBuilder.Entity("Myria.Server.Realm.Models.CharacterInventoryItem", b =>
@@ -1111,28 +1221,6 @@ namespace Myria.Server.Realm.Migrations
                         .IsRequired();
 
                     b.Navigation("Character");
-                });
-
-            modelBuilder.Entity("Myria.Server.Realm.Models.CharacterSkillProgress", b =>
-                {
-                    b.HasOne("Myria.Server.Realm.Models.Character", "Character")
-                        .WithMany("SkillProgress")
-                        .HasForeignKey("CharacterId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Character");
-                });
-
-            modelBuilder.Entity("Myria.Server.Realm.Models.CharacterSkillProgressUpgrade", b =>
-                {
-                    b.HasOne("Myria.Server.Realm.Models.CharacterSkillProgress", "SkillProgress")
-                        .WithMany("PurchasedUpgrades")
-                        .HasForeignKey("SkillProgressId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("SkillProgress");
                 });
 
             modelBuilder.Entity("Myria.Server.Realm.Models.CharacterSkillSlot", b =>
@@ -1370,7 +1458,11 @@ namespace Myria.Server.Realm.Migrations
 
                     b.Navigation("ClassXp");
 
+                    b.Navigation("CombinedSkills");
+
                     b.Navigation("CompletedQuests");
+
+                    b.Navigation("CompositeSkills");
 
                     b.Navigation("InventoryItems");
 
@@ -1384,21 +1476,24 @@ namespace Myria.Server.Realm.Migrations
 
                     b.Navigation("RuneDictionary");
 
-                    b.Navigation("SkillProgress");
-
                     b.Navigation("SkillSlots");
 
                     b.Navigation("Skills");
                 });
 
+            modelBuilder.Entity("Myria.Server.Realm.Models.CharacterCombinedSkill", b =>
+                {
+                    b.Navigation("Inputs");
+                });
+
+            modelBuilder.Entity("Myria.Server.Realm.Models.CharacterCompositeSkill", b =>
+                {
+                    b.Navigation("Components");
+                });
+
             modelBuilder.Entity("Myria.Server.Realm.Models.CharacterKnownRune", b =>
                 {
                     b.Navigation("AddedWords");
-                });
-
-            modelBuilder.Entity("Myria.Server.Realm.Models.CharacterSkillProgress", b =>
-                {
-                    b.Navigation("PurchasedUpgrades");
                 });
 
             modelBuilder.Entity("Myria.Server.Realm.Models.Guild", b =>

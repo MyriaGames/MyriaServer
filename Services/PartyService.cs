@@ -17,6 +17,29 @@ namespace Myria.Server.Realm.Services
 
         public const int MaxSize = 5;
 
+        // Open invites: (partyId, invitee in lower case) -> expiry. Joining through the hub needs one
+        // (AcceptInvite) - a party id alone used to be enough, so anyone who once saw an id (or
+        // intercepted an invite) could join without being invited (security review 2026-11-25, A01 F5).
+        public static readonly TimeSpan InviteLifetime = TimeSpan.FromMinutes(5);
+        private readonly ConcurrentDictionary<(string PartyId, string Invitee), DateTime> _invites = new();
+
+        private static (string, string) InviteKey(string partyId, string invitee) =>
+            (partyId, invitee.ToLowerInvariant());
+
+        public void Invite(string partyId, string invitee) =>
+            _invites[InviteKey(partyId, invitee)] = DateTime.UtcNow + InviteLifetime;
+
+        public void DeclineInvite(string partyId, string invitee) =>
+            _invites.TryRemove(InviteKey(partyId, invitee), out _);
+
+        /// <summary>Joins only with an open, unexpired invite for this character; the invite is used up.</summary>
+        public (bool success, IReadOnlyList<string> members, string? leader) AcceptInvite(string partyId, string username)
+        {
+            if (!_invites.TryRemove(InviteKey(partyId, username), out var expires) || expires < DateTime.UtcNow)
+                return (false, [], null);
+            return Join(partyId, username);
+        }
+
         // Creates a new party for the leader, or returns their existing party.
         public (string partyId, IReadOnlyList<string> members, string leader) GetOrCreate(string leaderUsername)
         {
