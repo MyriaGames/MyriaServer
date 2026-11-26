@@ -34,7 +34,10 @@ namespace Myria.Server.Realm.Controllers
         BanService bans,
         CharacterPresenceService presence,
         SessionRevocationService revocations,
-        IHubContext<GameHub> hub) : ControllerBase
+        IHubContext<GameHub> hub,
+        CharacterSessionService session,
+        Myria.Lib.Core.Repositories.ICharacterRepository repo,
+        CharacterLocks locks) : ControllerBase
     {
         private const string SecretHeader = "X-Internal-Secret";
 
@@ -101,7 +104,26 @@ namespace Myria.Server.Realm.Controllers
         {
             if (!IsAuthorized())
                 return Forbid();
+            if (string.IsNullOrWhiteSpace(req.OldUsername) || string.IsNullOrWhiteSpace(req.NewUsername))
+                return BadRequest();
 
+            // A character of this account in play: save it under the OLD name and end its session
+            // first. Otherwise the live session later saved under the old name after its rows had
+            // moved - the save failed and the progress since the last save was lost (security review
+            // 2026-11-26, A10 F4). The connection is dropped after the rename (ForceLogout); the
+            // client logs in again with the token issued for the new name.
+            var liveConn = presence.GetConnectionByAccount(req.OldUsername);
+            if (liveConn is not null && session.Get(liveConn) is { } live)
+            {
+                using (await locks.AcquireAsync(live.Name))
+                {
+                    await repo.SaveAsync(req.OldUsername, live);
+                    session.Remove(liveConn);
+                }
+            }
+
+            // One transaction: the stale-ban removal and the move used to be two separate saves.
+            await using var tx = await db.Database.BeginTransactionAsync();
             var records = await db.Characters.Where(c => c.UserId == req.OldUsername).ToListAsync();
             foreach (var record in records)
                 record.UserId = req.NewUsername;
@@ -123,7 +145,10 @@ namespace Myria.Server.Realm.Controllers
 
             if (records.Count > 0 || ban is not null)
                 await db.SaveChangesAsync();
+            await tx.CommitAsync();
 
+            if (liveConn is not null)
+                await KickAsync(req.OldUsername, "ForceLogout");
             return NoContent();
         }
 
