@@ -1308,14 +1308,14 @@ namespace Myria.Server.Realm.Hubs
             return ok;
         }
 
-        /// <summary>Refunds a skill's purchased upgrades for a flat gold cost
-        /// (SkillLevelingService.RespecCostGold) so the points can be spent differently.</summary>
+        /// <summary>Refunds a skill's purchased upgrades for a flat cost
+        /// (SkillLevelingService.RespecCostBronze, 100 silver) so the points can be spent differently.</summary>
         public async Task<bool> RespecSkill(string skillId)
         {
             var player = session.Get(Context.ConnectionId);
             if (player == null) return false;
 
-            if (!player.Money.TrySpend(SkillLevelingService.RespecCostGold)) return false;
+            if (!player.Money.TrySpend(SkillLevelingService.RespecCostBronze)) return false;
 
             SkillLevelingService.Respec(player, skillId);
             await NotifyCharacterUpdate(player, money: true, skillProgress: true);
