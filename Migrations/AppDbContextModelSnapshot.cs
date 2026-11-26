@@ -998,6 +998,43 @@ namespace Myria.Server.Realm.Migrations
                     b.ToTable("SessionRevocations");
                 });
 
+            modelBuilder.Entity("Myria.Server.Realm.Models.WorldNpcStock", b =>
+                {
+                    b.Property<int>("RoomId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("NpcId")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ItemId")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("RoomId", "NpcId", "ItemId");
+
+                    b.ToTable("WorldNpcStock");
+                });
+
+            modelBuilder.Entity("Myria.Server.Realm.Models.WorldRoomPopulation", b =>
+                {
+                    b.Property<int>("RoomId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("MonsterId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Count")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("RoomId", "MonsterId");
+
+                    b.ToTable("WorldRoomPopulations");
+                });
+
             modelBuilder.Entity("Myria.Server.Realm.Models.Block", b =>
                 {
                     b.HasOne("Myria.Server.Realm.Models.Character", "BlockedCharacter")

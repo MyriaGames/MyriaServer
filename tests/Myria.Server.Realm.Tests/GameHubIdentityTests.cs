@@ -125,6 +125,8 @@ internal sealed class HubHarness : IDisposable
     public TradeService Trade { get; } = new();
     public GroupCombatService GroupCombat { get; } = new();
     public PvpCombatService PvpCombat { get; } = new();
+    /// <summary>v0.3 world state (NPC stock, room populations), loaded from the test database in CreateAsync.</summary>
+    public WorldStateService World { get; private set; } = null!;
 
     /// <summary>The logger hubs get; replace to capture log output.</summary>
     public ILogger<GameHub> Logger { get; set; } = NullLogger<GameHub>.Instance;
@@ -135,6 +137,7 @@ internal sealed class HubHarness : IDisposable
 
     /// <summary>A fresh context over the test database, to read back what was actually saved.</summary>
     public Myria.Server.Realm.Data.AppDbContext NewDb() => _db.NewContext();
+    public IServiceScopeFactory ScopeFactory => _services.GetRequiredService<IServiceScopeFactory>();
 
     private HubHarness()
     {
@@ -157,6 +160,9 @@ internal sealed class HubHarness : IDisposable
     public static async Task<HubHarness> CreateAsync()
     {
         var harness = new HubHarness();
+        harness.World = new WorldStateService(harness._services.GetRequiredService<IServiceScopeFactory>(),
+            Microsoft.Extensions.Logging.Abstractions.NullLogger<WorldStateService>.Instance);
+        await harness.World.LoadAsync();
         var repo = new SqlCharacterRepository(harness._db.Db);
         await repo.SaveAsync("alice", new Character("Alicechar", new Stats()));
         await repo.SaveAsync("bob", new Character("Bobchar", new Stats()));
@@ -179,6 +185,7 @@ internal sealed class HubHarness : IDisposable
             scope.ServiceProvider.GetRequiredService<PlayerShopService>(),
             GroupCombat,
             PvpCombat,
+            World,
             _services.GetRequiredService<IServiceScopeFactory>(),
             AllowedVersions,
             Logger,

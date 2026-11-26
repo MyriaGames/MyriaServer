@@ -114,6 +114,8 @@ builder.Services.AddSingleton<CharacterLocks>();
 builder.Services.AddScoped<PlayerShopService>();
 builder.Services.AddSingleton<GroupCombatService>();
 builder.Services.AddSingleton<PvpCombatService>();
+builder.Services.AddSingleton<WorldStateService>();
+builder.Services.AddHostedService<WorldTickService>();
 // Global hub filters: registered via AddSignalR(options => options.AddFilter<T>()) plus a plain
 // DI registration of the filter type itself - this applies the filter to every hub (there's
 // currently only GameHub, but this stays global without needing updating if a second hub is ever
@@ -303,6 +305,9 @@ await app.Services.GetRequiredService<SessionRevocationService>().LoadAsync();
 // This is the sole source of truth for game content; nothing about it is persisted to
 // the database, which only holds player/account state (characters, guilds, friendships).
 GameService.InitializeGame();
+
+// The living world (NPC stock, room populations) is derived from that content plus its saved values.
+await app.Services.GetRequiredService<WorldStateService>().LoadAsync();
 
 // No app.UseHttpsRedirection() here: Production is now HTTPS-only at the Kestrel level (see
 // the guard above) — there's no plain-HTTP endpoint left to redirect away from. Development

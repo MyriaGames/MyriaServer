@@ -32,6 +32,10 @@ namespace Myria.Server.Realm.Data
         public DbSet<PlayerShop>     PlayerShops     => Set<PlayerShop>();
         public DbSet<PlayerShopItem> PlayerShopItems => Set<PlayerShopItem>();
 
+        // ── World state (v0.3 quest rework) ──
+        public DbSet<WorldNpcStock>       WorldNpcStock        => Set<WorldNpcStock>();
+        public DbSet<WorldRoomPopulation> WorldRoomPopulations => Set<WorldRoomPopulation>();
+
         // ── Character child tables ───────────────────────────────────────────────
         public DbSet<CharacterInventoryItem>       CharacterInventoryItems      => Set<CharacterInventoryItem>();
         public DbSet<CharacterSkill>               CharacterSkills              => Set<CharacterSkill>();
@@ -266,6 +270,10 @@ namespace Myria.Server.Realm.Data
                 // silently overwriting the winner's write (see the 2026-09-10 security audit).
                 e.Property(i => i.Quantity).IsConcurrencyToken();
             });
+
+            // ── World state (v0.3 quest rework) ──
+            modelBuilder.Entity<WorldNpcStock>(e => e.HasKey(s => new { s.RoomId, s.NpcId, s.ItemId }));
+            modelBuilder.Entity<WorldRoomPopulation>(e => e.HasKey(p => new { p.RoomId, p.MonsterId }));
         }
     }
 }

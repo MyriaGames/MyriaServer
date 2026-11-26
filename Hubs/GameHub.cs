@@ -28,6 +28,7 @@ namespace Myria.Server.Realm.Hubs
         PlayerShopService shop,
         GroupCombatService groupCombat,
         PvpCombatService pvp,
+        WorldStateService world,
         IServiceScopeFactory scopeFactory,
         AllowedVersionsConfig allowedVersions,
         ILogger<GameHub> logger,
@@ -1004,6 +1005,14 @@ namespace Myria.Server.Realm.Hubs
             item.StackSize = quantity;
             player.Inventory.AddItem(item, player);
 
+            // v0.3 world state: the NPC's stock of the item - and of what it's made from here - goes down.
+            if (presence.GetRoom(Context.ConnectionId) is int buyRoomId && CharacterRoomHasNpc(npcId))
+            {
+                var ingredients = CraftingService.GetRecipe(npcId, itemId)?.Ingredients
+                    .Select(i => (i.ItemId, i.Amount)) ?? Enumerable.Empty<(string, int)>();
+                world.State?.RecordPurchase(buyRoomId, npcId, itemId, quantity, ingredients);
+            }
+
             // Credit guild treasury if buyer is a rookie
             await TryApplyPurchaseCommissionAsync(player, totalCost);
 
@@ -1042,6 +1051,13 @@ namespace Myria.Server.Realm.Hubs
                 invItem.StackSize -= quantity;
 
             player.Money.TryAdd(totalGain);
+
+            // v0.3 world state: a sale refills the stock of whichever NPC here keeps this item and is
+            // lowest on it - the same deposit a quest turn-in makes.
+            if (presence.GetRoom(Context.ConnectionId) is int sellRoomId
+                && RoomService.GetRoomById(sellRoomId) is { } sellRoom
+                && world.State?.NeediestNpc(sellRoomId, sellRoom.Npcs, itemId) is { } stockKey)
+                world.State.Deposit(stockKey, quantity);
 
             logger.LogInformation("{Character} sold {Qty}x {Item} to an NPC for {Gain} gold",
                 DisplayName(), quantity, itemId, totalGain);
@@ -1401,8 +1417,16 @@ namespace Myria.Server.Realm.Hubs
             if (monsterPool.Count == 0)
                 return new StartCombatResult(false, "no_monsters", null, 0, 0);
 
-            var monster = MonsterService.PickMonsterForFight(monsterPool, room.EncounterableMonsters).Clone();
+            // v0.3: an overworld room's population of a monster type can run out (dungeons keep
+            // their own spawn-and-clear cycle).
+            var picked = room.IsDungeonRoom
+                ? MonsterService.PickMonsterForFight(monsterPool, room.EncounterableMonsters)
+                : MonsterService.TryPickMonsterForFight(monsterPool, room.EncounterableMonsters, m => IsMonsterAvailable(roomId, m));
+            if (picked == null)
+                return new StartCombatResult(false, "no_monsters", null, 0, 0);
+            var monster = picked.Clone();
             var encounter = new CombatEncounter(player, monster);
+            encounter.MonsterKilled += (_, e) => world.State?.RecordKill(roomId, e.MonsterId);
             session.SetEncounter(Context.ConnectionId, encounter);
 
             await Clients.OthersInGroup(RoomGroup(roomId)).SendAsync("CharacterInCombat", DisplayName());
@@ -1623,12 +1647,14 @@ namespace Myria.Server.Realm.Hubs
             if (players.Count == 0)
                 return new StartGroupCombatResult(false, "no_session", [], [], "");
 
-            var monsters = soloOnly
-                ? MonsterService.PickMonstersForGroupFight(
-                    room!.Monsters, room.EncounterableMonsters, room.CurrentMonsters, room.IsDungeonRoom, max: 1)
-                : MonsterService.PickMonstersForGroupFight(
-                    room!.Monsters, room.EncounterableMonsters, room.CurrentMonsters, room.IsDungeonRoom);
+            // v0.3: only monster types the room still has a population of (dungeons unaffected).
+            var monsters = MonsterService.TryPickMonstersForGroupFight(
+                room!.Monsters, room.EncounterableMonsters, room.CurrentMonsters, room.IsDungeonRoom,
+                m => IsMonsterAvailable(roomId, m), max: soloOnly ? 1 : 5);
+            if (monsters.Count == 0)
+                return new StartGroupCombatResult(false, "no_monsters", [], [], "");
             var encounter = new GroupCombatEncounter(players, monsters);
+            encounter.MonsterKilled += (_, e) => world.State?.RecordKill(roomId, e.MonsterId);
 
             if (!groupCombat.Start(fightId, memberConns, encounter))
                 return new StartGroupCombatResult(false, "already_in_combat", [], [], "");
@@ -3368,6 +3394,11 @@ namespace Myria.Server.Realm.Hubs
         // Upper bound for one Craft call. Far above what the client offers ("max" = what the
         // ingredients allow), small enough that ingredient Amount * quantity can't overflow (A06 F3).
         public const int MaxCraftBatch = 10_000;
+
+        /// <summary>v0.3: whether a monster type can currently be met in a room (its population hasn't run
+        /// out). Without a loaded world state everything is available.</summary>
+        private bool IsMonsterAvailable(int roomId, int monsterId) =>
+            world.State?.IsMonsterAvailable(roomId, monsterId) ?? true;
 
         private bool CharacterRoomHasNpc(string npcId)
         {
