@@ -301,6 +301,7 @@ namespace Myria.Server.Realm.Repositories
             BaseRuneService.ResolveRunes(character);
             SkillSlotService.ResolveSlots(character);
             SkillSlotService.MigrateIfEmpty(character);
+            Myria.Lib.Core.Services.Manager.RaceMigration.Apply(character); // v0.3: retired races -> lore races
             // Anti-tamper, same reasoning as RecalculateUnusedPoints above - Level/UnspentPoints are
             // never trusted from what was persisted, always re-derived from UsageCount.
             foreach (var sp in character.SkillProgress.ToList())
