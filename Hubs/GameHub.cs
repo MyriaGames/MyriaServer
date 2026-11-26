@@ -1378,12 +1378,45 @@ namespace Myria.Server.Realm.Hubs
         {
             var result = await RunCombatAction(enc => enc.CharacterAttack());
             var player = session.Get(Context.ConnectionId);
+            return player is null ? result : await FinishSoloActionAsync(player, result);
+        }
+
+        /// <summary>Uses one consumable (by item id) from the caller's own inventory as their turn
+        /// in the current solo encounter. Resolved server-side from the session inventory.</summary>
+        public async Task<CombatTurnResult> CharacterUseItem(string itemId)
+        {
+            var player = session.Get(Context.ConnectionId);
+            if (player == null || session.GetEncounter(Context.ConnectionId) == null)
+                return EmptyCombatTurn();
+
+            CombatTurnResult result;
+            // Same per-character lock as the out-of-combat UseItem (see GroupCharacterUseItem).
+            using (await locks.AcquireAsync(player.Name))
+            {
+                var item = ResolveConsumable(player, itemId);
+                if (item == null) return EmptyCombatTurn();
+
+                // The engine's bool is deliberately ignored (like CharacterCastSkill): it's also
+                // false when a stun or a DoT death already resolved the turn, and that result
+                // (incl. a loss -> respawn below) must still reach the client.
+                result = await RunCombatAction(enc => enc.CharacterUseItem(item));
+            }
+
+            await NotifyCharacterUpdate(player, inventory: true);
+            return await FinishSoloActionAsync(player, result);
+        }
+
+        /// <summary>
+        /// Post-turn handling shared by every solo combat action: respawn on a loss, and on a win
+        /// fold any rookie XP bonus into the result.
+        /// </summary>
+        private async Task<CombatTurnResult> FinishSoloActionAsync(Myria.Lib.Core.Entities.Characters.Character player, CombatTurnResult result)
+        {
             if (result.Finished && !result.CharacterWon)
             {
-                if (player is not null)
-                    await RespawnCharacterAsync(player, Context.ConnectionId);
+                await RespawnCharacterAsync(player, Context.ConnectionId);
             }
-            else if (result.Finished && result.CharacterWon && result.XpGained > 0 && player is not null)
+            else if (result.Finished && result.CharacterWon && result.XpGained > 0)
             {
                 long bonus = await TryApplyRookieXpBonusAsync(player, result.XpGained);
                 // The bonus is applied to the server's character above, but was granted after
@@ -1409,15 +1442,7 @@ namespace Myria.Server.Realm.Hubs
             if (skill == null) return EmptyCombatTurn();
 
             var result = await RunCombatAction(enc => enc.CharacterBeginCast(skill));
-            if (result.Finished && !result.CharacterWon)
-                await RespawnCharacterAsync(player, Context.ConnectionId);
-            else if (result.Finished && result.CharacterWon && result.XpGained > 0)
-            {
-                long bonus = await TryApplyRookieXpBonusAsync(player, result.XpGained);
-                if (bonus > 0)
-                    result = result with { RookieBonusXp = bonus };
-            }
-            return result;
+            return await FinishSoloActionAsync(player, result);
         }
 
         // ── Group Combat ──────────────────────────────────────────────────────
@@ -1582,8 +1607,7 @@ namespace Myria.Server.Realm.Hubs
 
         public async Task<GroupCombatSnapshot> GroupCharacterAttack(int targetMonsterIndex)
         {
-            var displayName = DisplayName();
-            var partyId     = groupCombat.GetPartyId(Context.ConnectionId);
+            var partyId = groupCombat.GetPartyId(Context.ConnectionId);
             if (partyId is null)
                 return EmptyGroupSnapshot();
 
@@ -1592,96 +1616,18 @@ namespace Myria.Server.Realm.Hubs
                 return EmptyGroupSnapshot();
 
             int logBefore = encounter.Log.Count;
-            if (!encounter.CharacterAttack(displayName, targetMonsterIndex))
+            string turnBefore = encounter.CurrentTurnCharacterName;
+            bool ok = encounter.CharacterAttack(DisplayName(), targetMonsterIndex);
+            if (!GroupActionResolved(encounter, ok, turnBefore))
                 return EmptyGroupSnapshot();
 
-            var snap = BuildGroupSnapshot(encounter, logBefore);
-
-            if (encounter.IsFinished)
-            {
-                if (encounter.CharactersWon)
-                {
-                    logger.LogInformation("Group combat won: {Chars}",
-                        string.Join(", ", encounter.Characters.Select(c => $"{c.Name} (Lvl {c.Level})")));
-
-                    long totalMonsterExp = encounter.Monsters.Sum(m => m.Exp);
-                    var bonusByName = new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase);
-                    foreach (var p in encounter.Characters.Where(p => p.IsAlive))
-                    {
-                        // A rookie-bonus failure here must never block the save/broadcast/respawn
-                        // below - the fight is already fully resolved in-memory (monsters dead,
-                        // XP/levels applied), so an unguarded throw would silently strand the
-                        // party mid-fight exactly like the bug fixed in item 52 (see item 66).
-                        long bonus = await TryApplyRookieXpBonusAsync(p, totalMonsterExp);
-                        if (bonus > 0) bonusByName[p.Name] = bonus;
-                    }
-
-                    await SaveCombatParticipantsAsync(encounter.Characters.Where(p => p.IsAlive));
-
-                    // `snap` was already built above (before the bonus existed), so a rookie's
-                    // extra XP/levels/stat growth would otherwise never reach the client at all -
-                    // only a full reload would pick it up. Patch the affected entries in place.
-                    if (bonusByName.Count > 0)
-                    {
-                        snap = snap with
-                        {
-                            Characters = snap.Characters.Select(c =>
-                                bonusByName.TryGetValue(c.Name, out var b) ? c with { RookieBonusXp = b } : c
-                            ).ToList()
-                        };
-                    }
-
-                    // GroupCombatSnapshot already carries per-turn HP/loot ids - this is the
-                    // reconciling push per surviving party member for everything that isn't
-                    // per-turn (items actually granted, XP/level/stats incl. rookie bonus, quest
-                    // kill/item progress), same as solo combat's RunCombatAction.
-                    foreach (var p in encounter.Characters.Where(p => p.IsAlive))
-                    {
-                        if (session.GetConnectionId(p.Name) is string connId)
-                            await NotifyCharacterUpdateFor(connId, p, inventory: true, progress: true, questProgress: true, skillProgress: true);
-                    }
-                }
-
-                // Broadcast BEFORE removing the party's fight registration - CombatGroupClients
-                // resolves recipients via groupCombat.GetConnections(fightId), which reads the
-                // same connection registry RemoveByParty tears down; removing first left that
-                // lookup empty, so the finishing broadcast silently reached nobody and both
-                // clients stayed frozen on the stale mid-fight screen forever (the server had
-                // already saved/respawned everything correctly - only the client notification
-                // was lost).
-                await CombatGroupClients(partyId).SendAsync("GroupCombatFinished", snap);
-                groupCombat.RemoveByParty(partyId);
-                if (!encounter.CharactersWon)
-                {
-                    logger.LogInformation("Group combat lost: {Chars}",
-                        string.Join(", ", encounter.Characters.Select(c => c.Name)));
-                }
-                // Respawn every dead character regardless of whether the fight was won or lost -
-                // CharactersWon only tracks whether the monsters died, not whether every party
-                // member survived getting there (see GroupCombatEncounter.FinishCharactersWon,
-                // which fires purely off Monsters.All(m => !m.IsAlive)). A party member who died
-                // mid-fight while their ally finished the last monster off used to never reach
-                // this call at all - stuck standing at 0 HP wherever the fight took place,
-                // walking around the field but rejected from fighting again ("You cannot fight
-                // while defeated"), since only the RespawnCharacterAsync this method calls
-                // actually moves them to town, heals them, and notifies their client.
-                // RespawnDeadGroupMembersAsync already only touches characters that are actually
-                // dead, so calling it unconditionally is a no-op for a clean win.
-                await RespawnDeadGroupMembersAsync(encounter);
-            }
-            else
-            {
-                await CombatGroupClients(partyId).SendAsync("GroupCombatUpdated", snap);
-            }
-
-            return snap;
+            return await CompleteGroupActionAsync(encounter, partyId, logBefore);
         }
 
         public async Task<GroupCombatSnapshot> GroupCharacterCastSkill(string skillId, int targetIndex)
         {
-            var displayName = DisplayName();
-            var player      = session.Get(Context.ConnectionId);
-            var partyId     = groupCombat.GetPartyId(Context.ConnectionId);
+            var player  = session.Get(Context.ConnectionId);
+            var partyId = groupCombat.GetPartyId(Context.ConnectionId);
             if (player is null || partyId is null)
                 return EmptyGroupSnapshot();
 
@@ -1692,87 +1638,142 @@ namespace Myria.Server.Realm.Hubs
             if (skill is null) return EmptyGroupSnapshot();
 
             int logBefore = encounter.Log.Count;
-            if (!encounter.CharacterCastSkill(displayName, skill, targetIndex))
+            string turnBefore = encounter.CurrentTurnCharacterName;
+            bool ok = encounter.CharacterCastSkill(DisplayName(), skill, targetIndex);
+            if (!GroupActionResolved(encounter, ok, turnBefore))
                 return EmptyGroupSnapshot();
 
+            return await CompleteGroupActionAsync(encounter, partyId, logBefore);
+        }
+
+        /// <summary>Uses one consumable (by item id) from the caller's own inventory as their turn
+        /// in the current group fight. The item is resolved server-side from the caller's session
+        /// inventory - the client only names which one.</summary>
+        public async Task<GroupCombatSnapshot> GroupCharacterUseItem(string itemId)
+        {
+            var player  = session.Get(Context.ConnectionId);
+            var partyId = groupCombat.GetPartyId(Context.ConnectionId);
+            if (player is null || partyId is null)
+                return EmptyGroupSnapshot();
+
+            var encounter = groupCombat.GetEncounter(partyId);
+            if (encounter is null) return EmptyGroupSnapshot();
+
+            int logBefore = encounter.Log.Count;
+            // Same per-character lock as the out-of-combat UseItem: the inventory must not change
+            // underneath this (trade, shop deposit, selling) between resolving and consuming.
+            using (await locks.AcquireAsync(player.Name))
+            {
+                var item = ResolveConsumable(player, itemId);
+                if (item is null) return EmptyGroupSnapshot();
+
+                string turnBefore = encounter.CurrentTurnCharacterName;
+                bool ok = encounter.CharacterUseItem(DisplayName(), item);
+                if (!GroupActionResolved(encounter, ok, turnBefore)) return EmptyGroupSnapshot();
+            }
+
+            // The snapshot carries HP/MP for everyone; the user's own inventory isn't part of it.
+            await NotifyCharacterUpdate(player, inventory: true);
+            return await CompleteGroupActionAsync(encounter, partyId, logBefore);
+        }
+
+        /// <summary>
+        /// Whether a group action resolved a turn that must be broadcast/finished. The engine's
+        /// bool alone isn't enough: it's also false when the actor died from a DoT tick at the
+        /// start of their own turn - after the turn has already advanced, and possibly after that
+        /// death ended the fight. Treating that as a rejection skipped the broadcast and the
+        /// finish/respawn. A real rejection (not your turn, bad target, no mana, cooldown,
+        /// silenced) neither advances the turn nor ends the fight, so it still returns false here.
+        /// </summary>
+        private static bool GroupActionResolved(GroupCombatEncounter encounter, bool engineResult, string turnBefore) =>
+            engineResult
+            || encounter.IsFinished
+            || !string.Equals(encounter.CurrentTurnCharacterName, turnBefore, StringComparison.Ordinal);
+
+        /// <summary>
+        /// Everything that follows a successful group-combat action: build the turn's snapshot,
+        /// then either broadcast it, or - if the action ended the fight - grant rookie bonuses,
+        /// save, push the reconciling character updates, broadcast the finish, and respawn the dead.
+        /// </summary>
+        private async Task<GroupCombatSnapshot> CompleteGroupActionAsync(GroupCombatEncounter encounter, string partyId, int logBefore)
+        {
             var snap = BuildGroupSnapshot(encounter, logBefore);
 
-            if (encounter.IsFinished)
-            {
-                if (encounter.CharactersWon)
-                {
-                    logger.LogInformation("Group combat won: {Chars}",
-                        string.Join(", ", encounter.Characters.Select(c => $"{c.Name} (Lvl {c.Level})")));
-
-                    long totalMonsterExp = encounter.Monsters.Sum(m => m.Exp);
-                    var bonusByName = new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase);
-                    foreach (var p in encounter.Characters.Where(p => p.IsAlive))
-                    {
-                        // A rookie-bonus failure here must never block the save/broadcast/respawn
-                        // below - the fight is already fully resolved in-memory (monsters dead,
-                        // XP/levels applied), so an unguarded throw would silently strand the
-                        // party mid-fight exactly like the bug fixed in item 52 (see item 66).
-                        long bonus = await TryApplyRookieXpBonusAsync(p, totalMonsterExp);
-                        if (bonus > 0) bonusByName[p.Name] = bonus;
-                    }
-
-                    await SaveCombatParticipantsAsync(encounter.Characters.Where(p => p.IsAlive));
-
-                    // `snap` was already built above (before the bonus existed), so a rookie's
-                    // extra XP/levels/stat growth would otherwise never reach the client at all -
-                    // only a full reload would pick it up. Patch the affected entries in place.
-                    if (bonusByName.Count > 0)
-                    {
-                        snap = snap with
-                        {
-                            Characters = snap.Characters.Select(c =>
-                                bonusByName.TryGetValue(c.Name, out var b) ? c with { RookieBonusXp = b } : c
-                            ).ToList()
-                        };
-                    }
-
-                    // GroupCombatSnapshot already carries per-turn HP/loot ids - this is the
-                    // reconciling push per surviving party member for everything that isn't
-                    // per-turn (items actually granted, XP/level/stats incl. rookie bonus, quest
-                    // kill/item progress), same as solo combat's RunCombatAction.
-                    foreach (var p in encounter.Characters.Where(p => p.IsAlive))
-                    {
-                        if (session.GetConnectionId(p.Name) is string connId)
-                            await NotifyCharacterUpdateFor(connId, p, inventory: true, progress: true, questProgress: true, skillProgress: true);
-                    }
-                }
-
-                // Broadcast BEFORE removing the party's fight registration - CombatGroupClients
-                // resolves recipients via groupCombat.GetConnections(fightId), which reads the
-                // same connection registry RemoveByParty tears down; removing first left that
-                // lookup empty, so the finishing broadcast silently reached nobody and both
-                // clients stayed frozen on the stale mid-fight screen forever (the server had
-                // already saved/respawned everything correctly - only the client notification
-                // was lost).
-                await CombatGroupClients(partyId).SendAsync("GroupCombatFinished", snap);
-                groupCombat.RemoveByParty(partyId);
-                if (!encounter.CharactersWon)
-                {
-                    logger.LogInformation("Group combat lost: {Chars}",
-                        string.Join(", ", encounter.Characters.Select(c => c.Name)));
-                }
-                // Respawn every dead character regardless of whether the fight was won or lost -
-                // CharactersWon only tracks whether the monsters died, not whether every party
-                // member survived getting there (see GroupCombatEncounter.FinishCharactersWon,
-                // which fires purely off Monsters.All(m => !m.IsAlive)). A party member who died
-                // mid-fight while their ally finished the last monster off used to never reach
-                // this call at all - stuck standing at 0 HP wherever the fight took place,
-                // walking around the field but rejected from fighting again ("You cannot fight
-                // while defeated"), since only the RespawnCharacterAsync this method calls
-                // actually moves them to town, heals them, and notifies their client.
-                // RespawnDeadGroupMembersAsync already only touches characters that are actually
-                // dead, so calling it unconditionally is a no-op for a clean win.
-                await RespawnDeadGroupMembersAsync(encounter);
-            }
-            else
+            if (!encounter.IsFinished)
             {
                 await CombatGroupClients(partyId).SendAsync("GroupCombatUpdated", snap);
+                return snap;
             }
+
+            if (encounter.CharactersWon)
+            {
+                logger.LogInformation("Group combat won: {Chars}",
+                    string.Join(", ", encounter.Characters.Select(c => $"{c.Name} (Lvl {c.Level})")));
+
+                long totalMonsterExp = encounter.Monsters.Sum(m => m.Exp);
+                var bonusByName = new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase);
+                foreach (var p in encounter.Characters.Where(p => p.IsAlive))
+                {
+                    // A rookie-bonus failure here must never block the save/broadcast/respawn
+                    // below - the fight is already fully resolved in-memory (monsters dead,
+                    // XP/levels applied), so an unguarded throw would silently strand the
+                    // party mid-fight exactly like the bug fixed in item 52 (see item 66).
+                    long bonus = await TryApplyRookieXpBonusAsync(p, totalMonsterExp);
+                    if (bonus > 0) bonusByName[p.Name] = bonus;
+                }
+
+                await SaveCombatParticipantsAsync(encounter.Characters.Where(p => p.IsAlive));
+
+                // `snap` was already built above (before the bonus existed), so a rookie's
+                // extra XP/levels/stat growth would otherwise never reach the client at all -
+                // only a full reload would pick it up. Patch the affected entries in place.
+                if (bonusByName.Count > 0)
+                {
+                    snap = snap with
+                    {
+                        Characters = snap.Characters.Select(c =>
+                            bonusByName.TryGetValue(c.Name, out var b) ? c with { RookieBonusXp = b } : c
+                        ).ToList()
+                    };
+                }
+
+                // GroupCombatSnapshot already carries per-turn HP/loot ids - this is the
+                // reconciling push per surviving party member for everything that isn't
+                // per-turn (items actually granted, XP/level/stats incl. rookie bonus, quest
+                // kill/item progress), same as solo combat's RunCombatAction.
+                foreach (var p in encounter.Characters.Where(p => p.IsAlive))
+                {
+                    if (session.GetConnectionId(p.Name) is string connId)
+                        await NotifyCharacterUpdateFor(connId, p, inventory: true, progress: true, questProgress: true, skillProgress: true);
+                }
+            }
+
+            // Broadcast BEFORE removing the party's fight registration - CombatGroupClients
+            // resolves recipients via groupCombat.GetConnections(fightId), which reads the
+            // same connection registry RemoveByParty tears down; removing first left that
+            // lookup empty, so the finishing broadcast silently reached nobody and both
+            // clients stayed frozen on the stale mid-fight screen forever (the server had
+            // already saved/respawned everything correctly - only the client notification
+            // was lost).
+            await CombatGroupClients(partyId).SendAsync("GroupCombatFinished", snap);
+            groupCombat.RemoveByParty(partyId);
+            if (!encounter.CharactersWon)
+            {
+                logger.LogInformation("Group combat lost: {Chars}",
+                    string.Join(", ", encounter.Characters.Select(c => c.Name)));
+            }
+            // Respawn every dead character regardless of whether the fight was won or lost -
+            // CharactersWon only tracks whether the monsters died, not whether every party
+            // member survived getting there (see GroupCombatEncounter.FinishCharactersWon,
+            // which fires purely off Monsters.All(m => !m.IsAlive)). A party member who died
+            // mid-fight while their ally finished the last monster off used to never reach
+            // this call at all - stuck standing at 0 HP wherever the fight took place,
+            // walking around the field but rejected from fighting again ("You cannot fight
+            // while defeated"), since only the RespawnCharacterAsync this method calls
+            // actually moves them to town, heals them, and notifies their client.
+            // RespawnDeadGroupMembersAsync already only touches characters that are actually
+            // dead, so calling it unconditionally is a no-op for a clean win.
+            await RespawnDeadGroupMembersAsync(encounter);
 
             return snap;
         }
@@ -3062,6 +3063,13 @@ namespace Myria.Server.Realm.Hubs
                 string.Equals(s.Name, skillId, StringComparison.OrdinalIgnoreCase));
             return baseSkill == null ? null : SkillLevelingService.ResolveEffectiveSkill(player, baseSkill);
         }
+
+        /// <summary>Exact-id lookup of a consumable in the player's own session inventory (not
+        /// InventoryUtils.ResolveInventoryItem's prefix match, which is meant for typed console
+        /// input).</summary>
+        private static ConsumableItem? ResolveConsumable(Myria.Lib.Core.Entities.Characters.Character player, string itemId) =>
+            player.Inventory.Items.OfType<ConsumableItem>()
+                .FirstOrDefault(i => string.Equals(i.Id, itemId, StringComparison.OrdinalIgnoreCase));
 
         // Returns Clients.Caller for solo group fights; for real party fights, sends to exactly
         // the connections registered to this specific fight (see GroupCombatService) rather than
