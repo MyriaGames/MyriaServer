@@ -559,7 +559,23 @@ namespace Myria.Server.Realm.Hubs
 
         // ── Room presence ─────────────────────────────────────────────────────
 
-        public async Task<bool> JoinRoom(int roomId)
+        /// <summary>
+        /// Normal movement: the client walks into <paramref name="roomId"/>. Only through an exit of the
+        /// character's current room - a modified client used to be able to jump to any room it met the
+        /// requirements for (MONO-003). Joining the room the character is already in is always allowed:
+        /// that's the placement after login, a character switch, a reconnect or a respawn.
+        /// Teleports/waypoints must not come through here - see <see cref="MoveToRoomAsync"/>.
+        /// </summary>
+        public Task<bool> JoinRoom(int roomId) => MoveToRoomAsync(roomId, viaExit: true);
+
+        /// <summary>
+        /// Moves the caller into <paramref name="roomId"/>. <paramref name="viaExit"/> = true is normal
+        /// walking (needs an exit from the current room, see <see cref="JoinRoom"/>). A future teleport or
+        /// waypoint feature calls this with false from its own hub method, after its own checks
+        /// (unlocked, cost paid, ...) - never by relaxing JoinRoom. Room requirements (level, quest,
+        /// party) apply either way, and dungeons can only be walked into, never teleported into.
+        /// </summary>
+        private async Task<bool> MoveToRoomAsync(int roomId, bool viaExit)
         {
             var displayName = DisplayName();
             var player      = session.Get(Context.ConnectionId);
@@ -570,6 +586,21 @@ namespace Myria.Server.Realm.Hubs
 
             if (player is not null)
             {
+                // Where the character actually is (its session state, not the connection's last room -
+                // those differ right after a character switch on the same connection).
+                bool placement = player.CurrentRoomId == roomId;
+                var fromRoom = RoomService.AllRooms.FirstOrDefault(r => r.Id == player.CurrentRoomId);
+                if (!placement)
+                {
+                    if (viaExit && (fromRoom is null || !fromRoom.ExitIds.ContainsValue(roomId)))
+                    {
+                        logger.LogWarning("{Character} tried to move from room {From} to {To} without an exit",
+                            player.Name, player.CurrentRoomId, roomId);
+                        return false;
+                    }
+                    if (!viaExit && room.IsDungeonRoom) return false;
+                }
+
                 bool allowed = room.RequirementType switch
                 {
                     RoomRequirementType.Level => player.Level >= room.AccessLevel,
@@ -583,13 +614,10 @@ namespace Myria.Server.Realm.Hubs
                 if (!allowed) return false;
 
                 // v0.3 dungeons: deeper only from a cleared room; from a room with monsters left you
-                // can only fall back. The first join of a session (login, saved inside) places freely.
-                if (prevRoom is int from && from != roomId && DungeonRules.DungeonIdOf(room) is { } targetDungeon)
-                {
-                    var fromRoom = RoomService.AllRooms.FirstOrDefault(r => r.Id == from);
-                    if (!dungeons.GetOrCreate(DungeonOwnerOf(displayName), targetDungeon).CanMove(fromRoom, room))
-                        return false;
-                }
+                // can only fall back. Placement (login, saved inside) is free.
+                if (!placement && DungeonRules.DungeonIdOf(room) is { } targetDungeon
+                    && !dungeons.GetOrCreate(DungeonOwnerOf(displayName), targetDungeon).CanMove(fromRoom, room))
+                    return false;
 
                 player.CurrentRoomId = roomId;
                 player.CurrentRoom   = room;

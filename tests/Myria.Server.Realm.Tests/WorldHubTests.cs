@@ -22,7 +22,7 @@ public class WorldHubTests
         var realm = await HubHarness.CreateAsync();
         var bob = realm.Connect("bob");
         Assert.True(await realm.Hub(bob).LoadCharacter("Bobchar"));
-        Assert.True(await realm.Hub(bob).JoinRoom(roomId));
+        Assert.True(await realm.PlaceAsync(bob, roomId));
         return (realm, bob, realm.Session.Get(bob.ConnectionId)!);
     }
 

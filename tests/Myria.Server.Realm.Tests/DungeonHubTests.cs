@@ -31,8 +31,8 @@ public class DungeonHubTests
         var a = realm.Session.Get(alice.ConnectionId)!;
         var b = realm.Session.Get(bob.ConnectionId)!;
         a.Level = b.Level = 40;
-        Assert.True(await realm.Hub(alice).JoinRoom(21));
-        Assert.True(await realm.Hub(bob).JoinRoom(21));
+        Assert.True(await realm.PlaceAsync(alice, 21));
+        Assert.True(await realm.PlaceAsync(bob, 21));
         return new Realm2(realm, alice, bob, a, b);
     }
 

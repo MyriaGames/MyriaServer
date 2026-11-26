@@ -36,8 +36,8 @@ public class PvpHubTests
             c.Stats.BaseHealth = 1_000_000;  // survive any number of turns
             c.CurrentHealth = 5_000;
         }
-        Assert.True(await realm.Hub(alice).JoinRoom(roomId));
-        Assert.True(await realm.Hub(bob).JoinRoom(roomId));
+        Assert.True(await realm.PlaceAsync(alice, roomId));
+        Assert.True(await realm.PlaceAsync(bob, roomId));
         return new Duel(realm, alice, bob, a, b);
     }
 

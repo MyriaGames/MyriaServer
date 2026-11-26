@@ -22,7 +22,7 @@ public class QuestProgressHubTests
         Assert.True(await realm.Hub(bob).LoadCharacter("Bobchar"));
         var player = realm.Session.Get(bob.ConnectionId)!;
         player.CurrentRoom = Myria.Lib.Core.Services.RoomService.AllRooms.First(r => r.Id == 1);
-        await realm.Hub(bob).JoinRoom(1);
+        await realm.PlaceAsync(bob, 1);
 
         // co1_gather_ore (4 iron ore at the smith) needs co1_first_day done first.
         Assert.True(await realm.Hub(bob).QuestAction("co1_first_day", false));

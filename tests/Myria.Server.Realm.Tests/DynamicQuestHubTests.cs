@@ -29,8 +29,8 @@ public class DynamicQuestHubTests
         var bob = realm.Connect("bob");
         Assert.True(await realm.Hub(alice).LoadCharacter("Alicechar"));
         Assert.True(await realm.Hub(bob).LoadCharacter("Bobchar"));
-        Assert.True(await realm.Hub(alice).JoinRoom(roomId));
-        Assert.True(await realm.Hub(bob).JoinRoom(roomId));
+        Assert.True(await realm.PlaceAsync(alice, roomId));
+        Assert.True(await realm.PlaceAsync(bob, roomId));
         return new Realm2(realm, alice, bob, realm.Session.Get(alice.ConnectionId)!, realm.Session.Get(bob.ConnectionId)!);
     }
 
@@ -160,7 +160,7 @@ public class DynamicQuestHubTests
         var dto = (await r.Realm.Hub(r.Alice).AcceptDynamicQuest(offer.Token))!;
         Give(r.A, "iron_ore", dto.RequiredItems["iron_ore"]);
         r.A.Level = 10;
-        Assert.True(await r.Realm.Hub(r.Alice).JoinRoom(12)); // Hydea's northern gate also has a smith_default
+        Assert.True(await r.Realm.PlaceAsync(r.Alice, 12)); // Hydea's northern gate also has a smith_default
 
         Assert.False(await r.Realm.Hub(r.Alice).QuestAction(dto.Id, isReturn: true));
     }
