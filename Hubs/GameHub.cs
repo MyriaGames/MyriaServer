@@ -768,6 +768,41 @@ namespace Myria.Server.Realm.Hubs
             if (!CharacterRoomHasNpc(npcId))
                 return new CraftActionResult(false, "npc_not_here", null, 0, 0, null);
 
+            return await ExecuteCraftAsync(player, npcId, recipeId, quantity);
+        }
+
+        /// <summary>
+        /// Crafts from the Jobs page, without standing at an NPC - only for the caller's active
+        /// job, and only if that job opted in (Job.AllowJobPageCrafting). The craft NPC is resolved
+        /// server-side from the job, never taken from the client, so the NPC-bound jobs (smith,
+        /// tailor, ...) can't use this to skip their proximity check.
+        /// </summary>
+        public async Task<CraftActionResult> CraftFromJob(string recipeId, int quantity)
+        {
+            if (quantity <= 0 || quantity > MaxCraftBatch)
+                return new CraftActionResult(false, "invalid_quantity", null, 0, 0, null);
+
+            var player = session.Get(Context.ConnectionId);
+            if (player == null)
+                return new CraftActionResult(false, "no_session", null, 0, 0, null);
+
+            using var held = await locks.AcquireAsync(player.Name);
+            var npc = JobManager.GetJobPageCraftNpc(player.ActiveJobId);
+            if (npc == null)
+                return new CraftActionResult(false, "job_crafting_not_allowed", null, 0, 0, null);
+
+            return await ExecuteCraftAsync(player, npc.Id, recipeId, quantity);
+        }
+
+        /// <summary>
+        /// Shared craft execution behind <see cref="Craft"/> (NPC must be here) and
+        /// <see cref="CraftFromJob"/> (opted-in active job). Validates recipe, knowledge and
+        /// ingredients, then consumes and produces. The caller holds the character lock and has
+        /// already validated quantity and its own location/job rule.
+        /// </summary>
+        private async Task<CraftActionResult> ExecuteCraftAsync(
+            Myria.Lib.Core.Entities.Characters.Character player, string npcId, string recipeId, int quantity)
+        {
             var recipe = CraftingService.GetRecipe(npcId, recipeId);
             if (recipe == null)
                 return new CraftActionResult(false, "unknown_recipe", null, 0, 0, null);
