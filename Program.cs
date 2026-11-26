@@ -275,6 +275,15 @@ var runningVersion = File.Exists(versionMarkerPath)
     : "dev (no .installed_version marker — not deployed via update-production.sh)";
 app.Logger.LogInformation("Myria.Server.Realm starting — version: {Version}", runningVersion);
 
+// Plain HTTP is fine behind a reverse proxy on this machine - but then it belongs on loopback, not
+// on every interface where only the firewall stands in front of it (security review 2026-11-26, A02 F2).
+if (app.Environment.IsProduction())
+    foreach (var url in PlainHttpEndpoints.ReachableFromNetwork(builder.Configuration))
+        app.Logger.LogWarning(
+            "PLAIN HTTP ON THE NETWORK: endpoint {Url} is unencrypted and not bound to loopback. If a reverse " +
+            "proxy on this machine terminates TLS, bind it to 127.0.0.1 instead; otherwise passwords and " +
+            "session tokens can cross the network in clear text.", url);
+
 // Apply pending DB migrations for the player/account data (SQLite)
 using (var scope = app.Services.CreateScope())
 {

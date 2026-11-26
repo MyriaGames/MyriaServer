@@ -159,6 +159,9 @@ fi
 chmod +x ./MyriaServer 2>/dev/null || true
 chmod +x ./auth/MyriaAuthServer 2>/dev/null || true
 chmod +x ./run-production.sh ./update-production.sh 2>/dev/null || true
+# The local secrets (JWT key, pepper, internal secret, certificate password) are owner-only
+# (security review 2026-11-26, A02 F3).
+chmod 600 ./appsettings.Production.json ./auth/appsettings.Production.json 2>/dev/null || true
 
 echo "$TARGET_VERSION" > "$VERSION_MARKER"
 # MyriaAuthServer runs with its own AppContext.BaseDirectory (./auth/), so it needs its own
