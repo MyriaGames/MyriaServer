@@ -479,7 +479,9 @@ namespace Myria.Server.Realm.Hubs
             if (!inventory && !money && !vitals && !progress && !questProgress && !jobs && !runes && !equipment) return null;
 
             return new CharacterUpdateDto(
-                inventory ? player.Inventory.Items.Select(i => new InventoryItemSnapshot(i.Id, i.StackSize)).ToList() : null,
+                inventory ? player.Inventory.Items.Select(i => i is EquipmentItem e
+                    ? new InventoryItemSnapshot(i.Id, i.StackSize, e.UpgradeLevel, e.CraftQuality)
+                    : new InventoryItemSnapshot(i.Id, i.StackSize)).ToList() : null,
                 money ? player.Money.Balance.BronzeTotal : null,
                 vitals ? player.CurrentHealth : null,
                 vitals ? player.MaxHealth : null,
@@ -489,7 +491,10 @@ namespace Myria.Server.Realm.Hubs
                 questProgress ? BuildQuestProgress(player) : null,
                 jobs ? player.Jobs.Select(j => new JobProgressSnapshot(j.JobId, j.SkillXp, j.KnowledgeXp, j.FameXp)).ToList() : null,
                 runes ? player.KnownRunes.Select(r => new RuneSnapshot(r.Id, r.BaseRuneId, new List<string>(r.AddedWordIds))).ToList() : null,
-                equipment ? new EquippedSnapshot(player.WeaponSlot?.Id, player.ArmorSlot?.Id, player.AccessorySlot?.Id) : null);
+                equipment ? new EquippedSnapshot(player.WeaponSlot?.Id, player.ArmorSlot?.Id, player.AccessorySlot?.Id,
+                    player.WeaponSlot?.UpgradeLevel ?? 0, player.WeaponSlot?.CraftQuality ?? 1f,
+                    player.ArmorSlot?.UpgradeLevel ?? 0, player.ArmorSlot?.CraftQuality ?? 1f,
+                    player.AccessorySlot?.UpgradeLevel ?? 0, player.AccessorySlot?.CraftQuality ?? 1f) : null);
         }
 
         /// <summary>

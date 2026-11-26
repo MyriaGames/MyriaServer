@@ -172,18 +172,18 @@ namespace Myria.Server.Realm.Repositories
             character.Inventory.Items.Clear();
             foreach (var ii in c.InventoryItems.OrderBy(x => x.SlotIndex))
             {
-                var item = ItemFactory.CreateItem(ii.ItemId, ii.StackSize);
+                var item = ItemFactory.CreateItem(ii.ItemId, ii.StackSize, ii.UpgradeLevel, ii.CraftQuality);
                 if (item is not null)
                     character.Inventory.Items.Add(item);
             }
 
             // Equipment
             if (!string.IsNullOrEmpty(c.WeaponItemId))
-                character.WeaponSlot = ItemFactory.CreateItem(c.WeaponItemId) as EquipmentItem;
+                character.WeaponSlot = ItemFactory.CreateItem(c.WeaponItemId, 1, c.WeaponUpgradeLevel, c.WeaponCraftQuality) as EquipmentItem;
             if (!string.IsNullOrEmpty(c.ArmorItemId))
-                character.ArmorSlot = ItemFactory.CreateItem(c.ArmorItemId) as EquipmentItem;
+                character.ArmorSlot = ItemFactory.CreateItem(c.ArmorItemId, 1, c.ArmorUpgradeLevel, c.ArmorCraftQuality) as EquipmentItem;
             if (!string.IsNullOrEmpty(c.AccessoryItemId))
-                character.AccessorySlot = ItemFactory.CreateItem(c.AccessoryItemId) as EquipmentItem;
+                character.AccessorySlot = ItemFactory.CreateItem(c.AccessoryItemId, 1, c.AccessoryUpgradeLevel, c.AccessoryCraftQuality) as EquipmentItem;
 
             // Active Quests
             character.ActiveQuests.Clear();
@@ -337,6 +337,7 @@ namespace Myria.Server.Realm.Repositories
             SkillCombinationService.ResolveCombinedSkills(character);
             SkillSlotService.ResolveSlots(character);
             SkillSlotService.MigrateIfEmpty(character);
+            character.Inventory.SplitOverfullStacks(); // repairs equipment merged by the old stack-to-50 bug
 
             return character;
         }
@@ -371,6 +372,12 @@ namespace Myria.Server.Realm.Repositories
             record.WeaponItemId             = character.WeaponSlot?.Id;
             record.ArmorItemId              = character.ArmorSlot?.Id;
             record.AccessoryItemId          = character.AccessorySlot?.Id;
+            record.WeaponUpgradeLevel       = character.WeaponSlot?.UpgradeLevel ?? 0;
+            record.WeaponCraftQuality       = character.WeaponSlot?.CraftQuality ?? 1f;
+            record.ArmorUpgradeLevel        = character.ArmorSlot?.UpgradeLevel ?? 0;
+            record.ArmorCraftQuality        = character.ArmorSlot?.CraftQuality ?? 1f;
+            record.AccessoryUpgradeLevel    = character.AccessorySlot?.UpgradeLevel ?? 0;
+            record.AccessoryCraftQuality    = character.AccessorySlot?.CraftQuality ?? 1f;
             record.MoneyBronze              = character.Money.Balance.BronzeTotal;
             record.MoneyCapacity            = character.Money.Capacity;
             record.InventoryPages           = character.Inventory.Pages;
@@ -383,7 +390,12 @@ namespace Myria.Server.Realm.Repositories
             for (int i = 0; i < character.Inventory.Items.Count; i++)
             {
                 var item = character.Inventory.Items[i];
-                record.InventoryItems.Add(new CharacterInventoryItem { ItemId = item.Id, StackSize = item.StackSize, SlotIndex = i });
+                var equipment = item as EquipmentItem;
+                record.InventoryItems.Add(new CharacterInventoryItem
+                {
+                    ItemId = item.Id, StackSize = item.StackSize, SlotIndex = i,
+                    UpgradeLevel = equipment?.UpgradeLevel ?? 0, CraftQuality = equipment?.CraftQuality ?? 1f,
+                });
             }
 
             record.Skills.Clear();

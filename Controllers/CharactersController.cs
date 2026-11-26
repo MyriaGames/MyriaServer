@@ -118,6 +118,12 @@ namespace Myria.Server.Realm.Controllers
                 WeaponItemId            = c.WeaponItemId,
                 ArmorItemId             = c.ArmorItemId,
                 AccessoryItemId         = c.AccessoryItemId,
+                WeaponUpgradeLevel      = c.WeaponUpgradeLevel,
+                WeaponCraftQuality      = c.WeaponCraftQuality,
+                ArmorUpgradeLevel       = c.ArmorUpgradeLevel,
+                ArmorCraftQuality       = c.ArmorCraftQuality,
+                AccessoryUpgradeLevel   = c.AccessoryUpgradeLevel,
+                AccessoryCraftQuality   = c.AccessoryCraftQuality,
                 MoneyBronze             = c.MoneyBronze,
                 MoneyCapacity           = c.MoneyCapacity,
                 InventoryPages          = c.InventoryPages,
@@ -128,7 +134,7 @@ namespace Myria.Server.Realm.Controllers
 
                 InventoryItems = c.InventoryItems
                     .OrderBy(i => i.SlotIndex)
-                    .Select(i => new CharSaveInventoryItem { ItemId = i.ItemId, StackSize = i.StackSize, SlotIndex = i.SlotIndex })
+                    .Select(i => new CharSaveInventoryItem { ItemId = i.ItemId, StackSize = i.StackSize, SlotIndex = i.SlotIndex, UpgradeLevel = i.UpgradeLevel, CraftQuality = i.CraftQuality })
                     .ToList(),
 
                 SkillIds = c.Skills.Select(s => s.SkillId).ToList(),

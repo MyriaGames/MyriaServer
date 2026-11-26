@@ -66,6 +66,13 @@ namespace Myria.Server.Realm.Models
         [MaxLength(100)] public string? WeaponItemId { get; set; }
         [MaxLength(100)] public string? ArmorItemId { get; set; }
         [MaxLength(100)] public string? AccessoryItemId { get; set; }
+        // Each slot's upgrade level and craft quality (not stored before - upgrades were lost on load).
+        public int   WeaponUpgradeLevel    { get; set; }
+        public float WeaponCraftQuality    { get; set; } = 1f;
+        public int   ArmorUpgradeLevel     { get; set; }
+        public float ArmorCraftQuality     { get; set; } = 1f;
+        public int   AccessoryUpgradeLevel { get; set; }
+        public float AccessoryCraftQuality { get; set; } = 1f;
 
         // ── Money ────────────────────────────────────────────────────────────────
         public long MoneyBronze { get; set; }

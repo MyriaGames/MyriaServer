@@ -122,6 +122,9 @@ namespace Myria.Server.Realm.Models.Dto
         public int    StackSize { get; set; } = 1;
         [Range(0, int.MaxValue)]
         public int    SlotIndex { get; set; }
+        // Equipment's upgrade state (read on load; the server never takes these from a client save).
+        public int    UpgradeLevel { get; set; }
+        public float  CraftQuality { get; set; } = 1f;
     }
 
     public class CharSaveActiveQuest
