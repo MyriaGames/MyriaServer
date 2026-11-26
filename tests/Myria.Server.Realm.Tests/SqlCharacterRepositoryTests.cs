@@ -372,4 +372,38 @@ public class SqlCharacterRepositoryTests
         // Must not throw.
         await new SqlCharacterRepository(host.Db).DeleteAsync(User, "NoSuchHero");
     }
+
+    // ---- Equipment upgrade state (wasn't stored at all: every upgrade was lost on load) --------
+
+    private static Myria.Lib.Core.Entities.Items.EquipmentItem Upgraded(string id, int level, float quality)
+    {
+        var item = (Myria.Lib.Core.Entities.Items.EquipmentItem)ItemFactory.CreateItem(id)!;
+        item.CraftQuality = quality;
+        for (int i = 0; i < level; i++) item.TryUpgrade_Internal();
+        return item;
+    }
+
+    [Fact]
+    public async Task SaveThenLoad_KeepsUpgradeLevelAndCraftQuality_InTheBagAndEquipped()
+    {
+        using var host = new RealmDbHost();
+        var character = NewCharacter();
+        var bagSword = Upgraded("iron_sword", 3, 1.2f);
+        character.Inventory.Items.Add(bagSword);
+        character.Inventory.Items.Add(Upgraded("iron_sword", 0, 1f));
+        character.WeaponSlot = Upgraded("steel_sword", 2, 1.1f);
+        character.ArmorSlot = Upgraded("chain_armor", 1, 1f);
+
+        var loaded = await RoundTripAsync(host, character);
+
+        var swords = loaded!.Inventory.Items.OfType<Myria.Lib.Core.Entities.Items.EquipmentItem>().Where(i => i.Id == "iron_sword").ToList();
+        Assert.Equal(new[] { 0, 3 }, swords.Select(s => s.UpgradeLevel).OrderBy(l => l));
+        var plus3 = swords.Single(s => s.UpgradeLevel == 3);
+        Assert.Equal(1.2f, plus3.CraftQuality, 3);
+        Assert.Equal(bagSword.BonusATK, plus3.BonusATK);
+        Assert.Equal(2, loaded.WeaponSlot!.UpgradeLevel);
+        Assert.Equal(1.1f, loaded.WeaponSlot.CraftQuality, 3);
+        Assert.Equal(character.WeaponSlot.BonusATK, loaded.WeaponSlot.BonusATK);
+        Assert.Equal(1, loaded.ArmorSlot!.UpgradeLevel);
+    }
 }

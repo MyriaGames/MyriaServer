@@ -12,6 +12,10 @@ namespace Myria.Server.Realm.Models
         public int StackSize { get; set; } = 1;
         /// <summary>Position index in the flat Items list (0-based).</summary>
         public int SlotIndex { get; set; }
+        /// <summary>Equipment only: upgrade level and craft quality (0 / 1 for everything else).
+        /// Weren't stored before, so every upgrade was lost on the next load.</summary>
+        public int UpgradeLevel { get; set; }
+        public float CraftQuality { get; set; } = 1f;
 
         [ForeignKey(nameof(CharacterId))]
         public Character Character { get; set; } = null!;

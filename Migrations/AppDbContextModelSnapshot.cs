@@ -77,9 +77,15 @@ namespace Myria.Server.Realm.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<float>("AccessoryCraftQuality")
+                        .HasColumnType("REAL");
+
                     b.Property<string>("AccessoryItemId")
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
+
+                    b.Property<int>("AccessoryUpgradeLevel")
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("ActiveJobId")
                         .HasMaxLength(100)
@@ -88,9 +94,15 @@ namespace Myria.Server.Realm.Migrations
                     b.Property<bool>("AdventurersGuildMember")
                         .HasColumnType("INTEGER");
 
+                    b.Property<float>("ArmorCraftQuality")
+                        .HasColumnType("REAL");
+
                     b.Property<string>("ArmorItemId")
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
+
+                    b.Property<int>("ArmorUpgradeLevel")
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("BanReason")
                         .HasMaxLength(500)
@@ -219,9 +231,15 @@ namespace Myria.Server.Realm.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("TEXT");
 
+                    b.Property<float>("WeaponCraftQuality")
+                        .HasColumnType("REAL");
+
                     b.Property<string>("WeaponItemId")
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
+
+                    b.Property<int>("WeaponUpgradeLevel")
+                        .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
 
@@ -317,6 +335,9 @@ namespace Myria.Server.Realm.Migrations
                     b.Property<int>("CharacterId")
                         .HasColumnType("INTEGER");
 
+                    b.Property<float>("CraftQuality")
+                        .HasColumnType("REAL");
+
                     b.Property<string>("ItemId")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -326,6 +347,9 @@ namespace Myria.Server.Realm.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<int>("StackSize")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("UpgradeLevel")
                         .HasColumnType("INTEGER");
 
                     b.HasKey("Id");

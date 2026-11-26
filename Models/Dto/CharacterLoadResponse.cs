@@ -47,6 +47,12 @@ namespace Myria.Server.Realm.Models.Dto
         public string? WeaponItemId    { get; set; }
         public string? ArmorItemId     { get; set; }
         public string? AccessoryItemId { get; set; }
+        public int     WeaponUpgradeLevel    { get; set; }
+        public float   WeaponCraftQuality    { get; set; } = 1f;
+        public int     ArmorUpgradeLevel     { get; set; }
+        public float   ArmorCraftQuality     { get; set; } = 1f;
+        public int     AccessoryUpgradeLevel { get; set; }
+        public float   AccessoryCraftQuality { get; set; } = 1f;
 
         // ── Money ────────────────────────────────────────────────────────────────
         public long MoneyBronze   { get; set; }
