@@ -96,6 +96,7 @@ builder.Services.AddSingleton<CharacterPresenceService>();
 builder.Services.AddSingleton<PartyService>();
 builder.Services.AddSingleton<CharacterSessionService>();
 builder.Services.AddSingleton<TradeService>();
+builder.Services.AddSingleton<CharacterLocks>();
 builder.Services.AddScoped<PlayerShopService>();
 builder.Services.AddSingleton<GroupCombatService>();
 // Global hub filters: registered via AddSignalR(options => options.AddFilter<T>()) plus a plain

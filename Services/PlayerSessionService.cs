@@ -11,8 +11,12 @@ namespace Myria.Server.Realm.Services
     public class CharacterSessionService
     {
         private readonly ConcurrentDictionary<string, Character> _players = new();
-        // connectionId → (roomId → (date, remaining))
-        private readonly ConcurrentDictionary<string, Dictionary<int, (DateTime Date, int Remaining)>> _gatherState = new();
+        // characterName → (roomId → (date, remaining)). Keyed by CHARACTER, not connection, and never
+        // reset when a session starts or ends: per connection, every reconnect or character switch
+        // handed out a fresh daily gather allowance (security review 2026-11-26, A06 F9). Only a
+        // realm restart clears it (in memory by choice - not something a player can trigger).
+        private readonly ConcurrentDictionary<string, Dictionary<int, (DateTime Date, int Remaining)>> _gatherState =
+            new(StringComparer.OrdinalIgnoreCase);
         private readonly ConcurrentDictionary<string, CombatEncounter> _encounters = new();
         // characterName → the connectionId currently holding that character's live session.
         private readonly ConcurrentDictionary<string, string> _connectionByCharacter = new(StringComparer.OrdinalIgnoreCase);
@@ -34,7 +38,6 @@ namespace Myria.Server.Realm.Services
         {
             lock (_lock)
             {
-                _gatherState[connectionId] = new Dictionary<int, (DateTime, int)>();
                 _connectionByCharacter[player.Name] = connectionId;
                 return _players.TryAdd(connectionId, player);
             }
@@ -55,7 +58,6 @@ namespace Myria.Server.Realm.Services
             lock (_lock)
             {
                 _players.TryRemove(connectionId, out var p);
-                _gatherState.TryRemove(connectionId, out _);
                 _encounters.TryRemove(connectionId, out _);
                 if (p != null)
                     _connectionByCharacter.TryRemove(new KeyValuePair<string, string>(p.Name, connectionId));
@@ -89,10 +91,6 @@ namespace Myria.Server.Realm.Services
                 if (_encounters.TryRemove(oldConnectionId, out var encounter))
                     _encounters[newConnectionId] = encounter;
 
-                _gatherState[newConnectionId] = _gatherState.TryRemove(oldConnectionId, out var gather)
-                    ? gather
-                    : new Dictionary<int, (DateTime, int)>();
-
                 return player;
             }
         }
@@ -101,9 +99,9 @@ namespace Myria.Server.Realm.Services
         /// Attempts to consume one gather charge for the given room.
         /// Resets the per-player daily counter when the UTC date has rolled over.
         /// </summary>
-        public bool TryConsumeGather(string connectionId, int roomId, int dailyLimit, out int remaining)
+        public bool TryConsumeGather(string characterName, int roomId, int dailyLimit, out int remaining)
         {
-            var state = _gatherState.GetOrAdd(connectionId, _ => new());
+            var state = _gatherState.GetOrAdd(characterName, _ => new());
             lock (state)
             {
                 var today = DateTime.UtcNow.Date;

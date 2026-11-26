@@ -25,6 +25,11 @@ namespace Myria.Server.Realm.Services
         // skims this fraction off the top before crediting the owner - zero when they're right there.
         public const double RemoteSaleFeeRate = 0.02;
 
+        // Highest price per unit (bronze). Without a cap, price * quantity overflowed long and the
+        // "cost" turned into a huge credit for the buyer (security review 2026-11-26, A06 F2). 10^9
+        // per unit times any stack size stays far below long.MaxValue.
+        public const long MaxUnitPrice = 1_000_000_000;
+
         private Task<Character?> GetCharacterByNameAsync(string name) =>
             db.Characters.SingleOrDefaultAsync(c => c.Name == name);
 
@@ -155,7 +160,7 @@ namespace Myria.Server.Realm.Services
             string ownerName, string itemId, long? price)
         {
             if (itemId == SealItemId) return (false, "seal_not_listable", null);
-            if (price is <= 0) return (false, "invalid_price", null);
+            if (price is <= 0 or > MaxUnitPrice) return (false, "invalid_price", null);
 
             var shop = await db.PlayerShops.Include(s => s.Items)
                 .Include(s => s.OwnerCharacter)

@@ -188,6 +188,33 @@ namespace Myria.Server.Realm.Services
             }
         }
 
+        /// <summary>
+        /// If both sides are ready, takes the final offer (from <paramref name="connId"/>'s side) and ends
+        /// the trade - in one lock section, so no offer change can land between "both ready" and the
+        /// swap, and a second ConfirmTrade can't execute the same trade again (security review
+        /// 2026-11-26, A06 F10: Confirm and Snapshot used to be separate steps).
+        /// </summary>
+        public bool TryClaimCompleted(string connId, out TradeSnapshot? final, out string? partnerConn)
+        {
+            lock (_lock)
+            {
+                final = null; partnerConn = null;
+                var s = Get(connId);
+                if (s is null || !(s.ReadyA && s.ReadyB)) return false;
+                bool isA = s.ConnA == connId;
+                final = new TradeSnapshot(
+                    isA ? s.OffersA.ToList() : s.OffersB.ToList(),
+                    isA ? s.OffersB.ToList() : s.OffersA.ToList(),
+                    isA ? s.GoldA : s.GoldB,
+                    isA ? s.GoldB : s.GoldA,
+                    true, true);
+                partnerConn = isA ? s.ConnB : s.ConnA;
+                _byConn.Remove(s.ConnA);
+                _byConn.Remove(s.ConnB);
+                return true;
+            }
+        }
+
         // Removes both parties from the service. Call on cancel or completion.
         public (string ConnA, string ConnB) End(string connId)
         {
