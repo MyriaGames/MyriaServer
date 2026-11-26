@@ -507,11 +507,16 @@ namespace Myria.Server.Realm.Hubs
             return Task.FromResult(BuildQuestProgress(player));
         }
 
-        private static List<QuestProgressState> BuildQuestProgress(Myria.Lib.Core.Entities.Characters.Character player) =>
-            player.ActiveQuests.Select(q => new QuestProgressState(
+        private static List<QuestProgressState> BuildQuestProgress(Myria.Lib.Core.Entities.Characters.Character player)
+        {
+            // Item counters from the current inventory (sold/used items count down), so the client shows
+            // and decides on what the hand-in will actually check.
+            QuestManager.UpdateItemProgress(player);
+            return player.ActiveQuests.Select(q => new QuestProgressState(
                 q.Id,
                 new Dictionary<int, int>(q.KillProgress),
                 new Dictionary<string, int>(q.ItemProgress))).ToList();
+        }
 
         // ── Room presence ─────────────────────────────────────────────────────
 
@@ -1059,11 +1064,10 @@ namespace Myria.Server.Realm.Hubs
                 // KillProgress/ItemProgress counters said otherwise. Same check as
                 // Character.ValidateQuestStatuses, which already corrects this after the fact for
                 // saved data; this stops it from happening live.
-                bool killsDone = active.RequiredKills.All(rk =>
-                    active.KillProgress.TryGetValue(rk.Key, out int kills) && kills >= rk.Value);
-                bool itemsDone = active.RequiredItems.All(ri =>
-                    active.ItemProgress.TryGetValue(ri.Key, out int items) && items >= ri.Value);
-                if (!killsDone || !itemsDone) return false;
+                // Item counters are recounted from what the character actually carries right now - they
+                // only ever went up, so items sold or used up after the counter was full still counted.
+                QuestManager.UpdateItemProgress(player);
+                if (!QuestManager.ObjectivesMet(active)) return false;
 
                 active.GrantRewards(player);
 
@@ -1100,12 +1104,9 @@ namespace Myria.Server.Realm.Hubs
                 if (!string.IsNullOrEmpty(quest.GiverNpcId) && !CharacterRoomHasNpc(quest.GiverNpcId))
                     return false;
 
-                {
-                    var clone = quest.Clone();
-                    clone.Status = clone.IsTalkOnly ? QuestStatus.Completed : QuestStatus.InProgress;
-                    clone.GrantAcceptItems(player);
-                    player.ActiveQuests.Add(clone);
-                }
+                // Also counts items the character already carries (they used to show 0/N until a new one
+                // was picked up).
+                QuestManager.StartQuest(player, quest);
             }
 
             // Covers both directions: a turn-in's item/gold/XP rewards, and an accept's
