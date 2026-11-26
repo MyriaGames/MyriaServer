@@ -30,13 +30,17 @@ var builder = WebApplication.CreateBuilder(args);
 if (builder.Environment.IsProduction())
 {
     var configuredJwtKey = builder.Configuration["Jwt:Key"];
-    if (configuredJwtKey == "REPLACE_ME_DEV_PLACEHOLDER_KEY" || string.IsNullOrWhiteSpace(configuredJwtKey))
+    if (ProductionSecrets.IsPlaceholder(configuredJwtKey))
         throw new InvalidOperationException(
             "Jwt:Key is still the dev placeholder (or unset) while running in Production. " +
             "Set a real secret via the Jwt__Key environment variable before starting this realm.");
+    // Same minimum as the auth server: HMAC-SHA256 wants a key at least as long as its output.
+    if (Encoding.UTF8.GetByteCount(configuredJwtKey!) < 32)
+        throw new InvalidOperationException(
+            "Jwt:Key is shorter than 32 bytes while running in Production. Use the same long secret as the auth server.");
 
     var configuredAdminSecret = builder.Configuration["Admin:InternalSecret"];
-    if (configuredAdminSecret == "REPLACE_ME_DEV_PLACEHOLDER_ADMIN_SECRET" || string.IsNullOrWhiteSpace(configuredAdminSecret))
+    if (ProductionSecrets.IsPlaceholder(configuredAdminSecret))
         throw new InvalidOperationException(
             "Admin:InternalSecret is still the dev placeholder (or unset) while running in Production. " +
             "Set a real secret via the Admin__InternalSecret environment variable before starting this realm.");

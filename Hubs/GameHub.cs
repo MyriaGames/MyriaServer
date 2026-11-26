@@ -2407,7 +2407,19 @@ namespace Myria.Server.Realm.Hubs
                 await Clients.Caller.SendAsync("ShopBuyResult", false, "insufficient_gold", itemId, 0, 0L);
                 return;
             }
-            if (!await shop.CommitSaleAsync(ownerName, itemId, qty))
+            bool sold;
+            try
+            {
+                sold = await shop.CommitSaleAsync(ownerName, itemId, qty);
+            }
+            catch
+            {
+                // Paid already: any database error here (not only "sold out") must give the gold back
+                // before the error propagates (security review 2026-11-26, A10 F2).
+                buyer.Money.TryAdd(totalCost);
+                throw;
+            }
+            if (!sold)
             {
                 buyer.Money.TryAdd(totalCost);
                 await Clients.Caller.SendAsync("ShopBuyResult", false, "insufficient_stock", itemId, 0, 0L);
@@ -2924,7 +2936,8 @@ namespace Myria.Server.Realm.Hubs
                 var conn = presence.GetConnectionByName(p.Name);
                 var username = conn != null ? presence.GetAccountUsername(conn) : null;
                 if (username == null) continue;
-                try { await repo.SaveAsync(username, p); } catch { /* best-effort */ }
+                // Retries and logs like every other save path - a silent catch hid lost combat progress (A10 F5).
+                await SaveCharacterReliablyAsync(repo, username, p, "combat");
             }
         }
 
