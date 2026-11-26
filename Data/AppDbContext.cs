@@ -183,6 +183,11 @@ namespace Myria.Server.Realm.Data
                 e.HasKey(t => t.GuildId);
                 e.HasOne(t => t.Guild).WithOne(g => g.Treasury)
                     .HasForeignKey<GuildTreasury>(t => t.GuildId).OnDelete(DeleteBehavior.Cascade);
+                // The balance is read before a purchase's transaction and written as an absolute
+                // value - two concurrent purchases both passed the check and one debit was lost
+                // (security review 2026-11-26, A06 F11). As a concurrency token the second write
+                // fails (DbUpdateConcurrencyException -> the purchase's rollback, "try again").
+                e.Property(t => t.Balance).IsConcurrencyToken();
             });
 
             modelBuilder.Entity<GuildDeposit>(e =>

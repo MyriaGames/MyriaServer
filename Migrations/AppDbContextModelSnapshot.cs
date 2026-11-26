@@ -961,6 +961,7 @@ namespace Myria.Server.Realm.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<long>("Balance")
+                        .IsConcurrencyToken()
                         .HasColumnType("INTEGER");
 
                     b.HasKey("GuildId");
