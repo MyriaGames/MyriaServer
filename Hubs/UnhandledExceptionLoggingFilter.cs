@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.SignalR;
 
-namespace Myria.Server.Realm.Hubs
+namespace Myria.Server.ClassicRealm.Hubs
 {
     /// <summary>
     /// Originally added as a scoped, additive safety net for the 2026-09-10 security/robustness

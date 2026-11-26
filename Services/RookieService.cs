@@ -1,10 +1,10 @@
 using Microsoft.EntityFrameworkCore;
 using Myria.Lib.Core.Services.Manager;
-using Myria.Server.Realm.Data;
-using Myria.Server.Realm.Models;
+using Myria.Server.ClassicRealm.Data;
+using Myria.Server.ClassicRealm.Models;
 using GameCharacter = Myria.Lib.Core.Entities.Characters.Character;
 
-namespace Myria.Server.Realm.Services
+namespace Myria.Server.ClassicRealm.Services
 {
     /// <summary>
     /// Handles the two rookie mechanics: XP bonus and NPC purchase commission.

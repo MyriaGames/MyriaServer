@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 
-namespace Myria.Server.Realm.Tests;
+namespace Myria.Server.ClassicRealm.Tests;
 
 /// <summary>
 /// A finished solo fight is saved right away (MONO-004): XP and loot from a win used to live only in

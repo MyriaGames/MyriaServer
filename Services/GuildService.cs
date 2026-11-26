@@ -1,8 +1,8 @@
 using Microsoft.EntityFrameworkCore;
-using Myria.Server.Realm.Data;
-using Myria.Server.Realm.Models;
+using Myria.Server.ClassicRealm.Data;
+using Myria.Server.ClassicRealm.Models;
 
-namespace Myria.Server.Realm.Services
+namespace Myria.Server.ClassicRealm.Services
 {
     public class GuildService(AppDbContext db)
     {

@@ -1,4 +1,4 @@
-namespace Myria.Server.Realm.Models
+namespace Myria.Server.ClassicRealm.Models
 {
     /// <summary>
     /// Client versions this Realm server currently accepts. Loaded once at startup from

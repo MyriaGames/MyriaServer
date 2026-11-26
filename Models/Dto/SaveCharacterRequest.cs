@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace Myria.Server.Realm.Models.Dto
+namespace Myria.Server.ClassicRealm.Models.Dto
 {
     /// <summary>Full player state sent by the client when saving a character.</summary>
     public class SaveCharacterRequest

@@ -1,4 +1,4 @@
-namespace Myria.Server.Realm.Models.Dto
+namespace Myria.Server.ClassicRealm.Models.Dto
 {
     /// <summary>Full character state returned by GET /api/characters/{name}.</summary>
     public class CharacterLoadResponse

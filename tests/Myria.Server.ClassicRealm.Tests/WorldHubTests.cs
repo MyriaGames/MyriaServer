@@ -3,10 +3,10 @@ using Myria.Lib.Core.Entities.Items;
 using Myria.Lib.Core.Services;
 using Myria.Lib.Core.Services.Builder;
 using Myria.Lib.Core.Systems.World;
-using Myria.Server.Realm.Services;
+using Myria.Server.ClassicRealm.Services;
 using Xunit;
 
-namespace Myria.Server.Realm.Tests;
+namespace Myria.Server.ClassicRealm.Tests;
 
 /// <summary>
 /// v0.3 quest rework, part 1, through the real hub and game data: room populations gate which

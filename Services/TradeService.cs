@@ -1,4 +1,4 @@
-namespace Myria.Server.Realm.Services
+namespace Myria.Server.ClassicRealm.Services
 {
     public record TradeItem(string ItemId, string Name, int Quantity);
 

@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace Myria.Server.Realm.Models.Dto
+namespace Myria.Server.ClassicRealm.Models.Dto
 {
     // Wire shapes of the internal operator API (Controllers/AdminController), consumed by the
     // localhost admin site. Permanent bans are reported as Permanent = true rather than leaking the

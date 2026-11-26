@@ -1,6 +1,6 @@
-# Myria.Server.Realm
+# Myria.Server.ClassicRealm
 
-**Myria.Server.Realm** (published binary name: `MyriaServer`) is the authoritative realtime
+**Myria.Server.ClassicRealm** (published binary name: `MyriaServer`) is the authoritative realtime
 game/world server for **Myria** — an ASP.NET Core 8 + SignalR service that holds all
 character/account game state, runs the live gameplay loop (combat, movement, chat, trading,
 guilds, parties, shops), and exposes a REST API for character management and the game's social
@@ -75,7 +75,7 @@ GitHub org:
   service. It handles registration, login, and password management, and mints the JWTs that this
   realm validates. It also owns the list of available realms and reaches this service's internal
   admin API for account-deletion/rename cascades.
-- **Myria.Server.Realm** (this repo) — the authoritative game/world server described above. It
+- **Myria.Server.ClassicRealm** (this repo) — the authoritative game/world server described above. It
   trusts tokens minted by MyriaAuthServer purely via a shared signing key, with no live callback
   to that service for ordinary gameplay.
 - **[Myria.Lib](https://github.com/MyriaGames/MyriaLib)** — shared game-logic library (entities,
@@ -93,7 +93,7 @@ GitHub org:
 ## Getting started / local development
 
 ```
-dotnet run --project Myria.Server.Realm.csproj
+dotnet run --project Myria.Server.ClassicRealm.csproj
 ```
 
 By default (the `http`/`https` launch profiles in `Properties/launchSettings.json`, which force

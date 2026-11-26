@@ -6,7 +6,7 @@
 # What it does:
 #   1. Reads the latest version from the Myria release server
 #      (https://myria.myria-games.duckdns.org/downloads/latest.json, or $MYRIA_RELEASES_URL),
-#      then downloads that version's MyriaServer_linux-x64_<version>.zip.
+#      then downloads that version's MyriaClassicRealm_linux-x64_<version>.zip.
 #   2. Verifies the zip against the release's SHA256SUMS and extracts it into a temp staging
 #      directory.
 #   3. Copies everything from staging over this directory EXCEPT:
@@ -64,7 +64,7 @@ if ! [[ "$TARGET_VERSION" =~ ^[0-9]+(\.[0-9]+){1,3}$ ]]; then
     exit 1
 fi
 
-ZIP_NAME="MyriaServer_linux-x64_${TARGET_VERSION}.zip"
+ZIP_NAME="MyriaClassicRealm_linux-x64_${TARGET_VERSION}.zip"
 LINUX_URL="$RELEASES_URL/$TARGET_VERSION/$ZIP_NAME"
 SUMS_URL="$RELEASES_URL/$TARGET_VERSION/SHA256SUMS"
 
@@ -156,7 +156,7 @@ if [ ! -f "$SIGNERS" ] && [ -f "$STAGE_DIR/release-signers" ]; then
     echo "Installed the release signing key ($SIGNERS)."
 fi
 
-chmod +x ./MyriaServer 2>/dev/null || true
+chmod +x ./MyriaClassicRealm 2>/dev/null || true
 chmod +x ./auth/MyriaAuthServer 2>/dev/null || true
 chmod +x ./run-production.sh ./update-production.sh 2>/dev/null || true
 # The local secrets (JWT key, pepper, internal secret, certificate password) are owner-only

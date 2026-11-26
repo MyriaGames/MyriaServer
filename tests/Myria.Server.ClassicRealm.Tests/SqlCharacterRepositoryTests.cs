@@ -1,10 +1,10 @@
 using Myria.Lib.Core.Entities;
 using Myria.Lib.Core.Entities.Characters;
 using Myria.Lib.Core.Services.Builder;
-using Myria.Server.Realm.Repositories;
+using Myria.Server.ClassicRealm.Repositories;
 using Xunit;
 
-namespace Myria.Server.Realm.Tests;
+namespace Myria.Server.ClassicRealm.Tests;
 
 /// <summary>
 /// SqlCharacterRepository is the only thing standing between a player's progress and a normalised

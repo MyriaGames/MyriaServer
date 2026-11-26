@@ -1,7 +1,7 @@
 using System.Collections.Concurrent;
 using Microsoft.AspNetCore.SignalR;
 
-namespace Myria.Server.Realm.Services
+namespace Myria.Server.ClassicRealm.Services
 {
     public class CharacterPresenceService
     {

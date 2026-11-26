@@ -1,8 +1,8 @@
-using Myria.Server.Realm.Models;
-using Myria.Server.Realm.Services;
+using Myria.Server.ClassicRealm.Models;
+using Myria.Server.ClassicRealm.Services;
 using Xunit;
 
-namespace Myria.Server.Realm.Tests;
+namespace Myria.Server.ClassicRealm.Tests;
 
 /// <summary>Operator bans: account-level (realm-only) and per-character, with expiry.</summary>
 public class BanTests

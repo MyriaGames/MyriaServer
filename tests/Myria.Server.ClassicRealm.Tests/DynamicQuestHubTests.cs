@@ -3,10 +3,10 @@ using Myria.Lib.Core.Entities.Characters;
 using Myria.Lib.Core.Services.Builder;
 using Myria.Lib.Core.Services.Manager;
 using Myria.Lib.Core.Systems.World;
-using Myria.Server.Realm.Services;
+using Myria.Server.ClassicRealm.Services;
 using Xunit;
 
-namespace Myria.Server.Realm.Tests;
+namespace Myria.Server.ClassicRealm.Tests;
 
 /// <summary>
 /// v0.3 quest rework, part 2, through the real hub and game data: the Adventurers' Guild, bounties
@@ -218,7 +218,7 @@ public class DynamicQuestHubTests
 
         Assert.NotNull(reloaded.Get(DynamicQuests.GrantIdOf(dto.Id)));
         await using var db = r.Realm.NewDb();
-        var repo = new Myria.Server.Realm.Repositories.SqlCharacterRepository(db);
+        var repo = new Myria.Server.ClassicRealm.Repositories.SqlCharacterRepository(db);
         var loaded = await repo.LoadAsync("alice", "Alicechar");
         Assert.Contains(loaded!.ActiveQuests, q => q.Id == dto.Id && q.RequiredRoomId == 2);
     }

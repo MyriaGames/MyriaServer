@@ -1,11 +1,11 @@
 using Myria.Lib.Core.Entities.Items;
 using Myria.Lib.Core.Services.Builder;
 using Myria.Lib.Core.Services.Manager;
-using Myria.Server.Realm.Hubs;
-using Myria.Server.Realm.Services;
+using Myria.Server.ClassicRealm.Hubs;
+using Myria.Server.ClassicRealm.Services;
 using Xunit;
 
-namespace Myria.Server.Realm.Tests;
+namespace Myria.Server.ClassicRealm.Tests;
 
 /// <summary>
 /// Security review 2026-11-26, A06: the economy and game-rule fixes, exercised through the real hub
@@ -121,7 +121,7 @@ public class EconomyIntegrityHubTests
         // A second character for the same account
         using (var db = realm.NewDb())
         {
-            await new Myria.Server.Realm.Repositories.SqlCharacterRepository(db).SaveAsync("bob",
+            await new Myria.Server.ClassicRealm.Repositories.SqlCharacterRepository(db).SaveAsync("bob",
                 new Myria.Lib.Core.Entities.Characters.Character("Bobalt", new Myria.Lib.Core.Entities.Stats()));
         }
         realm.Session.Get(bob.ConnectionId)!.Money.TryAdd(4321);
@@ -248,13 +248,13 @@ public class SessionAndLockTests
     public async Task ShopPrice_IsCapped(long price, bool accepted)
     {
         using var host = new RealmDbHost();
-        var owner = new Myria.Server.Realm.Models.Character { UserId = "alice", Name = "Alicia" };
+        var owner = new Myria.Server.ClassicRealm.Models.Character { UserId = "alice", Name = "Alicia" };
         host.Db.Characters.Add(owner);
         await host.Db.SaveChangesAsync();
-        host.Db.PlayerShops.Add(new Myria.Server.Realm.Models.PlayerShop
+        host.Db.PlayerShops.Add(new Myria.Server.ClassicRealm.Models.PlayerShop
         {
             OwnerCharacterId = owner.Id, RoomId = 1,
-            Items = { new Myria.Server.Realm.Models.PlayerShopItem { ItemId = "iron_ore", Quantity = 2 } }
+            Items = { new Myria.Server.ClassicRealm.Models.PlayerShopItem { ItemId = "iron_ore", Quantity = 2 } }
         });
         await host.Db.SaveChangesAsync();
 

@@ -1,7 +1,7 @@
 using Myria.Lib.Core.Systems;
 using System.Collections.Concurrent;
 
-namespace Myria.Server.Realm.Services
+namespace Myria.Server.ClassicRealm.Services
 {
     /// <summary>
     /// Live PvP fights: fightId -> encounter, and connection -> fightId for every participant's

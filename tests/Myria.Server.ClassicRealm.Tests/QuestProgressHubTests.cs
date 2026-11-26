@@ -2,7 +2,7 @@ using Myria.Lib.Core.Entities.Items;
 using Myria.Lib.Core.Systems.Enums;
 using Xunit;
 
-namespace Myria.Server.Realm.Tests;
+namespace Myria.Server.ClassicRealm.Tests;
 
 /// <summary>
 /// Reported 2026-11-26: quest counters were wrong and finished quests not returnable. On the server: items already

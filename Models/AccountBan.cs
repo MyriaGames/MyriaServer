@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace Myria.Server.Realm.Models
+namespace Myria.Server.ClassicRealm.Models
 {
     // Bars an ACCOUNT from playing on this realm (hub connection + realm REST API). It lives on the
     // realm, keyed by username like Character.UserId, and has no counterpart in the auth service:

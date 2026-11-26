@@ -4,13 +4,13 @@ using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Myria.Lib.Core.Models;
 using Myria.Lib.Core.Services.Builder;
-using Myria.Server.Realm.Data;
-using Myria.Server.Realm.Models;
-using Myria.Server.Realm.Models.Dto;
-using Myria.Server.Realm.Repositories;
-using Myria.Server.Realm.Services;
+using Myria.Server.ClassicRealm.Data;
+using Myria.Server.ClassicRealm.Models;
+using Myria.Server.ClassicRealm.Models.Dto;
+using Myria.Server.ClassicRealm.Repositories;
+using Myria.Server.ClassicRealm.Services;
 
-namespace Myria.Server.Realm.Controllers
+namespace Myria.Server.ClassicRealm.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]

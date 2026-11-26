@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
-using Myria.Server.Realm.Services;
+using Myria.Server.ClassicRealm.Services;
 
-namespace Myria.Server.Realm.Controllers
+namespace Myria.Server.ClassicRealm.Controllers
 {
     [ApiController]
     [Route("api/status")]

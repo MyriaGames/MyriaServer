@@ -2,7 +2,7 @@ using Myria.Lib.Core.Systems;
 using System.Collections.Concurrent;
 using System.Linq;
 
-namespace Myria.Server.Realm.Services
+namespace Myria.Server.ClassicRealm.Services
 {
     public class GroupCombatService
     {

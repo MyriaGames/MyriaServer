@@ -3,10 +3,10 @@ using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Myria.Lib.Core.Entities.Items;
 using Myria.Lib.Core.Services.Builder;
-using Myria.Server.Realm.Data;
-using Myria.Server.Realm.Models.Dto.Public;
+using Myria.Server.ClassicRealm.Data;
+using Myria.Server.ClassicRealm.Models.Dto.Public;
 
-namespace Myria.Server.Realm.Controllers
+namespace Myria.Server.ClassicRealm.Controllers
 {
     /// <summary>
     /// Public, unauthenticated character registry — anyone can browse basic character

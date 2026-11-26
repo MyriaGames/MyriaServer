@@ -3,13 +3,13 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Myria.Server.Realm.Controllers;
-using Myria.Server.Realm.Models;
-using Myria.Server.Realm.Models.Dto;
-using Myria.Server.Realm.Services;
+using Myria.Server.ClassicRealm.Controllers;
+using Myria.Server.ClassicRealm.Models;
+using Myria.Server.ClassicRealm.Models.Dto;
+using Myria.Server.ClassicRealm.Services;
 using Xunit;
 
-namespace Myria.Server.Realm.Tests;
+namespace Myria.Server.ClassicRealm.Tests;
 
 /// <summary>
 /// The account lookup the admin site shows next to a password-reset request (security review
@@ -42,7 +42,7 @@ public class AdminAccountLookupTests : IDisposable
         var db = _db.NewContext();
         var controller = new AdminController(db, _config, new BanService(db), new CharacterPresenceService(),
             new SessionRevocationService(_services.GetRequiredService<IServiceScopeFactory>(), _config), hub: null!,
-            new CharacterSessionService(), new Myria.Server.Realm.Repositories.SqlCharacterRepository(db), new CharacterLocks());
+            new CharacterSessionService(), new Myria.Server.ClassicRealm.Repositories.SqlCharacterRepository(db), new CharacterLocks());
         var http = new DefaultHttpContext();
         http.Connection.RemoteIpAddress = IPAddress.Loopback;
         http.Request.Headers["X-Internal-Secret"] = Secret;

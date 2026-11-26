@@ -3,11 +3,11 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Myria.Server.Realm.Controllers;
-using Myria.Server.Realm.Services;
+using Myria.Server.ClassicRealm.Controllers;
+using Myria.Server.ClassicRealm.Services;
 using Xunit;
 
-namespace Myria.Server.Realm.Tests;
+namespace Myria.Server.ClassicRealm.Tests;
 
 /// <summary>
 /// Security review 2026-11-25, A07 F1: after a password change or reset the auth server revokes the
@@ -123,7 +123,7 @@ public class SessionRevocationTests : IDisposable
         var db = _db.NewContext();
         var controller = new AdminController(db, _config, new BanService(db), new CharacterPresenceService(),
             svc, hub: null!, // hub only used to kick a live connection; none exists here
-            new CharacterSessionService(), new Myria.Server.Realm.Repositories.SqlCharacterRepository(db), new CharacterLocks());
+            new CharacterSessionService(), new Myria.Server.ClassicRealm.Repositories.SqlCharacterRepository(db), new CharacterLocks());
         var http = new DefaultHttpContext();
         http.Connection.RemoteIpAddress = IPAddress.Parse(remoteIp);
         http.Connection.LocalIpAddress = IPAddress.Parse("192.168.1.2");

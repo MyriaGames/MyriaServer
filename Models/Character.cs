@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace Myria.Server.Realm.Models
+namespace Myria.Server.ClassicRealm.Models
 {
     public class Character
     {

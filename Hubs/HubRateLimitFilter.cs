@@ -1,7 +1,7 @@
 using System.Collections.Concurrent;
 using Microsoft.AspNetCore.SignalR;
 
-namespace Myria.Server.Realm.Hubs
+namespace Myria.Server.ClassicRealm.Hubs
 {
     /// <summary>
     /// Closes the remaining half of TODO.md item 62: <c>Program.cs</c>'s "authenticated" REST

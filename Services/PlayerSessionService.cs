@@ -2,7 +2,7 @@ using System.Collections.Concurrent;
 using Myria.Lib.Core.Entities.Characters;
 using Myria.Lib.Core.Systems;
 
-namespace Myria.Server.Realm.Services
+namespace Myria.Server.ClassicRealm.Services
 {
     /// <summary>
     /// Holds server-authoritative player state for every active connection.

@@ -2,10 +2,10 @@ using Microsoft.EntityFrameworkCore;
 using Myria.Lib.Core.Entities.NPCs;
 using Myria.Lib.Core.Services.Manager;
 using Myria.Lib.Core.Systems.World;
-using Myria.Server.Realm.Data;
-using Myria.Server.Realm.Models;
+using Myria.Server.ClassicRealm.Data;
+using Myria.Server.ClassicRealm.Models;
 
-namespace Myria.Server.Realm.Services
+namespace Myria.Server.ClassicRealm.Services
 {
     /// <summary>
     /// Dynamic quests (v0.3 quest rework): computes what an NPC or guild house offers from the live

@@ -1,9 +1,9 @@
 using System.Net;
-using Myria.Server.Realm.Controllers;
-using Myria.Server.Realm.Services;
+using Myria.Server.ClassicRealm.Controllers;
+using Myria.Server.ClassicRealm.Services;
 using Xunit;
 
-namespace Myria.Server.Realm.Tests;
+namespace Myria.Server.ClassicRealm.Tests;
 
 /// <summary>
 /// Security review 2026-11-25:

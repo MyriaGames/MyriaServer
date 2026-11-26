@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace Myria.Server.Realm.Models
+namespace Myria.Server.ClassicRealm.Models
 {
     // Persistent player-run shop, anchored to the room it was opened in. Whether it's
     // currently *visible* to other players is computed on the fly (see PlayerShopService),

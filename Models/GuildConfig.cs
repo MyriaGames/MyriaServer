@@ -1,4 +1,4 @@
-namespace Myria.Server.Realm.Models
+namespace Myria.Server.ClassicRealm.Models
 {
     public class GuildConfig
     {

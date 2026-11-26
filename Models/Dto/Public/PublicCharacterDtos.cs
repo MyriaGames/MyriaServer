@@ -1,4 +1,4 @@
-namespace Myria.Server.Realm.Models.Dto.Public
+namespace Myria.Server.ClassicRealm.Models.Dto.Public
 {
     /// <summary>Row shown in the public character registry list.</summary>
     public class PublicCharacterListItem

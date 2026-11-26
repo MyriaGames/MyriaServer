@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace Myria.Server.Realm.Models
+namespace Myria.Server.ClassicRealm.Models
 {
     /// <summary>One player's copy of a dynamic quest (v0.3 quest rework) - see
     /// Myria.Lib.Core.Systems.World.QuestGrant. Completed grants are kept (Completed = true) but not

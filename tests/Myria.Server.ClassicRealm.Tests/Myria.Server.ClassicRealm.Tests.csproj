@@ -15,10 +15,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Myria.Server.Realm.csproj" />
+    <ProjectReference Include="..\..\Myria.Server.ClassicRealm.csproj" />
   </ItemGroup>
 
-  <!-- Myria.Server.Realm is a Web SDK project; its services and hub touch ASP.NET Core and
+  <!-- Myria.Server.ClassicRealm is a Web SDK project; its services and hub touch ASP.NET Core and
        SignalR types. A plain Microsoft.NET.Sdk test project doesn't get those implicitly. -->
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />

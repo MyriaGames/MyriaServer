@@ -1,6 +1,6 @@
 using Xunit;
 
-namespace Myria.Server.Realm.Tests;
+namespace Myria.Server.ClassicRealm.Tests;
 
 /// <summary>
 /// JoinRoom only walks through an exit of the character's current room (MONO-003): a modified

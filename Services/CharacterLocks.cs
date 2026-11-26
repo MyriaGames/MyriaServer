@@ -1,6 +1,6 @@
 using System.Collections.Concurrent;
 
-namespace Myria.Server.Realm.Services
+namespace Myria.Server.ClassicRealm.Services
 {
     // One lock per character name, for every hub method that changes a live character's inventory or
     // gold. SignalR runs one call at a time per connection, but other connections reach the same

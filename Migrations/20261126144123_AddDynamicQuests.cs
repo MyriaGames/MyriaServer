@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace Myria.Server.Realm.Migrations
+namespace Myria.Server.ClassicRealm.Migrations
 {
     /// <inheritdoc />
     public partial class AddDynamicQuests : Migration

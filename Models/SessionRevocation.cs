@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace Myria.Server.Realm.Models
+namespace Myria.Server.ClassicRealm.Models
 {
     // "Tokens of this account issued before TokensValidAfter are no longer accepted here." Set by the
     // auth server after a password change or reset (and when an operator forces a password change),

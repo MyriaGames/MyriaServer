@@ -1,4 +1,4 @@
-# Setup & Deployment Guide — Myria.Server.Realm
+# Setup & Deployment Guide — Myria.Server.ClassicRealm
 
 This guide walks through deploying **one realm** (this service, `MyriaServer`) together with
 **the shared account service** (`MyriaAuthServer`) in Production. The two are typically deployed
@@ -64,7 +64,7 @@ extract it — it already has the `auth/` subfolder bundled in.
 
 ```bash
 # From this repo:
-dotnet publish Myria.Server.Realm.csproj -c Release -r linux-x64 --self-contained true -o out/realm
+dotnet publish Myria.Server.ClassicRealm.csproj -c Release -r linux-x64 --self-contained true -o out/realm
 
 # From a checkout of MyriaGames/MyriaAuthServer, published into an auth/ subfolder of the same output:
 dotnet publish Myria.Server.Auth.csproj -c Release -r linux-x64 --self-contained true -o out/realm/auth

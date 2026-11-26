@@ -1,8 +1,8 @@
 using System.Text;
 using Microsoft.EntityFrameworkCore;
-using Myria.Server.Realm.Data;
+using Myria.Server.ClassicRealm.Data;
 
-namespace Myria.Server.Realm.Services
+namespace Myria.Server.ClassicRealm.Services
 {
     /// <summary>
     /// Security events in the same fixed, parseable shape as the auth server (security review 2026-11-26,
@@ -13,7 +13,7 @@ namespace Myria.Server.Realm.Services
     public static class SecurityLog
     {
         public const string Template = "security {Event} user={User} outcome={Outcome} detail={Detail}";
-        public const string Category = "Myria.Server.Realm.Security";
+        public const string Category = "Myria.Server.ClassicRealm.Security";
 
         private const char LineSeparator = (char)0x2028;
         private const char ParagraphSeparator = (char)0x2029;

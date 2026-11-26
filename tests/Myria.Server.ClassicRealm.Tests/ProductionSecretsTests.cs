@@ -1,7 +1,7 @@
-using Myria.Server.Realm.Services;
+using Myria.Server.ClassicRealm.Services;
 using Xunit;
 
-namespace Myria.Server.Realm.Tests;
+namespace Myria.Server.ClassicRealm.Tests;
 
 /// <summary>Security review 2026-11-26, A10 F1: every shipped placeholder must stop Production.</summary>
 public class ProductionSecretsTests

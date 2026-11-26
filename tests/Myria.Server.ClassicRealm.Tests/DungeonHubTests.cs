@@ -1,10 +1,10 @@
 using Myria.Lib.Core.Entities.Characters;
 using Myria.Lib.Core.Services;
 using Myria.Lib.Core.Systems.Dungeons;
-using Myria.Server.Realm.Services;
+using Myria.Server.ClassicRealm.Services;
 using Xunit;
 
-namespace Myria.Server.Realm.Tests;
+namespace Myria.Server.ClassicRealm.Tests;
 
 /// <summary>
 /// v0.3 dungeons through the real hub and game data: per-party instances of the Hollow Crypt

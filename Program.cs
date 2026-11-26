@@ -10,12 +10,12 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Myria.Lib.Core.Repositories;
 using Myria.Lib.Core.Services;
-using Myria.Server.Realm.Controllers;
-using Myria.Server.Realm.Data;
-using Myria.Server.Realm.Hubs;
-using Myria.Server.Realm.Models;
-using Myria.Server.Realm.Repositories;
-using Myria.Server.Realm.Services;
+using Myria.Server.ClassicRealm.Controllers;
+using Myria.Server.ClassicRealm.Data;
+using Myria.Server.ClassicRealm.Hubs;
+using Myria.Server.ClassicRealm.Models;
+using Myria.Server.ClassicRealm.Repositories;
+using Myria.Server.ClassicRealm.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -277,13 +277,13 @@ var app = builder.Build();
 
 // Startup version banner — reads the .installed_version marker update-production.sh writes
 // after a deploy (there's no other way to know what's actually running, since this project's
-// own <Version> in Myria.Server.Realm.csproj isn't bumped per release). Falls back to a clear "dev"
+// own <Version> in Myria.Server.ClassicRealm.csproj isn't bumped per release). Falls back to a clear "dev"
 // label for local runs / manual deployments that never went through that script.
 var versionMarkerPath = Path.Combine(AppContext.BaseDirectory, ".installed_version");
 var runningVersion = File.Exists(versionMarkerPath)
     ? File.ReadAllText(versionMarkerPath).Trim()
     : "dev (no .installed_version marker — not deployed via update-production.sh)";
-app.Logger.LogInformation("Myria.Server.Realm starting — version: {Version}", runningVersion);
+app.Logger.LogInformation("Myria.Server.ClassicRealm starting — version: {Version}", runningVersion);
 
 // Plain HTTP is fine behind a reverse proxy on this machine - but then it belongs on loopback, not
 // on every interface where only the firewall stands in front of it (security review 2026-11-26, A02 F2).

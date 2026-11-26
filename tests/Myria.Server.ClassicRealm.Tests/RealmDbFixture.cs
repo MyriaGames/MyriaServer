@@ -1,10 +1,10 @@
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Myria.Lib.Core.Services;
-using Myria.Server.Realm.Data;
+using Myria.Server.ClassicRealm.Data;
 using Xunit;
 
-namespace Myria.Server.Realm.Tests;
+namespace Myria.Server.ClassicRealm.Tests;
 
 /// <summary>
 /// Loads the real Data/common/*.json content once for the whole test run via

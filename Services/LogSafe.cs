@@ -1,4 +1,4 @@
-namespace Myria.Server.Realm.Services
+namespace Myria.Server.ClassicRealm.Services
 {
     // For logging a value a client sent that was NOT validated (typically the very value being
     // rejected). The console logger writes values into the line unchanged and journald starts a new

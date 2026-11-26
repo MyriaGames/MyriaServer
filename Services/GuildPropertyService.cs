@@ -1,11 +1,11 @@
 using Microsoft.EntityFrameworkCore;
 using Myria.Lib.Core.Services;
 using Myria.Lib.Core.Services.Regestries;
-using Myria.Server.Realm.Data;
-using Myria.Server.Realm.Models;
+using Myria.Server.ClassicRealm.Data;
+using Myria.Server.ClassicRealm.Models;
 using GameCharacter = Myria.Lib.Core.Entities.Characters.Character;
 
-namespace Myria.Server.Realm.Services
+namespace Myria.Server.ClassicRealm.Services
 {
     public class GuildPropertyService(AppDbContext db, GuildConfig config)
     {

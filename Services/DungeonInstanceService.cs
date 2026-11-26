@@ -1,7 +1,7 @@
 using System.Collections.Concurrent;
 using Myria.Lib.Core.Systems.Dungeons;
 
-namespace Myria.Server.Realm.Services
+namespace Myria.Server.ClassicRealm.Services
 {
     /// <summary>
     /// Dungeon instances (v0.3): one <see cref="DungeonRun"/> per owner (a party, or a player on

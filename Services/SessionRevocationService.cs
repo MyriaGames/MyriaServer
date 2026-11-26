@@ -1,9 +1,9 @@
 using System.Collections.Concurrent;
 using Microsoft.EntityFrameworkCore;
-using Myria.Server.Realm.Data;
-using Myria.Server.Realm.Models;
+using Myria.Server.ClassicRealm.Data;
+using Myria.Server.ClassicRealm.Models;
 
-namespace Myria.Server.Realm.Services
+namespace Myria.Server.ClassicRealm.Services
 {
     // Per-account "tokens issued before X are no longer valid" (security review 2026-11-25, A07 F1).
     // Tokens are validated statelessly (no call back to the auth server), so without this a password

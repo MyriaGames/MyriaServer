@@ -13,14 +13,14 @@ using Myria.Lib.Core.Services.Regestries;
 using Myria.Lib.Core.Systems;
 using Myria.Lib.Core.Systems.Enums;
 using Myria.Lib.Core.Systems.Mods;
-using Myria.Server.Realm.Data;
-using Myria.Server.Realm.Models;
-using Myria.Server.Realm.Services;
+using Myria.Server.ClassicRealm.Data;
+using Myria.Server.ClassicRealm.Models;
+using Myria.Server.ClassicRealm.Services;
 
 using Myria.Lib.Core.Systems.World;
 using Myria.Lib.Core.Systems.Dungeons;
 
-namespace Myria.Server.Realm.Hubs
+namespace Myria.Server.ClassicRealm.Hubs
 {
     [Authorize]
     public class GameHub(
@@ -3431,15 +3431,15 @@ namespace Myria.Server.Realm.Hubs
             using var scope = scopeFactory.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-            var targetChar = await db.Set<Myria.Server.Realm.Models.Character>()
+            var targetChar = await db.Set<Myria.Server.ClassicRealm.Models.Character>()
                 .FirstOrDefaultAsync(c => c.Name == targetCharacterName);
             if (targetChar is null) return false;
 
-            var senderChar = await db.Set<Myria.Server.Realm.Models.Character>()
+            var senderChar = await db.Set<Myria.Server.ClassicRealm.Models.Character>()
                 .FirstOrDefaultAsync(c => c.Name == senderCharacterName);
             if (senderChar is null) return false;
 
-            return await db.Set<Myria.Server.Realm.Models.Block>().AnyAsync(
+            return await db.Set<Myria.Server.ClassicRealm.Models.Block>().AnyAsync(
                 b => b.BlockerCharacterId == targetChar.Id && b.BlockedCharacterId == senderChar.Id);
         }
 

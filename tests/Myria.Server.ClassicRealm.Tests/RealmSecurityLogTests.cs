@@ -5,13 +5,13 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
-using Myria.Server.Realm.Models;
-using Myria.Server.Realm.Controllers;
-using Myria.Server.Realm.Hubs;
-using Myria.Server.Realm.Services;
+using Myria.Server.ClassicRealm.Models;
+using Myria.Server.ClassicRealm.Controllers;
+using Myria.Server.ClassicRealm.Hubs;
+using Myria.Server.ClassicRealm.Services;
 using Xunit;
 
-namespace Myria.Server.Realm.Tests;
+namespace Myria.Server.ClassicRealm.Tests;
 
 /// <summary>Collects formatted log lines for assertions.</summary>
 internal sealed class CapturingLogger<T> : ILogger<T>
@@ -130,7 +130,7 @@ public class RealmSecurityLogTests : IDisposable
         var db = _db.NewContext();
         var controller = new AdminController(db, _config, new BanService(db), new CharacterPresenceService(),
             new SessionRevocationService(_services.GetRequiredService<IServiceScopeFactory>(), _config), hub: null!,
-            new CharacterSessionService(), new Myria.Server.Realm.Repositories.SqlCharacterRepository(db), new CharacterLocks());
+            new CharacterSessionService(), new Myria.Server.ClassicRealm.Repositories.SqlCharacterRepository(db), new CharacterLocks());
         var logs = new CapturingLoggerFactory();
         var http = new DefaultHttpContext
         {

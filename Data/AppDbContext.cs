@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
-using Myria.Server.Realm.Models;
+using Myria.Server.ClassicRealm.Models;
 
-namespace Myria.Server.Realm.Data
+namespace Myria.Server.ClassicRealm.Data
 {
     public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
     {

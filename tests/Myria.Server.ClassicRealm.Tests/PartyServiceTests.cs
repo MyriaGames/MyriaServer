@@ -1,4 +1,4 @@
-using Myria.Server.Realm.Services;
+using Myria.Server.ClassicRealm.Services;
 using Xunit;
 
 /// <summary>

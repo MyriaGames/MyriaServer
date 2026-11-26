@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
-using Myria.Server.Realm.Services;
+using Myria.Server.ClassicRealm.Services;
 
-namespace Myria.Server.Realm.Controllers
+namespace Myria.Server.ClassicRealm.Controllers
 {
     // Registered globally: every authenticated realm REST call (characters, friends, guilds,
     // blocks, ...) is refused for an account under an operator ban. The realm trusts the auth

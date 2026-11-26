@@ -14,11 +14,11 @@ using Myria.Lib.Core.Services.Builder;
 using Myria.Lib.Core.Services.Manager;
 using Myria.Lib.Core.Systems;
 using Myria.Lib.Core.Systems.Enums;
-using Myria.Server.Realm.Data;
-using DbRow = Myria.Server.Realm.Models.Character;
-using Myria.Server.Realm.Models;
+using Myria.Server.ClassicRealm.Data;
+using DbRow = Myria.Server.ClassicRealm.Models.Character;
+using Myria.Server.ClassicRealm.Models;
 
-namespace Myria.Server.Realm.Repositories
+namespace Myria.Server.ClassicRealm.Repositories
 {
     /// <summary>
     /// Server-side character repository backed by the normalised SQL schema.

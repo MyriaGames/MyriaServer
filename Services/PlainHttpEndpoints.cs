@@ -1,6 +1,6 @@
 using System.Net;
 
-namespace Myria.Server.Realm.Services
+namespace Myria.Server.ClassicRealm.Services
 {
     /// <summary>
     /// Plain-HTTP Kestrel endpoints that listen beyond this machine. Behind a reverse proxy on the same

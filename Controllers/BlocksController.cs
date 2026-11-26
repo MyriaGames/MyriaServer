@@ -2,11 +2,11 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
-using Myria.Server.Realm.Data;
-using Myria.Server.Realm.Models;
-using Myria.Server.Realm.Services;
+using Myria.Server.ClassicRealm.Data;
+using Myria.Server.ClassicRealm.Models;
+using Myria.Server.ClassicRealm.Services;
 
-namespace Myria.Server.Realm.Controllers
+namespace Myria.Server.ClassicRealm.Controllers
 {
     public record BlockDto(int BlockId, string Username);
     public record BlockRequest(string CharacterName, string FromCharacterName);

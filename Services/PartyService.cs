@@ -1,6 +1,6 @@
 using System.Collections.Concurrent;
 
-namespace Myria.Server.Realm.Services
+namespace Myria.Server.ClassicRealm.Services
 {
     public class PartyService
     {

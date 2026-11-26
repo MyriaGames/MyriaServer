@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace Myria.Server.Realm.Models
+namespace Myria.Server.ClassicRealm.Models
 {
     public enum GuildRank { Member = 1, Elite = 2, Ward = 3, Officer = 4, Leader = 5 }
     public enum GuildPropertyType { House, Base }

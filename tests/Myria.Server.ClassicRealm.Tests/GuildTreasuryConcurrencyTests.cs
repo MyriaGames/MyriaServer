@@ -1,8 +1,8 @@
 using Microsoft.EntityFrameworkCore;
-using Myria.Server.Realm.Models;
+using Myria.Server.ClassicRealm.Models;
 using Xunit;
 
-namespace Myria.Server.Realm.Tests;
+namespace Myria.Server.ClassicRealm.Tests;
 
 /// <summary>Security review 2026-11-26, A06 F11: two concurrent debits must not both succeed.</summary>
 public class GuildTreasuryConcurrencyTests

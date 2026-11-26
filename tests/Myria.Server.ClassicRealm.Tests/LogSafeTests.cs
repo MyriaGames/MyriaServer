@@ -1,9 +1,9 @@
 using Microsoft.Extensions.Logging;
-using Myria.Server.Realm.Hubs;
-using Myria.Server.Realm.Services;
+using Myria.Server.ClassicRealm.Hubs;
+using Myria.Server.ClassicRealm.Services;
 using Xunit;
 
-namespace Myria.Server.Realm.Tests;
+namespace Myria.Server.ClassicRealm.Tests;
 
 /// <summary>Security review 2026-11-26, A05 F1: client-sent values must not forge log entries.</summary>
 public class LogSafeTests

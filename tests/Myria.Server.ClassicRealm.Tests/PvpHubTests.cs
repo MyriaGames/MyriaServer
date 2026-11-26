@@ -3,7 +3,7 @@ using Myria.Lib.Core.Entities.Characters;
 using Myria.Lib.Core.Services;
 using Xunit;
 
-namespace Myria.Server.Realm.Tests;
+namespace Myria.Server.ClassicRealm.Tests;
 
 /// <summary>
 /// v0.3 PvP through the real hub methods and real game data: room 73 is the Hydea arena (the only

@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace Myria.Server.Realm.Models
+namespace Myria.Server.ClassicRealm.Models
 {
     /// <summary>One NPC instance's stock of one item (v0.3 quest rework). Composite key
     /// (RoomId, NpcId, ItemId) - see Myria.Lib.Core.Systems.World.StockKey.</summary>

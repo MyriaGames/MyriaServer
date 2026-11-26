@@ -7,13 +7,13 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Myria.Lib.Core.Entities;
 using Myria.Lib.Core.Entities.Characters;
 using Myria.Lib.Core.Repositories;
-using Myria.Server.Realm.Data;
-using Myria.Server.Realm.Hubs;
-using Myria.Server.Realm.Repositories;
-using Myria.Server.Realm.Services;
+using Myria.Server.ClassicRealm.Data;
+using Myria.Server.ClassicRealm.Hubs;
+using Myria.Server.ClassicRealm.Repositories;
+using Myria.Server.ClassicRealm.Services;
 using Xunit;
 
-namespace Myria.Server.Realm.Tests;
+namespace Myria.Server.ClassicRealm.Tests;
 
 /// <summary>
 /// "Who is calling" on the game hub. The presence name a connection carries is what ~45 hub
@@ -137,10 +137,10 @@ internal sealed class HubHarness : IDisposable
     public CharacterLocks Locks { get; } = new();
     /// <summary>v0.3: the client-version gate (OnConnectedAsync) - not exercised by the harness, which registers
     /// connections directly.</summary>
-    public Myria.Server.Realm.Models.AllowedVersionsConfig AllowedVersions { get; } = new();
+    public Myria.Server.ClassicRealm.Models.AllowedVersionsConfig AllowedVersions { get; } = new();
 
     /// <summary>A fresh context over the test database, to read back what was actually saved.</summary>
-    public Myria.Server.Realm.Data.AppDbContext NewDb() => _db.NewContext();
+    public Myria.Server.ClassicRealm.Data.AppDbContext NewDb() => _db.NewContext();
     public IServiceScopeFactory ScopeFactory => _services.GetRequiredService<IServiceScopeFactory>();
 
     private HubHarness()

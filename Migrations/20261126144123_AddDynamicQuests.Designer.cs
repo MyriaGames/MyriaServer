@@ -4,11 +4,11 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using Myria.Server.Realm.Data;
+using Myria.Server.ClassicRealm.Data;
 
 #nullable disable
 
-namespace Myria.Server.Realm.Migrations
+namespace Myria.Server.ClassicRealm.Migrations
 {
     [DbContext(typeof(AppDbContext))]
     [Migration("20261126144123_AddDynamicQuests")]
@@ -20,7 +20,7 @@ namespace Myria.Server.Realm.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.15");
 
-            modelBuilder.Entity("Myria.Server.Realm.Models.AccountBan", b =>
+            modelBuilder.Entity("Myria.Server.ClassicRealm.Models.AccountBan", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -49,7 +49,7 @@ namespace Myria.Server.Realm.Migrations
                     b.ToTable("AccountBans");
                 });
 
-            modelBuilder.Entity("Myria.Server.Realm.Models.Block", b =>
+            modelBuilder.Entity("Myria.Server.ClassicRealm.Models.Block", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -74,7 +74,7 @@ namespace Myria.Server.Realm.Migrations
                     b.ToTable("Blocks");
                 });
 
-            modelBuilder.Entity("Myria.Server.Realm.Models.Character", b =>
+            modelBuilder.Entity("Myria.Server.ClassicRealm.Models.Character", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -234,7 +234,7 @@ namespace Myria.Server.Realm.Migrations
                     b.ToTable("Characters");
                 });
 
-            modelBuilder.Entity("Myria.Server.Realm.Models.CharacterActiveQuest", b =>
+            modelBuilder.Entity("Myria.Server.ClassicRealm.Models.CharacterActiveQuest", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -266,7 +266,7 @@ namespace Myria.Server.Realm.Migrations
                     b.ToTable("CharacterActiveQuests");
                 });
 
-            modelBuilder.Entity("Myria.Server.Realm.Models.CharacterClassXp", b =>
+            modelBuilder.Entity("Myria.Server.ClassicRealm.Models.CharacterClassXp", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -290,7 +290,7 @@ namespace Myria.Server.Realm.Migrations
                     b.ToTable("CharacterClassXp");
                 });
 
-            modelBuilder.Entity("Myria.Server.Realm.Models.CharacterCompletedQuest", b =>
+            modelBuilder.Entity("Myria.Server.ClassicRealm.Models.CharacterCompletedQuest", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -311,7 +311,7 @@ namespace Myria.Server.Realm.Migrations
                     b.ToTable("CharacterCompletedQuests");
                 });
 
-            modelBuilder.Entity("Myria.Server.Realm.Models.CharacterInventoryItem", b =>
+            modelBuilder.Entity("Myria.Server.ClassicRealm.Models.CharacterInventoryItem", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -338,7 +338,7 @@ namespace Myria.Server.Realm.Migrations
                     b.ToTable("CharacterInventoryItems");
                 });
 
-            modelBuilder.Entity("Myria.Server.Realm.Models.CharacterJob", b =>
+            modelBuilder.Entity("Myria.Server.ClassicRealm.Models.CharacterJob", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -374,7 +374,7 @@ namespace Myria.Server.Realm.Migrations
                     b.ToTable("CharacterJobs");
                 });
 
-            modelBuilder.Entity("Myria.Server.Realm.Models.CharacterKnownRune", b =>
+            modelBuilder.Entity("Myria.Server.ClassicRealm.Models.CharacterKnownRune", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -400,7 +400,7 @@ namespace Myria.Server.Realm.Migrations
                     b.ToTable("CharacterKnownRunes");
                 });
 
-            modelBuilder.Entity("Myria.Server.Realm.Models.CharacterRepeatableQuest", b =>
+            modelBuilder.Entity("Myria.Server.ClassicRealm.Models.CharacterRepeatableQuest", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -430,7 +430,7 @@ namespace Myria.Server.Realm.Migrations
                     b.ToTable("CharacterRepeatableQuests");
                 });
 
-            modelBuilder.Entity("Myria.Server.Realm.Models.CharacterRoomGathering", b =>
+            modelBuilder.Entity("Myria.Server.ClassicRealm.Models.CharacterRoomGathering", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -452,7 +452,7 @@ namespace Myria.Server.Realm.Migrations
                     b.ToTable("CharacterRoomGathering");
                 });
 
-            modelBuilder.Entity("Myria.Server.Realm.Models.CharacterRuneAddedWord", b =>
+            modelBuilder.Entity("Myria.Server.ClassicRealm.Models.CharacterRuneAddedWord", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -473,7 +473,7 @@ namespace Myria.Server.Realm.Migrations
                     b.ToTable("CharacterRuneAddedWords");
                 });
 
-            modelBuilder.Entity("Myria.Server.Realm.Models.CharacterRuneDictEntry", b =>
+            modelBuilder.Entity("Myria.Server.ClassicRealm.Models.CharacterRuneDictEntry", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -501,7 +501,7 @@ namespace Myria.Server.Realm.Migrations
                     b.ToTable("CharacterRuneDictionary");
                 });
 
-            modelBuilder.Entity("Myria.Server.Realm.Models.CharacterSkill", b =>
+            modelBuilder.Entity("Myria.Server.ClassicRealm.Models.CharacterSkill", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -522,7 +522,7 @@ namespace Myria.Server.Realm.Migrations
                     b.ToTable("CharacterSkills");
                 });
 
-            modelBuilder.Entity("Myria.Server.Realm.Models.CharacterSkillProgress", b =>
+            modelBuilder.Entity("Myria.Server.ClassicRealm.Models.CharacterSkillProgress", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -552,7 +552,7 @@ namespace Myria.Server.Realm.Migrations
                     b.ToTable("CharacterSkillProgress");
                 });
 
-            modelBuilder.Entity("Myria.Server.Realm.Models.CharacterSkillProgressUpgrade", b =>
+            modelBuilder.Entity("Myria.Server.ClassicRealm.Models.CharacterSkillProgressUpgrade", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -573,7 +573,7 @@ namespace Myria.Server.Realm.Migrations
                     b.ToTable("CharacterSkillProgressUpgrades");
                 });
 
-            modelBuilder.Entity("Myria.Server.Realm.Models.CharacterSkillSlot", b =>
+            modelBuilder.Entity("Myria.Server.ClassicRealm.Models.CharacterSkillSlot", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -600,7 +600,7 @@ namespace Myria.Server.Realm.Migrations
                     b.ToTable("CharacterSkillSlots");
                 });
 
-            modelBuilder.Entity("Myria.Server.Realm.Models.Friendship", b =>
+            modelBuilder.Entity("Myria.Server.ClassicRealm.Models.Friendship", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -628,7 +628,7 @@ namespace Myria.Server.Realm.Migrations
                     b.ToTable("Friendships");
                 });
 
-            modelBuilder.Entity("Myria.Server.Realm.Models.Guild", b =>
+            modelBuilder.Entity("Myria.Server.ClassicRealm.Models.Guild", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -667,7 +667,7 @@ namespace Myria.Server.Realm.Migrations
                     b.ToTable("Guilds");
                 });
 
-            modelBuilder.Entity("Myria.Server.Realm.Models.GuildApplication", b =>
+            modelBuilder.Entity("Myria.Server.ClassicRealm.Models.GuildApplication", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -696,7 +696,7 @@ namespace Myria.Server.Realm.Migrations
                     b.ToTable("GuildApplications");
                 });
 
-            modelBuilder.Entity("Myria.Server.Realm.Models.GuildDeposit", b =>
+            modelBuilder.Entity("Myria.Server.ClassicRealm.Models.GuildDeposit", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -721,7 +721,7 @@ namespace Myria.Server.Realm.Migrations
                     b.ToTable("GuildDeposits");
                 });
 
-            modelBuilder.Entity("Myria.Server.Realm.Models.GuildHouseListing", b =>
+            modelBuilder.Entity("Myria.Server.ClassicRealm.Models.GuildHouseListing", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -749,7 +749,7 @@ namespace Myria.Server.Realm.Migrations
                     b.ToTable("GuildHouseListings");
                 });
 
-            modelBuilder.Entity("Myria.Server.Realm.Models.GuildInvite", b =>
+            modelBuilder.Entity("Myria.Server.ClassicRealm.Models.GuildInvite", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -785,7 +785,7 @@ namespace Myria.Server.Realm.Migrations
                     b.ToTable("GuildInvites");
                 });
 
-            modelBuilder.Entity("Myria.Server.Realm.Models.GuildMember", b =>
+            modelBuilder.Entity("Myria.Server.ClassicRealm.Models.GuildMember", b =>
                 {
                     b.Property<int>("GuildId")
                         .HasColumnType("INTEGER");
@@ -806,7 +806,7 @@ namespace Myria.Server.Realm.Migrations
                     b.ToTable("GuildMembers");
                 });
 
-            modelBuilder.Entity("Myria.Server.Realm.Models.GuildProperty", b =>
+            modelBuilder.Entity("Myria.Server.ClassicRealm.Models.GuildProperty", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -838,7 +838,7 @@ namespace Myria.Server.Realm.Migrations
                     b.ToTable("GuildProperties");
                 });
 
-            modelBuilder.Entity("Myria.Server.Realm.Models.GuildRookie", b =>
+            modelBuilder.Entity("Myria.Server.ClassicRealm.Models.GuildRookie", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -868,7 +868,7 @@ namespace Myria.Server.Realm.Migrations
                     b.ToTable("GuildRookies");
                 });
 
-            modelBuilder.Entity("Myria.Server.Realm.Models.GuildRoom", b =>
+            modelBuilder.Entity("Myria.Server.ClassicRealm.Models.GuildRoom", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -907,7 +907,7 @@ namespace Myria.Server.Realm.Migrations
                     b.ToTable("GuildRooms");
                 });
 
-            modelBuilder.Entity("Myria.Server.Realm.Models.GuildSettings", b =>
+            modelBuilder.Entity("Myria.Server.ClassicRealm.Models.GuildSettings", b =>
                 {
                     b.Property<int>("GuildId")
                         .HasColumnType("INTEGER");
@@ -923,7 +923,7 @@ namespace Myria.Server.Realm.Migrations
                     b.ToTable("GuildSettings");
                 });
 
-            modelBuilder.Entity("Myria.Server.Realm.Models.GuildTreasury", b =>
+            modelBuilder.Entity("Myria.Server.ClassicRealm.Models.GuildTreasury", b =>
                 {
                     b.Property<int>("GuildId")
                         .HasColumnType("INTEGER");
@@ -937,7 +937,7 @@ namespace Myria.Server.Realm.Migrations
                     b.ToTable("GuildTreasuries");
                 });
 
-            modelBuilder.Entity("Myria.Server.Realm.Models.PlayerShop", b =>
+            modelBuilder.Entity("Myria.Server.ClassicRealm.Models.PlayerShop", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -960,7 +960,7 @@ namespace Myria.Server.Realm.Migrations
                     b.ToTable("PlayerShops");
                 });
 
-            modelBuilder.Entity("Myria.Server.Realm.Models.PlayerShopItem", b =>
+            modelBuilder.Entity("Myria.Server.ClassicRealm.Models.PlayerShopItem", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -989,7 +989,7 @@ namespace Myria.Server.Realm.Migrations
                     b.ToTable("PlayerShopItems");
                 });
 
-            modelBuilder.Entity("Myria.Server.Realm.Models.QuestGrantRecord", b =>
+            modelBuilder.Entity("Myria.Server.ClassicRealm.Models.QuestGrantRecord", b =>
                 {
                     b.Property<string>("Id")
                         .HasMaxLength(40)
@@ -1037,7 +1037,7 @@ namespace Myria.Server.Realm.Migrations
                     b.ToTable("QuestGrants");
                 });
 
-            modelBuilder.Entity("Myria.Server.Realm.Models.SessionRevocation", b =>
+            modelBuilder.Entity("Myria.Server.ClassicRealm.Models.SessionRevocation", b =>
                 {
                     b.Property<string>("Username")
                         .HasMaxLength(50)
@@ -1052,7 +1052,7 @@ namespace Myria.Server.Realm.Migrations
                     b.ToTable("SessionRevocations");
                 });
 
-            modelBuilder.Entity("Myria.Server.Realm.Models.WorldNpcStock", b =>
+            modelBuilder.Entity("Myria.Server.ClassicRealm.Models.WorldNpcStock", b =>
                 {
                     b.Property<int>("RoomId")
                         .HasColumnType("INTEGER");
@@ -1073,7 +1073,7 @@ namespace Myria.Server.Realm.Migrations
                     b.ToTable("WorldNpcStock");
                 });
 
-            modelBuilder.Entity("Myria.Server.Realm.Models.WorldRoomPopulation", b =>
+            modelBuilder.Entity("Myria.Server.ClassicRealm.Models.WorldRoomPopulation", b =>
                 {
                     b.Property<int>("RoomId")
                         .HasColumnType("INTEGER");
@@ -1089,15 +1089,15 @@ namespace Myria.Server.Realm.Migrations
                     b.ToTable("WorldRoomPopulations");
                 });
 
-            modelBuilder.Entity("Myria.Server.Realm.Models.Block", b =>
+            modelBuilder.Entity("Myria.Server.ClassicRealm.Models.Block", b =>
                 {
-                    b.HasOne("Myria.Server.Realm.Models.Character", "BlockedCharacter")
+                    b.HasOne("Myria.Server.ClassicRealm.Models.Character", "BlockedCharacter")
                         .WithMany()
                         .HasForeignKey("BlockedCharacterId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("Myria.Server.Realm.Models.Character", "BlockerCharacter")
+                    b.HasOne("Myria.Server.ClassicRealm.Models.Character", "BlockerCharacter")
                         .WithMany()
                         .HasForeignKey("BlockerCharacterId")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -1108,9 +1108,9 @@ namespace Myria.Server.Realm.Migrations
                     b.Navigation("BlockerCharacter");
                 });
 
-            modelBuilder.Entity("Myria.Server.Realm.Models.CharacterActiveQuest", b =>
+            modelBuilder.Entity("Myria.Server.ClassicRealm.Models.CharacterActiveQuest", b =>
                 {
-                    b.HasOne("Myria.Server.Realm.Models.Character", "Character")
+                    b.HasOne("Myria.Server.ClassicRealm.Models.Character", "Character")
                         .WithMany("ActiveQuests")
                         .HasForeignKey("CharacterId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1119,9 +1119,9 @@ namespace Myria.Server.Realm.Migrations
                     b.Navigation("Character");
                 });
 
-            modelBuilder.Entity("Myria.Server.Realm.Models.CharacterClassXp", b =>
+            modelBuilder.Entity("Myria.Server.ClassicRealm.Models.CharacterClassXp", b =>
                 {
-                    b.HasOne("Myria.Server.Realm.Models.Character", "Character")
+                    b.HasOne("Myria.Server.ClassicRealm.Models.Character", "Character")
                         .WithMany("ClassXp")
                         .HasForeignKey("CharacterId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1130,9 +1130,9 @@ namespace Myria.Server.Realm.Migrations
                     b.Navigation("Character");
                 });
 
-            modelBuilder.Entity("Myria.Server.Realm.Models.CharacterCompletedQuest", b =>
+            modelBuilder.Entity("Myria.Server.ClassicRealm.Models.CharacterCompletedQuest", b =>
                 {
-                    b.HasOne("Myria.Server.Realm.Models.Character", "Character")
+                    b.HasOne("Myria.Server.ClassicRealm.Models.Character", "Character")
                         .WithMany("CompletedQuests")
                         .HasForeignKey("CharacterId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1141,9 +1141,9 @@ namespace Myria.Server.Realm.Migrations
                     b.Navigation("Character");
                 });
 
-            modelBuilder.Entity("Myria.Server.Realm.Models.CharacterInventoryItem", b =>
+            modelBuilder.Entity("Myria.Server.ClassicRealm.Models.CharacterInventoryItem", b =>
                 {
-                    b.HasOne("Myria.Server.Realm.Models.Character", "Character")
+                    b.HasOne("Myria.Server.ClassicRealm.Models.Character", "Character")
                         .WithMany("InventoryItems")
                         .HasForeignKey("CharacterId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1152,9 +1152,9 @@ namespace Myria.Server.Realm.Migrations
                     b.Navigation("Character");
                 });
 
-            modelBuilder.Entity("Myria.Server.Realm.Models.CharacterJob", b =>
+            modelBuilder.Entity("Myria.Server.ClassicRealm.Models.CharacterJob", b =>
                 {
-                    b.HasOne("Myria.Server.Realm.Models.Character", "Character")
+                    b.HasOne("Myria.Server.ClassicRealm.Models.Character", "Character")
                         .WithMany("Jobs")
                         .HasForeignKey("CharacterId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1163,9 +1163,9 @@ namespace Myria.Server.Realm.Migrations
                     b.Navigation("Character");
                 });
 
-            modelBuilder.Entity("Myria.Server.Realm.Models.CharacterKnownRune", b =>
+            modelBuilder.Entity("Myria.Server.ClassicRealm.Models.CharacterKnownRune", b =>
                 {
-                    b.HasOne("Myria.Server.Realm.Models.Character", "Character")
+                    b.HasOne("Myria.Server.ClassicRealm.Models.Character", "Character")
                         .WithMany("KnownRunes")
                         .HasForeignKey("CharacterId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1174,9 +1174,9 @@ namespace Myria.Server.Realm.Migrations
                     b.Navigation("Character");
                 });
 
-            modelBuilder.Entity("Myria.Server.Realm.Models.CharacterRepeatableQuest", b =>
+            modelBuilder.Entity("Myria.Server.ClassicRealm.Models.CharacterRepeatableQuest", b =>
                 {
-                    b.HasOne("Myria.Server.Realm.Models.Character", "Character")
+                    b.HasOne("Myria.Server.ClassicRealm.Models.Character", "Character")
                         .WithMany("RepeatableQuests")
                         .HasForeignKey("CharacterId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1185,9 +1185,9 @@ namespace Myria.Server.Realm.Migrations
                     b.Navigation("Character");
                 });
 
-            modelBuilder.Entity("Myria.Server.Realm.Models.CharacterRoomGathering", b =>
+            modelBuilder.Entity("Myria.Server.ClassicRealm.Models.CharacterRoomGathering", b =>
                 {
-                    b.HasOne("Myria.Server.Realm.Models.Character", "Character")
+                    b.HasOne("Myria.Server.ClassicRealm.Models.Character", "Character")
                         .WithMany("RoomGatheringStatus")
                         .HasForeignKey("CharacterId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1196,9 +1196,9 @@ namespace Myria.Server.Realm.Migrations
                     b.Navigation("Character");
                 });
 
-            modelBuilder.Entity("Myria.Server.Realm.Models.CharacterRuneAddedWord", b =>
+            modelBuilder.Entity("Myria.Server.ClassicRealm.Models.CharacterRuneAddedWord", b =>
                 {
-                    b.HasOne("Myria.Server.Realm.Models.CharacterKnownRune", "KnownRune")
+                    b.HasOne("Myria.Server.ClassicRealm.Models.CharacterKnownRune", "KnownRune")
                         .WithMany("AddedWords")
                         .HasForeignKey("KnownRuneId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1207,9 +1207,9 @@ namespace Myria.Server.Realm.Migrations
                     b.Navigation("KnownRune");
                 });
 
-            modelBuilder.Entity("Myria.Server.Realm.Models.CharacterRuneDictEntry", b =>
+            modelBuilder.Entity("Myria.Server.ClassicRealm.Models.CharacterRuneDictEntry", b =>
                 {
-                    b.HasOne("Myria.Server.Realm.Models.Character", "Character")
+                    b.HasOne("Myria.Server.ClassicRealm.Models.Character", "Character")
                         .WithMany("RuneDictionary")
                         .HasForeignKey("CharacterId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1218,9 +1218,9 @@ namespace Myria.Server.Realm.Migrations
                     b.Navigation("Character");
                 });
 
-            modelBuilder.Entity("Myria.Server.Realm.Models.CharacterSkill", b =>
+            modelBuilder.Entity("Myria.Server.ClassicRealm.Models.CharacterSkill", b =>
                 {
-                    b.HasOne("Myria.Server.Realm.Models.Character", "Character")
+                    b.HasOne("Myria.Server.ClassicRealm.Models.Character", "Character")
                         .WithMany("Skills")
                         .HasForeignKey("CharacterId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1229,9 +1229,9 @@ namespace Myria.Server.Realm.Migrations
                     b.Navigation("Character");
                 });
 
-            modelBuilder.Entity("Myria.Server.Realm.Models.CharacterSkillProgress", b =>
+            modelBuilder.Entity("Myria.Server.ClassicRealm.Models.CharacterSkillProgress", b =>
                 {
-                    b.HasOne("Myria.Server.Realm.Models.Character", "Character")
+                    b.HasOne("Myria.Server.ClassicRealm.Models.Character", "Character")
                         .WithMany("SkillProgress")
                         .HasForeignKey("CharacterId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1240,9 +1240,9 @@ namespace Myria.Server.Realm.Migrations
                     b.Navigation("Character");
                 });
 
-            modelBuilder.Entity("Myria.Server.Realm.Models.CharacterSkillProgressUpgrade", b =>
+            modelBuilder.Entity("Myria.Server.ClassicRealm.Models.CharacterSkillProgressUpgrade", b =>
                 {
-                    b.HasOne("Myria.Server.Realm.Models.CharacterSkillProgress", "SkillProgress")
+                    b.HasOne("Myria.Server.ClassicRealm.Models.CharacterSkillProgress", "SkillProgress")
                         .WithMany("PurchasedUpgrades")
                         .HasForeignKey("SkillProgressId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1251,9 +1251,9 @@ namespace Myria.Server.Realm.Migrations
                     b.Navigation("SkillProgress");
                 });
 
-            modelBuilder.Entity("Myria.Server.Realm.Models.CharacterSkillSlot", b =>
+            modelBuilder.Entity("Myria.Server.ClassicRealm.Models.CharacterSkillSlot", b =>
                 {
-                    b.HasOne("Myria.Server.Realm.Models.Character", "Character")
+                    b.HasOne("Myria.Server.ClassicRealm.Models.Character", "Character")
                         .WithMany("SkillSlots")
                         .HasForeignKey("CharacterId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1262,15 +1262,15 @@ namespace Myria.Server.Realm.Migrations
                     b.Navigation("Character");
                 });
 
-            modelBuilder.Entity("Myria.Server.Realm.Models.Friendship", b =>
+            modelBuilder.Entity("Myria.Server.ClassicRealm.Models.Friendship", b =>
                 {
-                    b.HasOne("Myria.Server.Realm.Models.Character", "AddresseeCharacter")
+                    b.HasOne("Myria.Server.ClassicRealm.Models.Character", "AddresseeCharacter")
                         .WithMany()
                         .HasForeignKey("AddresseeCharacterId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("Myria.Server.Realm.Models.Character", "RequesterCharacter")
+                    b.HasOne("Myria.Server.ClassicRealm.Models.Character", "RequesterCharacter")
                         .WithMany()
                         .HasForeignKey("RequesterCharacterId")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -1281,9 +1281,9 @@ namespace Myria.Server.Realm.Migrations
                     b.Navigation("RequesterCharacter");
                 });
 
-            modelBuilder.Entity("Myria.Server.Realm.Models.Guild", b =>
+            modelBuilder.Entity("Myria.Server.ClassicRealm.Models.Guild", b =>
                 {
-                    b.HasOne("Myria.Server.Realm.Models.Character", "LeaderCharacter")
+                    b.HasOne("Myria.Server.ClassicRealm.Models.Character", "LeaderCharacter")
                         .WithMany()
                         .HasForeignKey("LeaderCharacterId")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -1292,15 +1292,15 @@ namespace Myria.Server.Realm.Migrations
                     b.Navigation("LeaderCharacter");
                 });
 
-            modelBuilder.Entity("Myria.Server.Realm.Models.GuildApplication", b =>
+            modelBuilder.Entity("Myria.Server.ClassicRealm.Models.GuildApplication", b =>
                 {
-                    b.HasOne("Myria.Server.Realm.Models.Character", "ApplicantCharacter")
+                    b.HasOne("Myria.Server.ClassicRealm.Models.Character", "ApplicantCharacter")
                         .WithMany()
                         .HasForeignKey("ApplicantCharacterId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("Myria.Server.Realm.Models.Guild", "Guild")
+                    b.HasOne("Myria.Server.ClassicRealm.Models.Guild", "Guild")
                         .WithMany("Applications")
                         .HasForeignKey("GuildId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1311,9 +1311,9 @@ namespace Myria.Server.Realm.Migrations
                     b.Navigation("Guild");
                 });
 
-            modelBuilder.Entity("Myria.Server.Realm.Models.GuildDeposit", b =>
+            modelBuilder.Entity("Myria.Server.ClassicRealm.Models.GuildDeposit", b =>
                 {
-                    b.HasOne("Myria.Server.Realm.Models.Guild", "Guild")
+                    b.HasOne("Myria.Server.ClassicRealm.Models.Guild", "Guild")
                         .WithMany("Deposit")
                         .HasForeignKey("GuildId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1322,15 +1322,15 @@ namespace Myria.Server.Realm.Migrations
                     b.Navigation("Guild");
                 });
 
-            modelBuilder.Entity("Myria.Server.Realm.Models.GuildHouseListing", b =>
+            modelBuilder.Entity("Myria.Server.ClassicRealm.Models.GuildHouseListing", b =>
                 {
-                    b.HasOne("Myria.Server.Realm.Models.GuildProperty", "GuildProperty")
+                    b.HasOne("Myria.Server.ClassicRealm.Models.GuildProperty", "GuildProperty")
                         .WithOne("Listing")
-                        .HasForeignKey("Myria.Server.Realm.Models.GuildHouseListing", "GuildPropertyId")
+                        .HasForeignKey("Myria.Server.ClassicRealm.Models.GuildHouseListing", "GuildPropertyId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Myria.Server.Realm.Models.Guild", "SellerGuild")
+                    b.HasOne("Myria.Server.ClassicRealm.Models.Guild", "SellerGuild")
                         .WithMany()
                         .HasForeignKey("SellerGuildId")
                         .OnDelete(DeleteBehavior.NoAction)
@@ -1341,21 +1341,21 @@ namespace Myria.Server.Realm.Migrations
                     b.Navigation("SellerGuild");
                 });
 
-            modelBuilder.Entity("Myria.Server.Realm.Models.GuildInvite", b =>
+            modelBuilder.Entity("Myria.Server.ClassicRealm.Models.GuildInvite", b =>
                 {
-                    b.HasOne("Myria.Server.Realm.Models.Guild", "Guild")
+                    b.HasOne("Myria.Server.ClassicRealm.Models.Guild", "Guild")
                         .WithMany("Invites")
                         .HasForeignKey("GuildId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Myria.Server.Realm.Models.Character", "InviteeCharacter")
+                    b.HasOne("Myria.Server.ClassicRealm.Models.Character", "InviteeCharacter")
                         .WithMany()
                         .HasForeignKey("InviteeCharacterId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("Myria.Server.Realm.Models.Character", "InviterCharacter")
+                    b.HasOne("Myria.Server.ClassicRealm.Models.Character", "InviterCharacter")
                         .WithMany()
                         .HasForeignKey("InviterCharacterId")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -1368,15 +1368,15 @@ namespace Myria.Server.Realm.Migrations
                     b.Navigation("InviterCharacter");
                 });
 
-            modelBuilder.Entity("Myria.Server.Realm.Models.GuildMember", b =>
+            modelBuilder.Entity("Myria.Server.ClassicRealm.Models.GuildMember", b =>
                 {
-                    b.HasOne("Myria.Server.Realm.Models.Character", "Character")
+                    b.HasOne("Myria.Server.ClassicRealm.Models.Character", "Character")
                         .WithMany()
                         .HasForeignKey("CharacterId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("Myria.Server.Realm.Models.Guild", "Guild")
+                    b.HasOne("Myria.Server.ClassicRealm.Models.Guild", "Guild")
                         .WithMany("Members")
                         .HasForeignKey("GuildId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1387,32 +1387,32 @@ namespace Myria.Server.Realm.Migrations
                     b.Navigation("Guild");
                 });
 
-            modelBuilder.Entity("Myria.Server.Realm.Models.GuildProperty", b =>
+            modelBuilder.Entity("Myria.Server.ClassicRealm.Models.GuildProperty", b =>
                 {
-                    b.HasOne("Myria.Server.Realm.Models.Guild", "Guild")
+                    b.HasOne("Myria.Server.ClassicRealm.Models.Guild", "Guild")
                         .WithOne("Property")
-                        .HasForeignKey("Myria.Server.Realm.Models.GuildProperty", "GuildId")
+                        .HasForeignKey("Myria.Server.ClassicRealm.Models.GuildProperty", "GuildId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Guild");
                 });
 
-            modelBuilder.Entity("Myria.Server.Realm.Models.GuildRookie", b =>
+            modelBuilder.Entity("Myria.Server.ClassicRealm.Models.GuildRookie", b =>
                 {
-                    b.HasOne("Myria.Server.Realm.Models.Character", "Character")
+                    b.HasOne("Myria.Server.ClassicRealm.Models.Character", "Character")
                         .WithMany()
                         .HasForeignKey("CharacterId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("Myria.Server.Realm.Models.Guild", "Guild")
+                    b.HasOne("Myria.Server.ClassicRealm.Models.Guild", "Guild")
                         .WithMany("Rookies")
                         .HasForeignKey("GuildId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Myria.Server.Realm.Models.Character", "RecruiterCharacter")
+                    b.HasOne("Myria.Server.ClassicRealm.Models.Character", "RecruiterCharacter")
                         .WithMany()
                         .HasForeignKey("RecruiterCharacterId")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -1425,9 +1425,9 @@ namespace Myria.Server.Realm.Migrations
                     b.Navigation("RecruiterCharacter");
                 });
 
-            modelBuilder.Entity("Myria.Server.Realm.Models.GuildRoom", b =>
+            modelBuilder.Entity("Myria.Server.ClassicRealm.Models.GuildRoom", b =>
                 {
-                    b.HasOne("Myria.Server.Realm.Models.GuildProperty", "GuildProperty")
+                    b.HasOne("Myria.Server.ClassicRealm.Models.GuildProperty", "GuildProperty")
                         .WithMany("Rooms")
                         .HasForeignKey("GuildPropertyId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1436,31 +1436,31 @@ namespace Myria.Server.Realm.Migrations
                     b.Navigation("GuildProperty");
                 });
 
-            modelBuilder.Entity("Myria.Server.Realm.Models.GuildSettings", b =>
+            modelBuilder.Entity("Myria.Server.ClassicRealm.Models.GuildSettings", b =>
                 {
-                    b.HasOne("Myria.Server.Realm.Models.Guild", "Guild")
+                    b.HasOne("Myria.Server.ClassicRealm.Models.Guild", "Guild")
                         .WithOne("Settings")
-                        .HasForeignKey("Myria.Server.Realm.Models.GuildSettings", "GuildId")
+                        .HasForeignKey("Myria.Server.ClassicRealm.Models.GuildSettings", "GuildId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Guild");
                 });
 
-            modelBuilder.Entity("Myria.Server.Realm.Models.GuildTreasury", b =>
+            modelBuilder.Entity("Myria.Server.ClassicRealm.Models.GuildTreasury", b =>
                 {
-                    b.HasOne("Myria.Server.Realm.Models.Guild", "Guild")
+                    b.HasOne("Myria.Server.ClassicRealm.Models.Guild", "Guild")
                         .WithOne("Treasury")
-                        .HasForeignKey("Myria.Server.Realm.Models.GuildTreasury", "GuildId")
+                        .HasForeignKey("Myria.Server.ClassicRealm.Models.GuildTreasury", "GuildId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Guild");
                 });
 
-            modelBuilder.Entity("Myria.Server.Realm.Models.PlayerShop", b =>
+            modelBuilder.Entity("Myria.Server.ClassicRealm.Models.PlayerShop", b =>
                 {
-                    b.HasOne("Myria.Server.Realm.Models.Character", "OwnerCharacter")
+                    b.HasOne("Myria.Server.ClassicRealm.Models.Character", "OwnerCharacter")
                         .WithMany()
                         .HasForeignKey("OwnerCharacterId")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -1469,9 +1469,9 @@ namespace Myria.Server.Realm.Migrations
                     b.Navigation("OwnerCharacter");
                 });
 
-            modelBuilder.Entity("Myria.Server.Realm.Models.PlayerShopItem", b =>
+            modelBuilder.Entity("Myria.Server.ClassicRealm.Models.PlayerShopItem", b =>
                 {
-                    b.HasOne("Myria.Server.Realm.Models.PlayerShop", "PlayerShop")
+                    b.HasOne("Myria.Server.ClassicRealm.Models.PlayerShop", "PlayerShop")
                         .WithMany("Items")
                         .HasForeignKey("PlayerShopId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1480,7 +1480,7 @@ namespace Myria.Server.Realm.Migrations
                     b.Navigation("PlayerShop");
                 });
 
-            modelBuilder.Entity("Myria.Server.Realm.Models.Character", b =>
+            modelBuilder.Entity("Myria.Server.ClassicRealm.Models.Character", b =>
                 {
                     b.Navigation("ActiveQuests");
 
@@ -1507,17 +1507,17 @@ namespace Myria.Server.Realm.Migrations
                     b.Navigation("Skills");
                 });
 
-            modelBuilder.Entity("Myria.Server.Realm.Models.CharacterKnownRune", b =>
+            modelBuilder.Entity("Myria.Server.ClassicRealm.Models.CharacterKnownRune", b =>
                 {
                     b.Navigation("AddedWords");
                 });
 
-            modelBuilder.Entity("Myria.Server.Realm.Models.CharacterSkillProgress", b =>
+            modelBuilder.Entity("Myria.Server.ClassicRealm.Models.CharacterSkillProgress", b =>
                 {
                     b.Navigation("PurchasedUpgrades");
                 });
 
-            modelBuilder.Entity("Myria.Server.Realm.Models.Guild", b =>
+            modelBuilder.Entity("Myria.Server.ClassicRealm.Models.Guild", b =>
                 {
                     b.Navigation("Applications");
 
@@ -1538,14 +1538,14 @@ namespace Myria.Server.Realm.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("Myria.Server.Realm.Models.GuildProperty", b =>
+            modelBuilder.Entity("Myria.Server.ClassicRealm.Models.GuildProperty", b =>
                 {
                     b.Navigation("Listing");
 
                     b.Navigation("Rooms");
                 });
 
-            modelBuilder.Entity("Myria.Server.Realm.Models.PlayerShop", b =>
+            modelBuilder.Entity("Myria.Server.ClassicRealm.Models.PlayerShop", b =>
                 {
                     b.Navigation("Items");
                 });

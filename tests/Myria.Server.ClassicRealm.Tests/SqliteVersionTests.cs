@@ -1,7 +1,7 @@
 using Microsoft.Data.Sqlite;
 using Xunit;
 
-namespace Myria.Server.Realm.Tests;
+namespace Myria.Server.ClassicRealm.Tests;
 
 /// <summary>
 /// Security review 2026-11-26, A03 F3: the native SQLite shipped with the server must include the fix for

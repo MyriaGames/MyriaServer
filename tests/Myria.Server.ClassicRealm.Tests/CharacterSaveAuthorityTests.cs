@@ -2,14 +2,14 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Myria.Server.Realm.Controllers;
-using Myria.Server.Realm.Models.Dto;
-using Myria.Server.Realm.Repositories;
-using Myria.Server.Realm.Services;
+using Myria.Server.ClassicRealm.Controllers;
+using Myria.Server.ClassicRealm.Models.Dto;
+using Myria.Server.ClassicRealm.Repositories;
+using Myria.Server.ClassicRealm.Services;
 using Xunit;
 using LibCharacter = Myria.Lib.Core.Entities.Characters.Character;
 
-namespace Myria.Server.Realm.Tests;
+namespace Myria.Server.ClassicRealm.Tests;
 
 /// <summary>
 /// Security review 2026-11-26, A06 F1: POST /api/characters may create a character from name, race
@@ -46,7 +46,7 @@ public class CharacterSaveAuthorityTests : IDisposable
         CompletedQuestIds = ["co1_first_day"]
     };
 
-    private Myria.Server.Realm.Models.Character Row(string name) =>
+    private Myria.Server.ClassicRealm.Models.Character Row(string name) =>
         _db.NewContext().Characters.Include(c => c.InventoryItems).Include(c => c.CompletedQuests).Single(c => c.Name == name);
 
     [Fact]

@@ -6,7 +6,7 @@ using Myria.Lib.Core.Services.Builder;
 using Myria.Lib.Core.Services.Manager;
 using Myria.Lib.Core.Systems.Enums;
 
-namespace Myria.Server.Realm.Services
+namespace Myria.Server.ClassicRealm.Services
 {
     // What a client may decide about a character through the REST save (security review 2026-11-26,
     // A06 F1): the save used to write the whole character from the request - level, stats, items,

@@ -1,10 +1,10 @@
 using Microsoft.EntityFrameworkCore;
 using Myria.Lib.Core.Services;
 using Myria.Lib.Core.Systems.World;
-using Myria.Server.Realm.Data;
-using Myria.Server.Realm.Models;
+using Myria.Server.ClassicRealm.Data;
+using Myria.Server.ClassicRealm.Models;
 
-namespace Myria.Server.Realm.Services
+namespace Myria.Server.ClassicRealm.Services
 {
     /// <summary>
     /// Owns the server's single live <see cref="WorldState"/> (NPC stock + room populations, v0.3

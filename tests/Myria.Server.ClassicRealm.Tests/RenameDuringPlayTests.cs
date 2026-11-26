@@ -3,13 +3,13 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Configuration;
-using Myria.Server.Realm.Controllers;
-using Myria.Server.Realm.Hubs;
-using Myria.Server.Realm.Repositories;
-using Myria.Server.Realm.Services;
+using Myria.Server.ClassicRealm.Controllers;
+using Myria.Server.ClassicRealm.Hubs;
+using Myria.Server.ClassicRealm.Repositories;
+using Myria.Server.ClassicRealm.Services;
 using Xunit;
 
-namespace Myria.Server.Realm.Tests;
+namespace Myria.Server.ClassicRealm.Tests;
 
 /// <summary>Security review 2026-11-26, A10 F4: an account rename must not lose a live session's progress.</summary>
 [Collection("RealmDb")]

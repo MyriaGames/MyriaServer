@@ -1,4 +1,4 @@
-namespace Myria.Server.Realm.Services
+namespace Myria.Server.ClassicRealm.Services
 {
     // Every committed placeholder secret starts with "REPLACE_ME". Comparing against one exact
     // string drifted: the check looked for "REPLACE_ME_DEV_PLACEHOLDER_KEY" while appsettings.json
