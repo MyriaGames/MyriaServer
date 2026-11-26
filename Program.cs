@@ -8,7 +8,6 @@ using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi.Models;
 using Myria.Lib.Core.Repositories;
 using Myria.Lib.Core.Services;
 using Myria.Server.Realm.Controllers;
@@ -238,30 +237,6 @@ builder.Services.AddAuthorization();
 builder.Services.AddScoped<BanService>();
 builder.Services.AddControllers(opt => opt.Filters.Add<RejectBannedAccountFilter>())
     .AddJsonOptions(opt => opt.JsonSerializerOptions.PropertyNameCaseInsensitive = true);
-builder.Services.AddEndpointsApiExplorer();
-
-builder.Services.AddSwaggerGen(c =>
-{
-    c.SwaggerDoc("v1", new OpenApiInfo { Title = "Myria.Server.Realm API", Version = "v1" });
-    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
-    {
-        Name         = "Authorization",
-        Type         = SecuritySchemeType.Http,
-        Scheme       = "bearer",
-        BearerFormat = "JWT",
-        In           = ParameterLocation.Header
-    });
-    c.AddSecurityRequirement(new OpenApiSecurityRequirement
-    {
-        {
-            new OpenApiSecurityScheme
-            {
-                Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
-            },
-            []
-        }
-    });
-});
 
 var app = builder.Build();
 
@@ -297,12 +272,6 @@ await app.Services.GetRequiredService<SessionRevocationService>().LoadAsync();
 // This is the sole source of truth for game content; nothing about it is persisted to
 // the database, which only holds player/account state (characters, guilds, friendships).
 GameService.InitializeGame();
-
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
 
 // No app.UseHttpsRedirection() here: Production is now HTTPS-only at the Kestrel level (see
 // the guard above) — there's no plain-HTTP endpoint left to redirect away from. Development
