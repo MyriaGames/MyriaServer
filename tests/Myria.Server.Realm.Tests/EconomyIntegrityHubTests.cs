@@ -21,7 +21,7 @@ public class EconomyIntegrityHubTests
         var realm = await HubHarness.CreateAsync();
         var bob = realm.Connect("bob");
         Assert.True(await realm.Hub(bob).LoadCharacter("Bobchar"));
-        Assert.True(await realm.Hub(bob).JoinRoom(roomId));
+        Assert.True(await realm.PlaceAsync(bob, roomId));
         return (realm, bob, realm.Session.Get(bob.ConnectionId)!);
     }
 
@@ -149,7 +149,7 @@ public class EconomyIntegrityHubTests
         int cityRoom = -1;
         foreach (var room in Myria.Lib.Core.Services.RoomService.AllRooms
                      .Where(r => Myria.Lib.Core.Services.Regestries.CityRegistry.GetCityByRoom(r) is not null))
-            if (await realm.Hub(alice).JoinRoom(room.Id)) { cityRoom = room.Id; break; }
+            if (await realm.PlaceAsync(alice, room.Id)) { cityRoom = room.Id; break; }
         Assert.NotEqual(-1, cityRoom);
 
         Assert.True(ItemFactory.TryCreateItem("iron_ore", out var ore) && ore is not null);

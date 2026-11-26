@@ -16,7 +16,7 @@ public class SoloCombatSaveTests
         using var realm = await HubHarness.CreateAsync();
         var bob = realm.Connect("bob");
         Assert.True(await realm.Hub(bob).LoadCharacter("Bobchar"));
-        Assert.True(await realm.Hub(bob).JoinRoom(2));
+        Assert.True(await realm.PlaceAsync(bob, 2));
         var player = realm.Session.Get(bob.ConnectionId)!;
         player.Stats.Strength = 500;                      // one or two hits end it
 

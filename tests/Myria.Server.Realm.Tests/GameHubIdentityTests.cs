@@ -184,6 +184,21 @@ internal sealed class HubHarness : IDisposable
         };
     }
 
+    /// <summary>
+    /// Puts the caller's loaded character into <paramref name="roomId"/> the way a login does (its
+    /// saved room), then joins it. JoinRoom itself only walks through exits, so test setup that needs
+    /// a character somewhere else uses this.
+    /// </summary>
+    public async Task<bool> PlaceAsync(FakeCallerContext ctx, int roomId)
+    {
+        if (Session.Get(ctx.ConnectionId) is { } character)
+        {
+            character.CurrentRoomId = roomId;
+            character.CurrentRoom = Myria.Lib.Core.Services.RoomService.GetRoomById(roomId);
+        }
+        return await Hub(ctx).JoinRoom(roomId);
+    }
+
     public ShopLease NewShopService() => new(_services.CreateScope());
 
     public void Dispose()
