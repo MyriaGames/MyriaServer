@@ -113,6 +113,7 @@ builder.Services.AddSingleton<TradeService>();
 builder.Services.AddSingleton<CharacterLocks>();
 builder.Services.AddScoped<PlayerShopService>();
 builder.Services.AddSingleton<GroupCombatService>();
+builder.Services.AddSingleton<PvpCombatService>();
 // Global hub filters: registered via AddSignalR(options => options.AddFilter<T>()) plus a plain
 // DI registration of the filter type itself - this applies the filter to every hub (there's
 // currently only GameHub, but this stays global without needing updating if a second hub is ever

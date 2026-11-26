@@ -124,6 +124,7 @@ internal sealed class HubHarness : IDisposable
     public PartyService Party { get; } = new();
     public TradeService Trade { get; } = new();
     public GroupCombatService GroupCombat { get; } = new();
+    public PvpCombatService PvpCombat { get; } = new();
 
     /// <summary>The logger hubs get; replace to capture log output.</summary>
     public ILogger<GameHub> Logger { get; set; } = NullLogger<GameHub>.Instance;
@@ -177,6 +178,7 @@ internal sealed class HubHarness : IDisposable
             Presence, Party, Session, Trade,
             scope.ServiceProvider.GetRequiredService<PlayerShopService>(),
             GroupCombat,
+            PvpCombat,
             _services.GetRequiredService<IServiceScopeFactory>(),
             AllowedVersions,
             Logger,

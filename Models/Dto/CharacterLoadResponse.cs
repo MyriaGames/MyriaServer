@@ -63,6 +63,12 @@ namespace Myria.Server.Realm.Models.Dto
         public string?  ActiveJobId    { get; set; }
         public DateTime LastJobChanged { get; set; }
 
+        // ── PvP (display only; the save request has no PvP fields) ─────────────────
+        public int  PvpRating   { get; set; }
+        public long PvpCurrency { get; set; }
+        public int  PvpWins     { get; set; }
+        public int  PvpLosses   { get; set; }
+
         // ── Collections ──────────────────────────────────────────────────────────
         public List<CharSaveInventoryItem>   InventoryItems      { get; set; } = new();
         public List<string>                  SkillIds            { get; set; } = new();

@@ -15,7 +15,7 @@ namespace Myria.Server.Realm.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "8.0.11");
+            modelBuilder.HasAnnotation("ProductVersion", "10.0.15");
 
             modelBuilder.Entity("Myria.Server.Realm.Models.AccountBan", b =>
                 {
@@ -150,6 +150,18 @@ namespace Myria.Server.Realm.Migrations
                         .UseCollation("NOCASE");
 
                     b.Property<int>("PotionTierAvailable")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("PvpCurrency")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("PvpLosses")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("PvpRating")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("PvpWins")
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("Race")

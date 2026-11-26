@@ -124,6 +124,10 @@ namespace Myria.Server.Realm.Controllers
                 LastClassChanged        = c.LastClassChanged,
                 ActiveJobId             = c.ActiveJobId,
                 LastJobChanged          = c.LastJobChanged,
+                PvpRating               = c.PvpRating,
+                PvpCurrency             = c.PvpCurrency,
+                PvpWins                 = c.PvpWins,
+                PvpLosses               = c.PvpLosses,
 
                 InventoryItems = c.InventoryItems
                     .OrderBy(i => i.SlotIndex)

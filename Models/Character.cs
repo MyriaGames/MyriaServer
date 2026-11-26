@@ -82,6 +82,13 @@ namespace Myria.Server.Realm.Models
         [MaxLength(100)] public string? ActiveJobId { get; set; }
         public DateTime LastJobChanged { get; set; } = DateTime.MinValue;
 
+        // ── PvP (server-authoritative: written only by the server session save, never from a
+        // client SaveCharacterRequest) ──
+        public int  PvpRating   { get; set; } = Myria.Lib.Core.Services.PvpRatingService.StartingRating;
+        public long PvpCurrency { get; set; }
+        public int  PvpWins     { get; set; }
+        public int  PvpLosses   { get; set; }
+
         // ── Navigation properties (child tables) ─────────────────────────────────
         public ICollection<CharacterInventoryItem>  InventoryItems      { get; set; } = new List<CharacterInventoryItem>();
         public ICollection<CharacterSkill>          Skills              { get; set; } = new List<CharacterSkill>();

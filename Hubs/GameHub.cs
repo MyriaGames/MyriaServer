@@ -27,6 +27,7 @@ namespace Myria.Server.Realm.Hubs
         TradeService trade,
         PlayerShopService shop,
         GroupCombatService groupCombat,
+        PvpCombatService pvp,
         IServiceScopeFactory scopeFactory,
         AllowedVersionsConfig allowedVersions,
         ILogger<GameHub> logger,
@@ -130,6 +131,11 @@ namespace Myria.Server.Realm.Hubs
         public override async Task OnDisconnectedAsync(Exception? exception)
         {
             presence.UnregisterContext(Context.ConnectionId);
+
+            // A disconnect mid-PvP is a forfeit. Must run before the session is removed and saved
+            // below: it settles the loss and restores pre-fight HP/MP on the session character, so
+            // the disconnect save persists exactly that.
+            await ForfeitPvpAsync(Context.ConnectionId, session.Get(Context.ConnectionId), notifyCaller: false);
 
             var displayName = presence.GetDisplayName(Context.ConnectionId);
             var roomId      = presence.GetRoom(Context.ConnectionId);
@@ -473,9 +479,9 @@ namespace Myria.Server.Realm.Hubs
             Myria.Lib.Core.Entities.Characters.Character player,
             bool inventory = false, bool money = false, bool vitals = false, bool progress = false,
             bool questProgress = false, bool jobs = false, bool runes = false, bool equipment = false,
-            bool skillProgress = false)
+            bool skillProgress = false, bool pvpStats = false)
         {
-            var dto = BuildCharacterUpdate(player, inventory, money, vitals, progress, questProgress, jobs, runes, equipment, skillProgress);
+            var dto = BuildCharacterUpdate(player, inventory, money, vitals, progress, questProgress, jobs, runes, equipment, skillProgress, pvpStats);
             return dto is null ? Task.CompletedTask : Clients.Caller.SendAsync("CharacterUpdated", dto);
         }
 
@@ -484,18 +490,18 @@ namespace Myria.Server.Realm.Hubs
         private Task NotifyCharacterUpdateFor(string connectionId, Myria.Lib.Core.Entities.Characters.Character player,
             bool inventory = false, bool money = false, bool vitals = false, bool progress = false,
             bool questProgress = false, bool jobs = false, bool runes = false, bool equipment = false,
-            bool skillProgress = false)
+            bool skillProgress = false, bool pvpStats = false)
         {
-            var dto = BuildCharacterUpdate(player, inventory, money, vitals, progress, questProgress, jobs, runes, equipment, skillProgress);
+            var dto = BuildCharacterUpdate(player, inventory, money, vitals, progress, questProgress, jobs, runes, equipment, skillProgress, pvpStats);
             return dto is null ? Task.CompletedTask : Clients.Client(connectionId).SendAsync("CharacterUpdated", dto);
         }
 
         private static CharacterUpdateDto? BuildCharacterUpdate(
             Myria.Lib.Core.Entities.Characters.Character player,
             bool inventory, bool money, bool vitals, bool progress, bool questProgress = false,
-            bool jobs = false, bool runes = false, bool equipment = false, bool skillProgress = false)
+            bool jobs = false, bool runes = false, bool equipment = false, bool skillProgress = false, bool pvpStats = false)
         {
-            if (!inventory && !money && !vitals && !progress && !questProgress && !jobs && !runes && !equipment && !skillProgress) return null;
+            if (!inventory && !money && !vitals && !progress && !questProgress && !jobs && !runes && !equipment && !skillProgress && !pvpStats) return null;
 
             return new CharacterUpdateDto(
                 inventory ? player.Inventory.Items.Select(i => new InventoryItemSnapshot(i.Id, i.StackSize)).ToList() : null,
@@ -510,7 +516,8 @@ namespace Myria.Server.Realm.Hubs
                 runes ? player.KnownRunes.Select(r => new RuneSnapshot(r.Id, r.BaseRuneId, new List<string>(r.AddedWordIds))).ToList() : null,
                 equipment ? new EquippedSnapshot(player.WeaponSlot?.Id, player.ArmorSlot?.Id, player.AccessorySlot?.Id) : null,
                 skillProgress ? player.SkillProgress.Select(sp => new SkillProgressSnapshot(
-                    sp.SkillId, sp.UsageCount, sp.Level, sp.UnspentPoints, new List<string>(sp.PurchasedUpgradeIds))).ToList() : null);
+                    sp.SkillId, sp.UsageCount, sp.Level, sp.UnspentPoints, new List<string>(sp.PurchasedUpgradeIds))).ToList() : null,
+                pvpStats ? new PvpStatsSnapshot(player.PvpRating, player.PvpCurrency, player.PvpWins, player.PvpLosses) : null);
         }
 
         /// <summary>
@@ -1379,7 +1386,7 @@ namespace Myria.Server.Realm.Hubs
             if (presence.GetRoom(Context.ConnectionId) != roomId)
                 return new StartCombatResult(false, "wrong_room", null, 0, 0);
 
-            if (session.GetEncounter(Context.ConnectionId) != null)
+            if (session.GetEncounter(Context.ConnectionId) != null || pvp.IsInFight(Context.ConnectionId))
                 return new StartCombatResult(false, "already_in_combat", null, 0, 0);
 
             var room = RoomService.AllRooms.FirstOrDefault(r => r.Id == roomId);
@@ -1526,8 +1533,8 @@ namespace Myria.Server.Realm.Hubs
                 return new StartGroupCombatResult(false, "wrong_room", [], [], "");
             }
 
-            // Reject if already in any group combat.
-            if (groupCombat.GetPartyId(Context.ConnectionId) is not null)
+            // Reject if already in any group combat (or a PvP fight).
+            if (groupCombat.GetPartyId(Context.ConnectionId) is not null || pvp.IsInFight(Context.ConnectionId))
             {
                 logger.LogWarning("Combat start rejected for {User} (conn {Conn}): already_in_combat", displayName, Context.ConnectionId);
                 return new StartGroupCombatResult(false, "already_in_combat", [], [], "");
@@ -1812,6 +1819,248 @@ namespace Myria.Server.Realm.Hubs
 
             return snap;
         }
+
+        // ── PvP (v0.3: arena rooms only, party vs party, rating + PvP currency stakes) ──
+
+        /// <summary>Whether this connection is already in any kind of fight.</summary>
+        private bool IsInAnyFight(string connId) =>
+            groupCombat.GetPartyId(connId) is not null
+            || session.GetEncounter(connId) is not null
+            || pvp.IsInFight(connId);
+
+        /// <summary>Members of <paramref name="partyId"/> standing in <paramref name="roomId"/> who
+        /// can fight right now (alive, not already fighting).</summary>
+        private List<(string Conn, Myria.Lib.Core.Entities.Characters.Character Character)> AvailablePartyMembersIn(string partyId, int roomId) =>
+            party.GetMembers(partyId)
+                .Select(m => presence.GetConnectionByName(m))
+                .Where(c => c is not null && presence.GetRoom(c) == roomId && !IsInAnyFight(c))
+                .Select(c => (Conn: c!, Character: session.Get(c!)))
+                .Where(x => x.Character is { IsAlive: true })
+                .Select(x => (x.Conn, x.Character!))
+                .ToList();
+
+        /// <summary>Everyone the caller could challenge in their current room - empty outside a PvP
+        /// room. Party members are never listed (party members can't fight each other).</summary>
+        public Task<List<PvpTargetInfo>> GetPvpTargets()
+        {
+            var result = new List<PvpTargetInfo>();
+            if (session.Get(Context.ConnectionId) is not { } me) return Task.FromResult(result);
+            if (presence.GetRoom(Context.ConnectionId) is not int roomId) return Task.FromResult(result);
+            if (RoomService.AllRooms.FirstOrDefault(r => r.Id == roomId) is not { IsPvpRoom: true }) return Task.FromResult(result);
+
+            var myParty = party.GetPartyId(me.Name);
+            foreach (var name in presence.GetCharactersInRoom(roomId))
+            {
+                if (string.Equals(name, me.Name, StringComparison.OrdinalIgnoreCase)) continue;
+                var theirParty = party.GetPartyId(name);
+                if (myParty is not null && myParty == theirParty) continue;
+
+                var conn = presence.GetConnectionByName(name);
+                if (conn is null || IsInAnyFight(conn) || session.Get(conn) is not { IsAlive: true } them) continue;
+
+                int partySize = theirParty is null ? 1 : AvailablePartyMembersIn(theirParty, roomId).Count;
+                result.Add(new PvpTargetInfo(them.Name, them.Level, them.Class, theirParty, partySize));
+            }
+            return Task.FromResult(result);
+        }
+
+        /// <summary>
+        /// Challenges <paramref name="targetName"/> in the caller's PvP room. There's no
+        /// accept/decline (same immediacy as starting a monster fight). <paramref name="partyFight"/>
+        /// pulls in every free party member present on both sides - an unpartied player is a party
+        /// of one; otherwise it's a 1v1 between just the two of them.
+        /// </summary>
+        public async Task<StartPvpResult> StartPvpFight(string targetName, bool partyFight)
+        {
+            var caller = session.Get(Context.ConnectionId);
+            if (caller is null) return new StartPvpResult(false, "failed", null);
+            if (!caller.IsAlive) return new StartPvpResult(false, "player_dead", null);
+
+            if (presence.GetRoom(Context.ConnectionId) is not int roomId
+                || RoomService.AllRooms.FirstOrDefault(r => r.Id == roomId) is not { IsPvpRoom: true })
+                return new StartPvpResult(false, "not_pvp_room", null);
+
+            if (IsInAnyFight(Context.ConnectionId)) return new StartPvpResult(false, "already_in_combat", null);
+            if (string.Equals(targetName, caller.Name, StringComparison.OrdinalIgnoreCase))
+                return new StartPvpResult(false, "failed", null);
+
+            var targetConn = presence.GetConnectionByName(targetName);
+            var target = targetConn is null ? null : session.Get(targetConn);
+            if (targetConn is null || target is null || presence.GetRoom(targetConn) != roomId)
+                return new StartPvpResult(false, "target_not_here", null);
+            if (!target.IsAlive || IsInAnyFight(targetConn))
+                return new StartPvpResult(false, "target_busy", null);
+
+            var myParty = party.GetPartyId(caller.Name);
+            var theirParty = party.GetPartyId(target.Name);
+            if (myParty is not null && myParty == theirParty)
+                return new StartPvpResult(false, "same_party", null);
+
+            var sideA = partyFight && myParty is not null
+                ? AvailablePartyMembersIn(myParty, roomId)
+                : new() { (Context.ConnectionId, caller) };
+            var sideB = partyFight && theirParty is not null
+                ? AvailablePartyMembersIn(theirParty, roomId)
+                : new() { (targetConn, target) };
+            // The two principals must be in (AvailablePartyMembersIn only drops busy/dead/absent ones).
+            if (!sideA.Any(x => x.Conn == Context.ConnectionId)) sideA.Insert(0, (Context.ConnectionId, caller));
+            if (!sideB.Any(x => x.Conn == targetConn)) sideB.Insert(0, (targetConn, target));
+
+            var encounter = new PvpEncounter(sideA.Select(x => x.Character), sideB.Select(x => x.Character));
+            string fightId = $"pvp:{Guid.NewGuid():N}";
+            if (!pvp.Start(fightId, sideA.Concat(sideB).Select(x => x.Conn).ToList(), encounter))
+                return new StartPvpResult(false, "target_busy", null);
+
+            var snap = BuildPvpSnapshot(encounter, 0);
+            logger.LogInformation("PvP started (fight {FightId}, room {Room}): {A} vs {B}", fightId, roomId,
+                string.Join(", ", sideA.Select(x => x.Character.Name)), string.Join(", ", sideB.Select(x => x.Character.Name)));
+
+            await PvpClients(fightId).SendAsync("PvpStarted", snap);
+            return new StartPvpResult(true, null, snap);
+        }
+
+        public Task<PvpSnapshot?> PvpAttack(int opponentIndex) =>
+            RunPvpAction((enc, me) => enc.Attack(me, opponentIndex));
+
+        /// <summary><paramref name="targetIndex"/>: an index into the opponents for enemy-targeted
+        /// skills, into the caller's own side for SingleAlly.</summary>
+        public Task<PvpSnapshot?> PvpCastSkill(string skillId, int targetIndex)
+        {
+            if (session.Get(Context.ConnectionId) is not { } player || ResolveCastableSkill(player, skillId) is not { } skill)
+                return Task.FromResult<PvpSnapshot?>(null);
+            return RunPvpAction((enc, me) => enc.CastSkill(me, skill, targetIndex));
+        }
+
+        public async Task<PvpSnapshot?> PvpUseItem(string itemId)
+        {
+            if (session.Get(Context.ConnectionId) is not { } player) return null;
+            PvpSnapshot? snap;
+            // Same per-character lock as every other inventory change.
+            using (await locks.AcquireAsync(player.Name))
+            {
+                if (ResolveConsumable(player, itemId) is not { } item) return null;
+                snap = await RunPvpAction((enc, me) => enc.UseItem(me, item));
+            }
+            if (snap is not null) await NotifyCharacterUpdate(player, inventory: true);
+            return snap;
+        }
+
+        /// <summary>Forfeits the caller's current PvP fight (a loss, settled immediately).</summary>
+        public Task PvpFlee() =>
+            ForfeitPvpAsync(Context.ConnectionId, session.Get(Context.ConnectionId), notifyCaller: true);
+
+        /// <summary>Any participant may call this; the encounter only skips the turn once it has
+        /// actually run past PvpEncounter.TurnTimeout. Clients poll it while waiting.</summary>
+        public async Task<bool> PvpSkipStalledTurn()
+        {
+            if (pvp.GetFightId(Context.ConnectionId) is not { } fightId || pvp.GetEncounter(fightId) is not { } enc)
+                return false;
+            int logBefore = enc.Log.Count;
+            if (!enc.SkipStalledTurn()) return false;
+            await CompletePvpActionAsync(fightId, enc, logBefore);
+            return true;
+        }
+
+        /// <summary>
+        /// Runs one turn action. A rejection that logged a reason (no mana, on cooldown, silenced)
+        /// comes back to the caller only, so they see why; a silent rejection (not your turn, bad
+        /// target) returns null and the client resyncs. Engine true = the turn was spent.
+        /// </summary>
+        private async Task<PvpSnapshot?> RunPvpAction(Func<PvpEncounter, string, bool> action)
+        {
+            if (pvp.GetFightId(Context.ConnectionId) is not { } fightId || pvp.GetEncounter(fightId) is not { } enc)
+                return null;
+
+            int logBefore = enc.Log.Count;
+            if (!action(enc, DisplayName()))
+                return enc.Log.Count > logBefore ? BuildPvpSnapshot(enc, logBefore) : null;
+
+            return await CompletePvpActionAsync(fightId, enc, logBefore);
+        }
+
+        /// <summary>Broadcasts the turn, or - if it ended the fight - settles ratings, restores
+        /// everyone to their pre-fight state, saves, and broadcasts the result.</summary>
+        private async Task<PvpSnapshot> CompletePvpActionAsync(string fightId, PvpEncounter enc, int logBefore)
+        {
+            var snap = BuildPvpSnapshot(enc, logBefore);
+            if (!enc.IsFinished)
+            {
+                await PvpClients(fightId).SendAsync("PvpUpdated", snap);
+                return snap;
+            }
+
+            var losingSide = (enc.WinningSide == 1 ? enc.SideB : enc.SideA).ToList();
+            var results = PvpRatingService.ApplyFightResult(enc.Winners, enc.Losers, losingSide);
+            var settled = enc.Winners.Concat(enc.Losers).ToList(); // fled participants settled at flee time
+            foreach (var c in settled) enc.RestorePreFightState(c);
+            await SaveCombatParticipantsAsync(settled);
+            foreach (var c in settled)
+                if (session.GetConnectionId(c.Name) is string conn)
+                    await NotifyCharacterUpdateFor(conn, c, vitals: true, pvpStats: true);
+
+            snap = snap with { Results = results.Select(r => new PvpResultEntry(r.Name, r.Won, r.RatingDelta, r.NewRating, r.CurrencyDelta)).ToList() };
+            logger.LogInformation("PvP finished (fight {FightId}): {Results}", fightId,
+                string.Join(", ", results.Select(r => $"{r.Name} {(r.Won ? "won" : "lost")} {r.RatingDelta:+0;-0;0}")));
+
+            // Broadcast before removing - PvpClients resolves recipients from the registry.
+            await PvpClients(fightId).SendAsync("PvpFinished", snap);
+            pvp.Remove(fightId);
+            return snap;
+        }
+
+        /// <summary>
+        /// Takes a participant out of their PvP fight as a forfeit: the loss is settled right away
+        /// (they may be gone by the time the fight ends), they're restored to their pre-fight
+        /// state and saved, and the rest of the fight carries on - or ends, if that was the last
+        /// one on their side. Used by PvpFlee and by disconnects.
+        /// </summary>
+        private async Task ForfeitPvpAsync(string connId, Myria.Lib.Core.Entities.Characters.Character? player, bool notifyCaller)
+        {
+            if (player is null || pvp.GetFightId(connId) is not { } fightId || pvp.GetEncounter(fightId) is not { } enc)
+                return;
+            var me = enc.Find(player.Name);
+            if (me is null) return;
+
+            int logBefore = enc.Log.Count;
+            if (!enc.Flee(me.Name)) return;
+
+            var opponents = enc.OpponentsOf(me).Where(c => !enc.HasFled(c)).ToList();
+            var result = PvpRatingService.ApplyForfeit(me, opponents.Count > 0 ? opponents : enc.OpponentsOf(me).ToList());
+            enc.RestorePreFightState(me);
+            pvp.RemoveConnection(connId);
+            await SaveCombatParticipantsAsync(new[] { me });
+            logger.LogInformation("PvP forfeit (fight {FightId}): {Name} {Delta:+0;-0;0}", fightId, me.Name, result.RatingDelta);
+
+            if (notifyCaller)
+            {
+                await NotifyCharacterUpdate(me, vitals: true, pvpStats: true);
+                await Clients.Caller.SendAsync("PvpFinished", BuildPvpSnapshot(enc, logBefore) with
+                {
+                    Finished = true,
+                    Results = [new PvpResultEntry(result.Name, false, result.RatingDelta, result.NewRating, result.CurrencyDelta)]
+                });
+            }
+
+            await CompletePvpActionAsync(fightId, enc, logBefore);
+        }
+
+        private static PvpSnapshot BuildPvpSnapshot(PvpEncounter enc, int logBefore)
+        {
+            GroupCombatantState State(Myria.Lib.Core.Entities.Characters.Character c) => new(
+                c.Name, c.CurrentHealth, c.MaxHealth, enc.IsInFight(c), c.Level, Mana: c.CurrentMana, MaxMana: c.MaxMana);
+
+            return new PvpSnapshot(
+                enc.SideA.Select(State).ToList(),
+                enc.SideB.Select(State).ToList(),
+                enc.CurrentTurnCharacterName,
+                enc.IsFinished,
+                enc.WinningSide,
+                enc.Log.Skip(logBefore)
+                    .Select(e => new CombatLogMessage(e.Key, e.Args.Select(a => a?.ToString() ?? "").ToArray()))
+                    .ToList());
+        }
+
+        private IClientProxy PvpClients(string fightId) => Clients.Clients(pvp.GetConnections(fightId));
 
         // ── Party ─────────────────────────────────────────────────────────────
 

@@ -153,7 +153,11 @@ namespace Myria.Server.Realm.Repositories
                 LastClassPenaltyApplied = c.LastClassPenaltyApplied,
                 LastClassChanged        = c.LastClassChanged,
                 ActiveJobId             = c.ActiveJobId,
-                LastJobChanged          = c.LastJobChanged
+                LastJobChanged          = c.LastJobChanged,
+                PvpRating               = c.PvpRating,
+                PvpCurrency             = c.PvpCurrency,
+                PvpWins                 = c.PvpWins,
+                PvpLosses               = c.PvpLosses
             };
 
             character.CurrentRoom = RoomService.AllRooms.FirstOrDefault(r => r.Id == c.CurrentRoomId);
@@ -341,6 +345,10 @@ namespace Myria.Server.Realm.Repositories
             record.LastClassChanged         = character.LastClassChanged;
             record.ActiveJobId              = character.ActiveJobId;
             record.LastJobChanged           = character.LastJobChanged;
+            record.PvpRating                = character.PvpRating;
+            record.PvpCurrency              = character.PvpCurrency;
+            record.PvpWins                  = character.PvpWins;
+            record.PvpLosses                = character.PvpLosses;
 
             record.InventoryItems.Clear();
             for (int i = 0; i < character.Inventory.Items.Count; i++)
