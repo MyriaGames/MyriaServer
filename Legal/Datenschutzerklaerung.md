@@ -116,6 +116,13 @@ Fehlersuche sowie dem Erkennen und Aufklären von Missbrauch und Angriffen
 werden nach **30 Tagen** automatisch gelöscht. Der den Servern vorgeschaltete
 Webserver (Reverse Proxy, siehe Abschnitt 2.6) führt kein Zugriffsprotokoll.
 
+Aktionen, die der Betreiber im Verwaltungswerkzeug vornimmt (z. B. Sperren,
+Rauswürfe, Account-Löschungen, ausgestellte Links zum Zurücksetzen des
+Passworts), werden in einem eigenen Betreiberprotokoll mit Zeitpunkt, Aktion
+und betroffenem Benutzernamen festgehalten, damit sie später nachvollziehbar
+sind. Es enthält keine Passwörter oder Links, Zugriff hat nur der Betreiber,
+und Einträge werden nach **einem Jahr** automatisch gelöscht.
+
 Die Account- und Spielstanddatenbanken werden täglich automatisch gesichert.
 Die Sicherungen liegen auf derselben Hardware des Betreibers (siehe
 Abschnitt 5), sind ausschließlich für den Betreiber zugänglich und werden
@@ -203,7 +210,8 @@ implementiert. Die bei einer Anfrage zum Zurücksetzen des Passworts
 angegebene E-Mail-Adresse wird gelöscht, sobald die Anfrage erledigt ist,
 spätestens 30 Tage nach der Anfrage (zuzüglich höchstens 14 Tagen in den
 Sicherungen, siehe Abschnitt 2.5). Einträge im Betriebsprotokoll werden nach
-30 Tagen gelöscht (Abschnitt 2.5).
+30 Tagen gelöscht (Abschnitt 2.5). Einträge im Betreiberprotokoll werden nach
+einem Jahr gelöscht (Abschnitt 2.5).
 
 ## 5. Weitergabe an Dritte
 
