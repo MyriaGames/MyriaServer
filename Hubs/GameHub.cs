@@ -732,47 +732,35 @@ namespace Myria.Server.Realm.Hubs
             if (!session.TryConsumeGather(player.Name, roomId, room.DailyGatherLimit + JobManager.GetGatherKnowledgeBonus(player), out int remaining))
                 return new GatherActionResult(false, "depleted", null, 0, 0, null, 0);
 
-            foreach (var spot in room.GatheringSpots)
+            // Same choice as single player: a random spot the player has the tool and skill for.
+            var spot = GatherService.PickSpot(player, room, out var failure);
+            if (spot is null)
+                return new GatherActionResult(false, failure == GatherResult.SkillTooLow ? "skill_too_low" : "no_tool", null, 0, 0, null);
+
+            if (!ItemFactory.TryCreateItem(spot.GatheredItemId, out var item))
+                return new GatherActionResult(false, "no_spots", null, 0, 0, null);
+
+            string jobId = GatherService.JobFor(spot.Type);
+            if (!string.IsNullOrEmpty(jobId))
+                item.StackSize = JobManager.GetGatherAmount(player, jobId);
+            if (item.StackSize <= 0)
+                item.StackSize = 1;
+
+            // Capture before AddItem — it decrements StackSize during stack-merging.
+            int gatheredAmount = item.StackSize;
+            player.Inventory.AddItem(item, player, "gather");
+
+            long xp = 0;
+            if (!string.IsNullOrEmpty(jobId))
             {
-                if (!string.IsNullOrEmpty(spot.RequiredToolId))
-                {
-                    bool hasTool = player.Inventory.Items.Any(i => i.Id == spot.RequiredToolId)
-                                || player.WeaponSlot?.Id == spot.RequiredToolId;
-                    if (!hasTool) continue;
-                }
-
-                if (!ItemFactory.TryCreateItem(spot.GatheredItemId, out var item)) continue;
-
-                string jobId = spot.Type switch
-                {
-                    GatheringType.Ore  => "miner",
-                    GatheringType.Tree => "woodcutter",
-                    GatheringType.Herb => "herbalist",
-                    _                  => ""
-                };
-                if (!string.IsNullOrEmpty(jobId))
-                    item.StackSize = JobManager.GetGatherAmount(player, jobId);
-                if (item.StackSize <= 0)
-                    item.StackSize = 1;
-
-                // Capture before AddItem — it decrements StackSize during stack-merging.
-                int gatheredAmount = item.StackSize;
-                player.Inventory.AddItem(item, player, "gather");
-
-                long xp = 0;
-                if (!string.IsNullOrEmpty(jobId))
-                {
-                    JobManager.GrantSkillXp(player, jobId, 10);
-                    xp = 10;
-                    await TryApplyRookieJobXpBonusAsync(player, jobId, xp);
-                }
-
-                await Clients.OthersInGroup(RoomGroup(roomId)).SendAsync("CharacterGathering", DisplayName());
-                await NotifyCharacterUpdate(player, inventory: true, jobs: !string.IsNullOrEmpty(jobId));
-                return new GatherActionResult(true, null, item.Id, gatheredAmount, xp, jobId, remaining);
+                JobManager.GrantSkillXp(player, jobId, 10);
+                xp = 10;
+                await TryApplyRookieJobXpBonusAsync(player, jobId, xp);
             }
 
-            return new GatherActionResult(false, "no_tool", null, 0, 0, null);
+            await Clients.OthersInGroup(RoomGroup(roomId)).SendAsync("CharacterGathering", DisplayName());
+            await NotifyCharacterUpdate(player, inventory: true, jobs: !string.IsNullOrEmpty(jobId));
+            return new GatherActionResult(true, null, item.Id, gatheredAmount, xp, jobId, remaining);
         }
 
         /// <summary>Crafts <paramref name="quantity"/> of <paramref name="recipeId"/> at <paramref name="npcId"/>.</summary>
