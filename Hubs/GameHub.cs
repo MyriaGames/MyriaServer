@@ -3337,6 +3337,10 @@ namespace Myria.Server.Realm.Hubs
                 }
                 else
                     logger.LogInformation("{Character} lost a solo fight", player.Name);
+
+                // Save the outcome now, like group fights and PvP do - XP and loot from a solo win
+                // used to live only in the session until some unrelated save, so a crash lost them.
+                await SaveCombatParticipantsAsync(new[] { player });
             }
 
             return new CombatTurnResult(
