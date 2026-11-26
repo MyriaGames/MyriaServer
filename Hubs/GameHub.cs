@@ -1694,7 +1694,7 @@ namespace Myria.Server.Realm.Hubs
                 ? dungeonRun.NextPack(room!, DungeonRules.PackPerFight(partyId is not null), () => startedFight is null
                     || (!startedFight.IsFinished && groupCombat.GetEncounter(fightId) == startedFight))
                 : MonsterService.TryPickMonstersForGroupFight(
-                    room!.Monsters, room.EncounterableMonsters, room.CurrentMonsters, false,
+                    room!.Monsters, room.EncounterableMonsters,
                     m => IsMonsterAvailable(roomId, m), max: soloOnly ? 1 : 5);
             if (monsters.Count == 0)
                 return new StartGroupCombatResult(false, "no_monsters", [], [], "");
