@@ -18,6 +18,7 @@ using Myria.Server.Realm.Models;
 using Myria.Server.Realm.Services;
 
 using Myria.Lib.Core.Systems.World;
+using Myria.Lib.Core.Systems.Dungeons;
 
 namespace Myria.Server.Realm.Hubs
 {
@@ -32,6 +33,7 @@ namespace Myria.Server.Realm.Hubs
         PvpCombatService pvp,
         WorldStateService world,
         DynamicQuestService quests,
+        DungeonInstanceService dungeons,
         IServiceScopeFactory scopeFactory,
         AllowedVersionsConfig allowedVersions,
         ILogger<GameHub> logger,
@@ -575,6 +577,15 @@ namespace Myria.Server.Realm.Hubs
 
                 if (!allowed) return false;
 
+                // v0.3 dungeons: deeper only from a cleared room; from a room with monsters left you
+                // can only fall back. The first join of a session (login, saved inside) places freely.
+                if (prevRoom is int from && from != roomId && DungeonRules.DungeonIdOf(room) is { } targetDungeon)
+                {
+                    var fromRoom = RoomService.AllRooms.FirstOrDefault(r => r.Id == from);
+                    if (!dungeons.GetOrCreate(DungeonOwnerOf(displayName), targetDungeon).CanMove(fromRoom, room))
+                        return false;
+                }
+
                 player.CurrentRoomId = roomId;
                 player.CurrentRoom   = room;
 
@@ -590,6 +601,7 @@ namespace Myria.Server.Realm.Hubs
 
             presence.SetRoom(Context.ConnectionId, roomId);
             await Groups.AddToGroupAsync(Context.ConnectionId, RoomGroup(roomId));
+            ResetDungeonIfLeft(displayName, prevRoom, roomId);
 
             var others = presence.GetCharactersInRoom(roomId)
                                  .Where(u => u != displayName)
@@ -1423,24 +1435,35 @@ namespace Myria.Server.Realm.Hubs
             if (room == null)
                 return new StartCombatResult(false, "no_monsters", null, 0, 0);
 
-            // For dungeon rooms use spawned CurrentMonsters; otherwise use templates.
-            var monsterPool = room.IsDungeonRoom && room.CurrentMonsters.Count > 0
-                ? room.CurrentMonsters
-                : room.Monsters;
+            Myria.Lib.Core.Entities.Monsters.Monster monster;
+            CombatEncounter encounter;
+            if (DungeonRunFor(room) is { } run)
+            {
+                // v0.3 dungeons: one monster of this run's pack for the room (the instance itself, so
+                // its death clears it from the run).
+                var conn = Context.ConnectionId;
+                CombatEncounter? started = null;
+                var pack = run.NextPack(room, 1, () => started is null
+                    || (started.Phase != CombatPhase.Finished && session.GetEncounter(conn) == started));
+                if (pack.Count == 0)
+                    return new StartCombatResult(false, run.IsCleared(room) ? "room_cleared" : "no_monsters", null, 0, 0);
+                monster = pack[0];
+                encounter = started = new CombatEncounter(player, monster);
+                encounter.MonsterKilled += (_, e) => { if (e.Monster is not null) run.RecordKill(roomId, e.Monster); };
+            }
+            else
+            {
+                if (room.Monsters.Count == 0)
+                    return new StartCombatResult(false, "no_monsters", null, 0, 0);
 
-            if (monsterPool.Count == 0)
-                return new StartCombatResult(false, "no_monsters", null, 0, 0);
-
-            // v0.3: an overworld room's population of a monster type can run out (dungeons keep
-            // their own spawn-and-clear cycle).
-            var picked = room.IsDungeonRoom
-                ? MonsterService.PickMonsterForFight(monsterPool, room.EncounterableMonsters)
-                : MonsterService.TryPickMonsterForFight(monsterPool, room.EncounterableMonsters, m => IsMonsterAvailable(roomId, m));
-            if (picked == null)
-                return new StartCombatResult(false, "no_monsters", null, 0, 0);
-            var monster = picked.Clone();
-            var encounter = new CombatEncounter(player, monster);
-            encounter.MonsterKilled += (_, e) => world.State?.RecordKill(roomId, e.MonsterId);
+                // v0.3: an overworld room's population of a monster type can run out.
+                var picked = MonsterService.TryPickMonsterForFight(room.Monsters, room.EncounterableMonsters, m => IsMonsterAvailable(roomId, m));
+                if (picked == null)
+                    return new StartCombatResult(false, "no_monsters", null, 0, 0);
+                monster = picked.Clone();
+                encounter = new CombatEncounter(player, monster);
+                encounter.MonsterKilled += (_, e) => world.State?.RecordKill(roomId, e.MonsterId);
+            }
             session.SetEncounter(Context.ConnectionId, encounter);
 
             await Clients.OthersInGroup(RoomGroup(roomId)).SendAsync("CharacterInCombat", DisplayName());
@@ -1579,8 +1602,10 @@ namespace Myria.Server.Realm.Hubs
             }
 
             var room = RoomService.AllRooms.FirstOrDefault(r => r.Id == roomId);
-            bool hasMonsters = room != null &&
-                (room.IsDungeonRoom ? room.CurrentMonsters.Count > 0 : room.Monsters.Count > 0);
+            var dungeonRun = DungeonRunFor(room);
+            if (dungeonRun is not null && dungeonRun.IsCleared(room!))
+                return new StartGroupCombatResult(false, "room_cleared", [], [], "");
+            bool hasMonsters = room != null && (dungeonRun is not null || room.Monsters.Count > 0);
             if (!hasMonsters)
             {
                 logger.LogWarning("Combat start rejected for {User} (conn {Conn}): no_monsters", displayName, Context.ConnectionId);
@@ -1662,13 +1687,22 @@ namespace Myria.Server.Realm.Hubs
                 return new StartGroupCombatResult(false, "no_session", [], [], "");
 
             // v0.3: only monster types the room still has a population of (dungeons unaffected).
-            var monsters = MonsterService.TryPickMonstersForGroupFight(
-                room!.Monsters, room.EncounterableMonsters, room.CurrentMonsters, room.IsDungeonRoom,
-                m => IsMonsterAvailable(roomId, m), max: soloOnly ? 1 : 5);
+            // v0.3 dungeons: the next pack of this run's monsters for the room (several fights for a
+            // big pack); elsewhere a random draw limited by the room's populations.
+            GroupCombatEncounter? startedFight = null;
+            var monsters = dungeonRun is not null
+                ? dungeonRun.NextPack(room!, DungeonRules.PackPerFight(partyId is not null), () => startedFight is null
+                    || (!startedFight.IsFinished && groupCombat.GetEncounter(fightId) == startedFight))
+                : MonsterService.TryPickMonstersForGroupFight(
+                    room!.Monsters, room.EncounterableMonsters, room.CurrentMonsters, false,
+                    m => IsMonsterAvailable(roomId, m), max: soloOnly ? 1 : 5);
             if (monsters.Count == 0)
                 return new StartGroupCombatResult(false, "no_monsters", [], [], "");
-            var encounter = new GroupCombatEncounter(players, monsters);
-            encounter.MonsterKilled += (_, e) => world.State?.RecordKill(roomId, e.MonsterId);
+            var encounter = startedFight = new GroupCombatEncounter(players, monsters);
+            if (dungeonRun is not null)
+                encounter.MonsterKilled += (_, e) => { if (e.Monster is not null) dungeonRun.RecordKill(roomId, e.Monster); };
+            else
+                encounter.MonsterKilled += (_, e) => world.State?.RecordKill(roomId, e.MonsterId);
 
             if (!groupCombat.Start(fightId, memberConns, encounter))
                 return new StartGroupCombatResult(false, "already_in_combat", [], [], "");
@@ -1858,6 +1892,49 @@ namespace Myria.Server.Realm.Hubs
             await RespawnDeadGroupMembersAsync(encounter);
 
             return snap;
+        }
+
+        // ── Dungeons (v0.3: per-party instances) ─────────────────────────────
+
+        /// <summary>Whose dungeon run a character plays in: their party's, or their own.</summary>
+        private string DungeonOwnerOf(string displayName) =>
+            party.GetPartyId(displayName) is { } partyId
+                ? DungeonInstanceService.PartyOwner(partyId)
+                : DungeonInstanceService.SoloOwner(displayName);
+
+        /// <summary>The caller's run for the dungeon <paramref name="room"/> is in; null outside dungeons.</summary>
+        private DungeonRun? DungeonRunFor(Myria.Lib.Core.Entities.Maps.Room? room) =>
+            DungeonRules.DungeonIdOf(room) is { } dungeonId ? dungeons.GetOrCreate(DungeonOwnerOf(DisplayName()), dungeonId) : null;
+
+        /// <summary>After a move out of a dungeon: once nobody of the run's owner is inside any more,
+        /// the run is dropped - the next visit starts fresh.</summary>
+        private void ResetDungeonIfLeft(string displayName, int? fromRoomId, int toRoomId)
+        {
+            if (fromRoomId is not int from || from == toRoomId) return;
+            var fromRoom = RoomService.AllRooms.FirstOrDefault(r => r.Id == from);
+            if (DungeonRules.DungeonIdOf(fromRoom) is not { } dungeonId) return;
+            if (DungeonRules.DungeonIdOf(RoomService.AllRooms.FirstOrDefault(r => r.Id == toRoomId)) == dungeonId) return;
+
+            var dungeon = DungeonRegistry.GetDungeonById(dungeonId);
+            if (dungeon is null) return;
+            IEnumerable<string> members = party.GetPartyId(displayName) is { } partyId ? party.GetMembers(partyId) : new[] { displayName };
+            bool anyoneInside = members
+                .Select(m => presence.GetConnectionByName(m))
+                .Any(c => c is not null && presence.GetRoom(c) is int r && dungeon.RoomIds.Contains(r));
+            if (!anyoneInside) dungeons.Reset(DungeonOwnerOf(displayName), dungeonId);
+        }
+
+        /// <summary>The caller's dungeon run from their current room: cleared rooms and what's still
+        /// alive here. Null outside dungeons.</summary>
+        public Task<DungeonRoomState?> GetDungeonState()
+        {
+            if (presence.GetRoom(Context.ConnectionId) is not int roomId) return Task.FromResult<DungeonRoomState?>(null);
+            var room = RoomService.AllRooms.FirstOrDefault(r => r.Id == roomId);
+            if (room is null || DungeonRunFor(room) is not { } run) return Task.FromResult<DungeonRoomState?>(null);
+
+            var remaining = run.Remaining(room).Select(m => new DungeonMonsterState(m.Id, m.Name, m.Level)).ToList();
+            return Task.FromResult<DungeonRoomState?>(new DungeonRoomState(
+                run.DungeonId, roomId, remaining.Count == 0, run.ClearedRoomIds.ToList(), remaining));
         }
 
         // ── Adventurers' Guild and dynamic quests (v0.3 quest rework) ──────────
@@ -3365,6 +3442,7 @@ namespace Myria.Server.Realm.Hubs
             player.CurrentRoomId = respawnRoom.Id;
             player.CurrentRoom   = respawnRoom;
             presence.SetRoom(connectionId, respawnRoom.Id);
+            ResetDungeonIfLeft(displayName ?? player.Name, currentRoomId, respawnRoom.Id);
 
             await Groups.AddToGroupAsync(connectionId, RoomGroup(respawnRoom.Id));
             if (displayName is not null)

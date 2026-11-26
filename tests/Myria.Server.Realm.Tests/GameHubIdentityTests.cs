@@ -129,6 +129,8 @@ internal sealed class HubHarness : IDisposable
     public WorldStateService World { get; private set; } = null!;
     /// <summary>v0.3 dynamic quests (grants), loaded from the test database in CreateAsync.</summary>
     public DynamicQuestService Quests { get; private set; } = null!;
+    /// <summary>v0.3 per-party dungeon runs.</summary>
+    public DungeonInstanceService Dungeons { get; } = new();
 
     /// <summary>The logger hubs get; replace to capture log output.</summary>
     public ILogger<GameHub> Logger { get; set; } = NullLogger<GameHub>.Instance;
@@ -192,6 +194,7 @@ internal sealed class HubHarness : IDisposable
             PvpCombat,
             World,
             Quests,
+            Dungeons,
             _services.GetRequiredService<IServiceScopeFactory>(),
             AllowedVersions,
             Logger,

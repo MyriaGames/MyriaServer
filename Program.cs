@@ -116,6 +116,7 @@ builder.Services.AddSingleton<GroupCombatService>();
 builder.Services.AddSingleton<PvpCombatService>();
 builder.Services.AddSingleton<WorldStateService>();
 builder.Services.AddSingleton<DynamicQuestService>();
+builder.Services.AddSingleton<DungeonInstanceService>();
 builder.Services.AddHostedService<WorldTickService>();
 // Global hub filters: registered via AddSignalR(options => options.AddFilter<T>()) plus a plain
 // DI registration of the filter type itself - this applies the filter to every hub (there's
