@@ -69,12 +69,16 @@ namespace Myria.Server.ClassicRealm.Services
         /// overworld rooms within <see cref="DynamicQuestRules.GuildRadius"/> exits.</summary>
         public List<(string Token, Quest Preview)> BountyOffers(WorldState world, int guildRoomId, string holder)
         {
-            var near = DynamicQuests.RoomsWithin(guildRoomId, DynamicQuestRules.GuildRadius);
+            var near = DynamicQuests.DistancesWithin(guildRoomId, DynamicQuestRules.GuildRadius);
             lock (_sync)
                 return world.PopulationKeys
-                    .Where(k => near.Contains(k.RoomId))
-                    .Select(k => (k, size: DynamicQuests.GrantSize(Remaining(world, k), GrantKind.Kill)))
+                    .Where(k => near.ContainsKey(k.RoomId))
+                    .Select(k => (k, remaining: Remaining(world, k)))
+                    .Select(x => (x.k, x.remaining, size: DynamicQuests.GrantSize(x.remaining, GrantKind.Kill)))
                     .Where(x => x.size > 0 && !HoldsOpen(holder, x.k))
+                    // The most overrun rooms first, then the nearest; only a handful at a time.
+                    .OrderByDescending(x => x.remaining).ThenBy(x => near[x.k.RoomId]).ThenBy(x => x.k.RoomId).ThenBy(x => x.k.MonsterId)
+                    .Take(DynamicQuestRules.MaxBountiesShown)
                     .Select(x => (DynamicQuests.Token(x.k), Preview(GrantKind.Kill, x.k.RoomId, null, null, x.k.MonsterId, x.size)))
                     .ToList();
         }

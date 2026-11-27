@@ -616,7 +616,7 @@ namespace Myria.Server.ClassicRealm.Hubs
                 // v0.3 dungeons: deeper only from a cleared room; from a room with monsters left you
                 // can only fall back. Placement (login, saved inside) is free.
                 if (!placement && DungeonRules.DungeonIdOf(room) is { } targetDungeon
-                    && !dungeons.GetOrCreate(DungeonOwnerOf(displayName), targetDungeon).CanMove(fromRoom, room))
+                    && !DungeonRunOf(displayName, targetDungeon).CanMove(fromRoom, room))
                     return false;
 
                 player.CurrentRoomId = roomId;
@@ -890,7 +890,7 @@ namespace Myria.Server.ClassicRealm.Hubs
             // Apply craft quality from smith skill level
             if (output is EquipmentItem crafted && npc?.MasterJobId is { Length: > 0 } mj)
             {
-                crafted.CraftQuality = (float)JobXpService.GetSkillMultiplierFromXp(JobManager.GetOrAdd(player, mj).SkillXp);
+                crafted.CraftQuality = (float)JobXpService.GetCraftQualityFromXp(JobManager.GetOrAdd(player, mj).SkillXp);
                 crafted.Bonuses = crafted.BaseStats.Scale(crafted.CraftQuality);
             }
 
@@ -914,7 +914,15 @@ namespace Myria.Server.ClassicRealm.Hubs
         }
 
         /// <summary>Upgrades the given item at the given NPC, consuming upgrade materials.</summary>
-        public async Task<UpgradeActionResult> Upgrade(string npcId, string itemId)
+        public Task<UpgradeActionResult> Upgrade(string npcId, string itemId) =>
+            UpgradeCore(npcId, itemId, null, 0f);
+
+        /// <summary>Upgrades the inventory item with this id AND upgrade state - <see cref="Upgrade"/>
+        /// (id only) took the first of several same-id items (the +4 blade instead of the +6 one).</summary>
+        public Task<UpgradeActionResult> UpgradeInstance(string npcId, string itemId, int upgradeLevel, float craftQuality) =>
+            UpgradeCore(npcId, itemId, upgradeLevel, craftQuality);
+
+        private async Task<UpgradeActionResult> UpgradeCore(string npcId, string itemId, int? upgradeLevel, float craftQuality)
         {
             var player = session.Get(Context.ConnectionId);
             if (player == null)
@@ -926,8 +934,9 @@ namespace Myria.Server.ClassicRealm.Hubs
 
             NpcService.TryGet(npcId, out var npc);
 
-            var eq = player.Inventory.Items.OfType<EquipmentItem>()
-                         .FirstOrDefault(e => e.Id == itemId);
+            var eq = upgradeLevel is int level
+                ? player.Inventory.FindEquipment(itemId, level, craftQuality)
+                : player.Inventory.Items.OfType<EquipmentItem>().FirstOrDefault(e => e.Id == itemId);
             if (eq == null)
                 return new UpgradeActionResult(false, "item_not_found", itemId, 0, 0, null);
 
@@ -961,7 +970,7 @@ namespace Myria.Server.ClassicRealm.Hubs
             // Apply skill quality bonus from smith level
             if (npc?.MasterJobId is { Length: > 0 } mj)
             {
-                float quality = (float)JobXpService.GetSkillMultiplierFromXp(JobManager.GetOrAdd(player, mj).SkillXp);
+                float quality = (float)JobXpService.GetCraftQualityFromXp(JobManager.GetOrAdd(player, mj).SkillXp);
                 if (quality > eq.CraftQuality) eq.CraftQuality = quality;
             }
 
@@ -1291,6 +1300,21 @@ namespace Myria.Server.ClassicRealm.Hubs
             // only source of truth for what's equipped, and a mismatch (e.g. a rejected swap the
             // client didn't correctly roll back) would permanently desync MaxHealth/MaxMana/combat
             // stats (all gear-derived) between client display and server-authoritative combat.
+            if (ok) await NotifyCharacterUpdate(player, inventory: true, equipment: true);
+            return new EquipItemResult(ok, reason);
+        }
+
+        /// <summary>Equips the inventory item with this id and upgrade state - <see cref="EquipItem"/>
+        /// (id only) picked the first of several same-id items, e.g. the +4 blade when the player
+        /// chose the +6 one.</summary>
+        public async Task<EquipItemResult> EquipItemInstance(string itemId, int upgradeLevel, float craftQuality)
+        {
+            var player = session.Get(Context.ConnectionId);
+            if (player == null) return new EquipItemResult(false, "Not connected to a game session.");
+            using var held = await locks.AcquireAsync(player.Name);
+
+            var item = player.Inventory.FindEquipment(itemId, upgradeLevel, craftQuality);
+            bool ok = player.Inventory.SwapEquipment(item, player, out var reason);
             if (ok) await NotifyCharacterUpdate(player, inventory: true, equipment: true);
             return new EquipItemResult(ok, reason);
         }
@@ -1756,7 +1780,7 @@ namespace Myria.Server.ClassicRealm.Hubs
             string turnBefore = encounter.CurrentTurnCharacterName;
             bool ok = encounter.CharacterAttack(DisplayName(), targetMonsterIndex);
             if (!GroupActionResolved(encounter, ok, turnBefore))
-                return EmptyGroupSnapshot();
+                return RejectedGroupSnapshot(encounter, logBefore);
 
             return await CompleteGroupActionAsync(encounter, partyId, logBefore);
         }
@@ -1778,7 +1802,7 @@ namespace Myria.Server.ClassicRealm.Hubs
             string turnBefore = encounter.CurrentTurnCharacterName;
             bool ok = encounter.CharacterCastSkill(DisplayName(), skill, targetIndex);
             if (!GroupActionResolved(encounter, ok, turnBefore))
-                return EmptyGroupSnapshot();
+                return RejectedGroupSnapshot(encounter, logBefore);
 
             return await CompleteGroupActionAsync(encounter, partyId, logBefore);
         }
@@ -1806,7 +1830,7 @@ namespace Myria.Server.ClassicRealm.Hubs
 
                 string turnBefore = encounter.CurrentTurnCharacterName;
                 bool ok = encounter.CharacterUseItem(DisplayName(), item);
-                if (!GroupActionResolved(encounter, ok, turnBefore)) return EmptyGroupSnapshot();
+                if (!GroupActionResolved(encounter, ok, turnBefore)) return RejectedGroupSnapshot(encounter, logBefore);
             }
 
             // The snapshot carries HP/MP for everyone; the user's own inventory isn't part of it.
@@ -1925,7 +1949,18 @@ namespace Myria.Server.ClassicRealm.Hubs
 
         /// <summary>The caller's run for the dungeon <paramref name="room"/> is in; null outside dungeons.</summary>
         private DungeonRun? DungeonRunFor(Myria.Lib.Core.Entities.Maps.Room? room) =>
-            DungeonRules.DungeonIdOf(room) is { } dungeonId ? dungeons.GetOrCreate(DungeonOwnerOf(DisplayName()), dungeonId) : null;
+            DungeonRules.DungeonIdOf(room) is { } dungeonId ? DungeonRunOf(DisplayName(), dungeonId) : null;
+
+        /// <summary>The run of <paramref name="displayName"/>'s party (or them alone), kept at the
+        /// party's current size - rooms not rolled yet get monsters scaled for it.</summary>
+        private DungeonRun DungeonRunOf(string displayName, string dungeonId)
+        {
+            var run = dungeons.GetOrCreate(DungeonOwnerOf(displayName), dungeonId);
+            run.PartySize = party.GetPartyId(displayName) is { } partyId
+                ? Math.Max(1, party.GetMembers(partyId).Count())
+                : 1;
+            return run;
+        }
 
         /// <summary>After a move out of a dungeon: once nobody of the run's owner is inside any more,
         /// the run is dropped - the next visit starts fresh.</summary>
@@ -3321,6 +3356,14 @@ namespace Myria.Server.ClassicRealm.Hubs
 
         private static GroupCombatSnapshot EmptyGroupSnapshot() =>
             new([], [], "", false, false, []);
+
+        /// <summary>A rejected action (no mana, silenced, on cooldown, not your turn): still "empty"
+        /// (no combatants, so clients resync), but carrying the log lines the engine wrote for the
+        /// rejection - it used to come back with nothing, and the skill just didn't happen.</summary>
+        private static GroupCombatSnapshot RejectedGroupSnapshot(GroupCombatEncounter enc, int logBefore) =>
+            new([], [], "", false, false, enc.Log.Skip(logBefore)
+                .Select(e => new CombatLogMessage(e.Key, e.Args.Select(a => a?.ToString() ?? "").ToArray()))
+                .ToList());
 
         private async Task<CombatTurnResult> RunCombatAction(Action<CombatEncounter> action)
         {
