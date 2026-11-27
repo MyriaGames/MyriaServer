@@ -70,4 +70,23 @@ public class AdminAccountLookupTests : IDisposable
         Assert.Null(account.Characters.Single(c => c.Name == "Brann").Guild);
         Assert.Equal(12, account.Characters.Single(c => c.Name == "Alicia").Level);
     }
+
+    /// <summary>MONO-008: the character search ignores case and treats % and _ literally.</summary>
+    [Fact]
+    public async Task SearchCharacters_IgnoresCase_AndEscapesWildcards()
+    {
+        _db.Db.Characters.AddRange(
+            new Character { UserId = "a", Name = "Aria" },
+            new Character { UserId = "b", Name = "Mariana" },
+            new Character { UserId = "c", Name = "Bob" });
+        await _db.Db.SaveChangesAsync();
+
+        async Task<List<string>> Search(string q) =>
+            Assert.IsAssignableFrom<IEnumerable<RealmCharacterInfo>>(
+                Assert.IsType<OkObjectResult>(await NewController().SearchCharacters(q)).Value).Select(r => r.Name).ToList();
+
+        Assert.Equal(new[] { "Aria", "Mariana" }, await Search("ARI"));
+        Assert.Empty(await Search("%"));
+        Assert.Empty(await Search("_ob"));
+    }
 }

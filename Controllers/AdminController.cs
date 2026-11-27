@@ -213,9 +213,12 @@ namespace Myria.Server.ClassicRealm.Controllers
             if (string.IsNullOrWhiteSpace(q)) return Ok(Array.Empty<RealmCharacterInfo>());
 
             q = q.Trim();
+            // LIKE, not Contains: Contains becomes SQLite instr(), which is case-sensitive despite
+            // the NOCASE column ("ari" didn't find "Aria"). Escape LIKE's wildcards in the query.
+            string pattern = "%" + q.Replace("\\", "\\\\").Replace("%", "\\%").Replace("_", "\\_") + "%";
             var now = DateTime.UtcNow;
             var rows = await db.Characters.AsNoTracking()
-                .Where(c => c.Name.Contains(q))
+                .Where(c => EF.Functions.Like(c.Name, pattern, "\\"))
                 .OrderBy(c => c.Name)
                 .Take(Math.Clamp(take, 1, 100))
                 .Select(c => new { c.Name, c.UserId, c.Level, c.Class, c.Race, c.LastSaved, c.BannedUntil, c.BanReason })
