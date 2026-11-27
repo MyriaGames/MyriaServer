@@ -19,6 +19,8 @@ public class SoloCombatSaveTests
         Assert.True(await realm.PlaceAsync(bob, 2));
         var player = realm.Session.Get(bob.ConnectionId)!;
         player.Stats.Strength = 500;                      // one or two hits end it
+        player.Stats.BaseHealth = 100_000;                // and a lucky monster cant win it
+        player.CurrentHealth = player.MaxHealth;
 
         var start = await realm.Hub(bob).StartCombat(2);
         Assert.True(start.Success, start.Reason);

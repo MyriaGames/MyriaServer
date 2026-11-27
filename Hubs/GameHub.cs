@@ -849,7 +849,15 @@ namespace Myria.Server.Realm.Hubs
         }
 
         /// <summary>Upgrades the given item at the given NPC, consuming upgrade materials.</summary>
-        public async Task<UpgradeActionResult> Upgrade(string npcId, string itemId)
+        public Task<UpgradeActionResult> Upgrade(string npcId, string itemId) =>
+            UpgradeCore(npcId, itemId, null, 0f);
+
+        /// <summary>Upgrades the inventory item with this id AND upgrade state - <see cref="Upgrade"/>
+        /// (id only) took the first of several same-id items (the +4 blade instead of the +6 one).</summary>
+        public Task<UpgradeActionResult> UpgradeInstance(string npcId, string itemId, int upgradeLevel, float craftQuality) =>
+            UpgradeCore(npcId, itemId, upgradeLevel, craftQuality);
+
+        private async Task<UpgradeActionResult> UpgradeCore(string npcId, string itemId, int? upgradeLevel, float craftQuality)
         {
             var player = session.Get(Context.ConnectionId);
             if (player == null)
@@ -861,8 +869,9 @@ namespace Myria.Server.Realm.Hubs
 
             NpcService.TryGet(npcId, out var npc);
 
-            var eq = player.Inventory.Items.OfType<EquipmentItem>()
-                         .FirstOrDefault(e => e.Id == itemId);
+            var eq = upgradeLevel is int level
+                ? player.Inventory.FindEquipment(itemId, level, craftQuality)
+                : player.Inventory.Items.OfType<EquipmentItem>().FirstOrDefault(e => e.Id == itemId);
             if (eq == null)
                 return new UpgradeActionResult(false, "item_not_found", itemId, 0, 0, null);
 
@@ -1200,6 +1209,21 @@ namespace Myria.Server.Realm.Hubs
             // only source of truth for what's equipped, and a mismatch (e.g. a rejected swap the
             // client didn't correctly roll back) would permanently desync MaxHealth/MaxMana/combat
             // stats (all gear-derived) between client display and server-authoritative combat.
+            if (ok) await NotifyCharacterUpdate(player, inventory: true, equipment: true);
+            return new EquipItemResult(ok, reason);
+        }
+
+        /// <summary>Equips the inventory item with this id and upgrade state - <see cref="EquipItem"/>
+        /// (id only) picked the first of several same-id items, e.g. the +4 blade when the player
+        /// chose the +6 one.</summary>
+        public async Task<EquipItemResult> EquipItemInstance(string itemId, int upgradeLevel, float craftQuality)
+        {
+            var player = session.Get(Context.ConnectionId);
+            if (player == null) return new EquipItemResult(false, "Not connected to a game session.");
+            using var held = await locks.AcquireAsync(player.Name);
+
+            var item = player.Inventory.FindEquipment(itemId, upgradeLevel, craftQuality);
+            bool ok = player.Inventory.SwapEquipment(item, player, out var reason);
             if (ok) await NotifyCharacterUpdate(player, inventory: true, equipment: true);
             return new EquipItemResult(ok, reason);
         }
