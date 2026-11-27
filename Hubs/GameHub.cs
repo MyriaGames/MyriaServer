@@ -1744,6 +1744,9 @@ namespace Myria.Server.ClassicRealm.Hubs
             if (monsters.Count == 0)
                 return new StartGroupCombatResult(false, "no_monsters", [], [], "");
             var encounter = startedFight = new GroupCombatEncounter(players, monsters);
+            // v0.3: a party's dungeon loot all goes to its loot master (the leader unless chosen).
+            if (dungeonRun is not null && partyId is not null && party.GetLootMaster(partyId) is { } lootMaster)
+                encounter.LootRecipient = players.FirstOrDefault(p => string.Equals(p.Name, lootMaster, StringComparison.OrdinalIgnoreCase));
             if (dungeonRun is not null)
                 encounter.MonsterKilled += (_, e) => { if (e.Monster is not null) dungeonRun.RecordKill(roomId, e.Monster); };
             else
@@ -2387,6 +2390,7 @@ namespace Myria.Server.ClassicRealm.Hubs
             await Groups.AddToGroupAsync(Context.ConnectionId, PartyService.PartyGroup(partyId));
             await Clients.Group(PartyService.PartyGroup(partyId))
                 .SendAsync("PartyUpdated", members.ToList(), leader);
+            await SendLootMasterAsync(partyId);
             logger.LogInformation("{User} joined party {PartyId} (members: {Members})",
                 displayName, partyId, string.Join(", ", members));
         }
@@ -2443,6 +2447,7 @@ namespace Myria.Server.ClassicRealm.Hubs
             {
                 await Clients.Group(PartyService.PartyGroup(partyId))
                     .SendAsync("PartyUpdated", remaining.ToList(), leader);
+                await SendLootMasterAsync(partyId);
                 await Clients.Group(PartyService.PartyGroup(partyId))
                     .SendAsync("ChatMessage", "System", $"{targetName} was kicked from the party.", "party");
             }
@@ -2465,9 +2470,35 @@ namespace Myria.Server.ClassicRealm.Hubs
 
             await Clients.Group(PartyService.PartyGroup(partyId))
                 .SendAsync("PartyUpdated", members.ToList(), newLeader);
+
+            await SendLootMasterAsync(partyId);
             await Clients.Group(PartyService.PartyGroup(partyId))
                 .SendAsync("ChatMessage", "System",
                     $"{displayName} transferred party leadership to {newLeader}.", "party");
+        }
+
+        /// <summary>The leader picks the party's loot master (v0.3), who gets all loot from the party's
+        /// dungeon fights; null or the leader's own name hands it back to the leader.</summary>
+        public async Task SetPartyLootMaster(string? targetName)
+        {
+            var displayName = DisplayName();
+            var (success, partyId, lootMaster) = party.SetLootMaster(displayName, string.IsNullOrWhiteSpace(targetName) ? null : targetName);
+            if (!success)
+            {
+                await Clients.Caller.SendAsync("ChatMessage", "System",
+                    "Could not set the loot master - you may not be the leader or that player is not in the party.", "party");
+                return;
+            }
+            await SendLootMasterAsync(partyId);
+            await Clients.Group(PartyService.PartyGroup(partyId))
+                .SendAsync("ChatMessage", "System", $"{lootMaster} is now the party's loot master.", "party");
+        }
+
+        /// <summary>Tells the party who its (effective) loot master is.</summary>
+        private async Task SendLootMasterAsync(string partyId)
+        {
+            if (party.GetLootMaster(partyId) is { } lootMaster)
+                await Clients.Group(PartyService.PartyGroup(partyId)).SendAsync("PartyLootMaster", lootMaster);
         }
 
         public async Task UpdatePartyStats()
@@ -3457,6 +3488,7 @@ namespace Myria.Server.ClassicRealm.Hubs
             {
                 await Clients.Group(PartyService.PartyGroup(partyId))
                     .SendAsync("PartyUpdated", remaining.ToList(), newLeader ?? remaining[0]);
+                await SendLootMasterAsync(partyId);
                 await Clients.Group(PartyService.PartyGroup(partyId))
                     .SendAsync("ChatMessage", "System", $"{displayName} left the party.", "party");
             }

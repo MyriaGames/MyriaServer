@@ -8,6 +8,8 @@ namespace Myria.Server.ClassicRealm.Services
         {
             public required string Id { get; init; }
             public string LeaderUsername { get; set; } = string.Empty;
+            /// <summary>Set by the leader; null = the leader is the loot master.</summary>
+            public string? LootMaster { get; set; }
             public List<string> Members { get; } = new();
         }
 
@@ -143,6 +145,35 @@ namespace Myria.Server.ClassicRealm.Services
                 return (true, p.Members.ToList(), newLeader);
             }
         }
+
+        /// <summary>
+        /// The party's loot master (v0.3): gets all loot from the party's dungeon fights and hands it
+        /// out through trades. Only the leader sets it; null (or the leader) clears it. Returns the
+        /// effective loot master.
+        /// </summary>
+        public (bool success, string partyId, string lootMaster) SetLootMaster(string leaderUsername, string? target)
+        {
+            lock (_lock)
+            {
+                if (!_memberToParty.TryGetValue(leaderUsername, out var partyId)) return (false, string.Empty, string.Empty);
+                var p = _parties[partyId];
+                if (p.LeaderUsername != leaderUsername) return (false, string.Empty, string.Empty);
+                if (target is not null && !p.Members.Contains(target)) return (false, string.Empty, string.Empty);
+                p.LootMaster = target == p.LeaderUsername ? null : target;
+                return (true, partyId, EffectiveLootMaster(p));
+            }
+        }
+
+        /// <summary>Who gets the party's dungeon loot: the chosen loot master while they're still a
+        /// member, otherwise the leader.</summary>
+        public string? GetLootMaster(string partyId)
+        {
+            lock (_lock)
+                return _parties.TryGetValue(partyId, out var p) ? EffectiveLootMaster(p) : null;
+        }
+
+        private static string EffectiveLootMaster(Party p) =>
+            p.LootMaster is { } lm && p.Members.Contains(lm) ? lm : p.LeaderUsername;
 
         public bool IsInParty(string username) => _memberToParty.ContainsKey(username);
 
