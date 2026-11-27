@@ -148,17 +148,99 @@ public class PvpHubTests
         Assert.Equal(loser.PvpRating, await SavedRatingAsync(d.Realm, loser.Name));
     }
 
+    // ── Lost connections (v0.3: grace period instead of an instant forfeit) ──
+
+    private static DateTime _now = new(2026, 11, 28, 12, 0, 0, DateTimeKind.Utc);
+    private static void UseTestClock() => Myria.Server.ClassicRealm.Services.PvpCombatService.Clock = () => _now;
+
     [Fact]
-    public async Task Disconnecting_ForfeitsTheFight_AndSavesTheLoss()
+    public async Task Disconnecting_KeepsTheFightOpen_AndReconnectingRejoinsIt()
     {
+        UseTestClock();
         using var d = await BothInRoomAsync(Arena);
         Assert.True((await d.Realm.Hub(d.Alice).StartPvpFight("Bobchar", false)).Success);
+        var enc = d.Realm.PvpCombat.GetEncounterForConnection(d.Alice.ConnectionId)!;
+        d.B.CurrentHealth = 4_000;
 
+        d.Realm.Presence.UnregisterContext(d.Bob.ConnectionId);
         await d.Realm.Hub(d.Bob).OnDisconnectedAsync(null);
+
+        Assert.True(d.Realm.PvpCombat.IsInFight(d.Alice.ConnectionId));   // no forfeit
+        Assert.False(enc.IsFinished);
+        Assert.NotEqual("Bobchar", enc.CurrentTurnCharacterName);         // Bob's turns pass at once
+        Assert.Equal(PvpRatingService.StartingRating, d.A.PvpRating);
+
+        _now += TimeSpan.FromSeconds(30);
+        var bob2 = d.Realm.Connect("bob");
+        Assert.True(await d.Realm.Hub(bob2).LoadCharacter("Bobchar"));
+
+        Assert.True(d.Realm.PvpCombat.IsInFight(bob2.ConnectionId));
+        Assert.Same(d.B, d.Realm.Session.Get(bob2.ConnectionId));          // the same live character
+        Assert.Equal(4_000, d.B.CurrentHealth);                            // in-fight HP kept
+        Assert.Contains(enc.Log, e => e.Key == "pg.fight.pvp.reconnected");
+    }
+
+    [Fact]
+    public async Task StayingAwayPastTheGracePeriod_IsAForfeit_AndSavesTheLoss()
+    {
+        UseTestClock();
+        using var d = await BothInRoomAsync(Arena);
+        int bHp = d.B.CurrentHealth;
+        Assert.True((await d.Realm.Hub(d.Alice).StartPvpFight("Bobchar", false)).Success);
+        d.B.CurrentHealth = 9;
+
+        d.Realm.Presence.UnregisterContext(d.Bob.ConnectionId);
+        await d.Realm.Hub(d.Bob).OnDisconnectedAsync(null);
+        _now += Myria.Server.ClassicRealm.Services.PvpCombatService.ReconnectGrace + TimeSpan.FromSeconds(1);
+
+        await d.Realm.Hub(d.Alice).PvpSkipStalledTurn();   // any participant's poll settles it
 
         Assert.False(d.Realm.PvpCombat.IsInFight(d.Alice.ConnectionId));
         Assert.True(d.A.PvpRating > PvpRatingService.StartingRating);
         Assert.True(await SavedRatingAsync(d.Realm, "Bobchar") < PvpRatingService.StartingRating);
+        Assert.Null(d.Realm.Session.GetConnectionId("Bobchar"));   // kept session dropped
+        await using var db = d.Realm.NewDb();
+        Assert.Equal(bHp, (await db.Characters.SingleAsync(c => c.Name == "Bobchar")).CurrentHealth);   // pre-fight HP saved
+    }
+
+    [Fact]
+    public async Task FightEndingWhileAway_SavesTheResult_AndDropsTheKeptSession()
+    {
+        UseTestClock();
+        using var d = await BothInRoomAsync(Arena);
+        int bHp = d.B.CurrentHealth;
+        Assert.True((await d.Realm.Hub(d.Alice).StartPvpFight("Bobchar", false)).Success);
+        d.Realm.Presence.UnregisterContext(d.Bob.ConnectionId);
+        await d.Realm.Hub(d.Bob).OnDisconnectedAsync(null);
+        d.B.CurrentHealth = 1;   // Alice's first hit that lands ends it
+
+        for (int i = 0; i < 100 && d.Realm.PvpCombat.IsInFight(d.Alice.ConnectionId); i++)
+            await d.Realm.Hub(d.Alice).PvpAttack(0);   // always Alice's turn: Bob's pass at once
+
+        Assert.False(d.Realm.PvpCombat.IsInFight(d.Alice.ConnectionId));
+        Assert.True(await SavedRatingAsync(d.Realm, "Bobchar") < PvpRatingService.StartingRating);
+        Assert.Null(d.Realm.Session.GetConnectionId("Bobchar"));
+        await using var db = d.Realm.NewDb();
+        Assert.Equal(bHp, (await db.Characters.SingleAsync(c => c.Name == "Bobchar")).CurrentHealth);
+    }
+
+    [Fact]
+    public async Task ComingBackLate_SettlesTheForfeitOnLogin()
+    {
+        UseTestClock();
+        using var d = await BothInRoomAsync(Arena);
+        Assert.True((await d.Realm.Hub(d.Alice).StartPvpFight("Bobchar", false)).Success);
+        d.Realm.Presence.UnregisterContext(d.Bob.ConnectionId);
+        await d.Realm.Hub(d.Bob).OnDisconnectedAsync(null);
+        _now += Myria.Server.ClassicRealm.Services.PvpCombatService.ReconnectGrace + TimeSpan.FromSeconds(1);
+
+        var bob2 = d.Realm.Connect("bob");
+        Assert.True(await d.Realm.Hub(bob2).LoadCharacter("Bobchar"));
+
+        Assert.False(d.Realm.PvpCombat.IsInFight(bob2.ConnectionId));
+        Assert.False(d.Realm.PvpCombat.IsInFight(d.Alice.ConnectionId));
+        Assert.True(d.B.PvpRating < PvpRatingService.StartingRating);
+        Assert.NotNull(d.Realm.Session.Get(bob2.ConnectionId));   // logged in normally
     }
 
     [Fact]

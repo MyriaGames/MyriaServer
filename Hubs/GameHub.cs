@@ -138,16 +138,18 @@ namespace Myria.Server.ClassicRealm.Hubs
         {
             presence.UnregisterContext(Context.ConnectionId);
 
-            // A disconnect mid-PvP is a forfeit. Must run before the session is removed and saved
-            // below: it settles the loss and restores pre-fight HP/MP on the session character, so
-            // the disconnect save persists exactly that.
-            await ForfeitPvpAsync(Context.ConnectionId, session.Get(Context.ConnectionId), notifyCaller: false);
+            // A disconnect mid-PvP starts a grace period (v0.3; it used to forfeit at once): the live
+            // session stays in memory - unsaved, so the database never holds in-fight HP - for the
+            // character to reconnect into the fight (LoadCharacter -> RejoinPvpAsync). Past
+            // PvpCombatService.ReconnectGrace it's a forfeit (ForfeitExpiredAwayAsync), and when the
+            // fight ends meanwhile the result is saved and the session dropped (CompletePvpActionAsync).
+            bool keptForPvp = await MarkPvpAwayAsync(Context.ConnectionId, session.Get(Context.ConnectionId));
 
             var displayName = presence.GetDisplayName(Context.ConnectionId);
             var roomId      = presence.GetRoom(Context.ConnectionId);
 
             // Auto-save session player and notify guild of offline status
-            var player   = session.Remove(Context.ConnectionId);
+            var player   = keptForPvp ? null : session.Remove(Context.ConnectionId);
             var username = Context.User?.Identity?.Name;
 
             logger.LogInformation("{User} disconnected (conn {Conn}, character {Character})",
@@ -389,6 +391,10 @@ namespace Myria.Server.ClassicRealm.Hubs
             // turn it is. Re-sending "GroupCombatStarted" (same message the fight page already
             // knows how to react to - see ViewModel_PageGame.OnGroupCombatStarted) to just this
             // caller re-triggers that navigation/init with the encounter's current live state.
+            // A PvP fight this character lost the connection to (v0.3): back into it, or - past the
+            // grace period - the forfeit is settled now.
+            await RejoinPvpAsync(session.Get(Context.ConnectionId)!.Name);
+
             if (groupCombat.GetPartyId(Context.ConnectionId) is string rejoinPartyId &&
                 groupCombat.GetEncounter(rejoinPartyId) is { } rejoinEncounter)
             {
@@ -2275,10 +2281,12 @@ namespace Myria.Server.ClassicRealm.Hubs
         /// actually run past PvpEncounter.TurnTimeout. Clients poll it while waiting.</summary>
         public async Task<bool> PvpSkipStalledTurn()
         {
+            if (pvp.GetFightId(Context.ConnectionId) is { } current) await ForfeitExpiredAwayAsync(current);
             if (pvp.GetFightId(Context.ConnectionId) is not { } fightId || pvp.GetEncounter(fightId) is not { } enc)
                 return false;
             int logBefore = enc.Log.Count;
-            if (!enc.SkipStalledTurn()) return false;
+            bool awayTurn = enc.CurrentTurnCharacterName is { } turn && pvp.GetAwayFight(turn) == fightId && enc.SkipTurnOf(turn);
+            if (!awayTurn && !enc.SkipStalledTurn()) return false;
             await CompletePvpActionAsync(fightId, enc, logBefore);
             return true;
         }
@@ -2290,6 +2298,7 @@ namespace Myria.Server.ClassicRealm.Hubs
         /// </summary>
         private async Task<PvpSnapshot?> RunPvpAction(Func<PvpEncounter, string, bool> action)
         {
+            if (pvp.GetFightId(Context.ConnectionId) is { } current) await ForfeitExpiredAwayAsync(current);
             if (pvp.GetFightId(Context.ConnectionId) is not { } fightId || pvp.GetEncounter(fightId) is not { } enc)
                 return null;
 
@@ -2304,6 +2313,10 @@ namespace Myria.Server.ClassicRealm.Hubs
         /// everyone to their pre-fight state, saves, and broadcasts the result.</summary>
         private async Task<PvpSnapshot> CompletePvpActionAsync(string fightId, PvpEncounter enc, int logBefore)
         {
+            // Nobody waits for a participant who lost the connection: their turns pass at once.
+            for (int i = 0; i < 16 && enc.CurrentTurnCharacterName is { } turn && pvp.GetAwayFight(turn) == fightId; i++)
+                if (!enc.SkipTurnOf(turn)) break;
+
             var snap = BuildPvpSnapshot(enc, logBefore);
             if (!enc.IsFinished)
             {
@@ -2326,7 +2339,12 @@ namespace Myria.Server.ClassicRealm.Hubs
 
             // Broadcast before removing - PvpClients resolves recipients from the registry.
             await PvpClients(fightId).SendAsync("PvpFinished", snap);
+            var away = pvp.AwayIn(fightId);
             pvp.Remove(fightId);
+            // Participants still away: their result is saved above; now drop the session that was
+            // only kept for them to reconnect.
+            foreach (var name in away)
+                if (session.GetConnectionId(name) is { } awayConn) DropOfflineSession(awayConn);
             return snap;
         }
 
@@ -2336,9 +2354,10 @@ namespace Myria.Server.ClassicRealm.Hubs
         /// state and saved, and the rest of the fight carries on - or ends, if that was the last
         /// one on their side. Used by PvpFlee and by disconnects.
         /// </summary>
-        private async Task ForfeitPvpAsync(string connId, Myria.Lib.Core.Entities.Characters.Character? player, bool notifyCaller)
+        private async Task ForfeitPvpAsync(string connId, Myria.Lib.Core.Entities.Characters.Character? player, bool notifyCaller,
+            string? fightIdOverride = null)
         {
-            if (player is null || pvp.GetFightId(connId) is not { } fightId || pvp.GetEncounter(fightId) is not { } enc)
+            if (player is null || (fightIdOverride ?? pvp.GetFightId(connId)) is not { } fightId || pvp.GetEncounter(fightId) is not { } enc)
                 return;
             var me = enc.Find(player.Name);
             if (me is null) return;
@@ -2364,6 +2383,72 @@ namespace Myria.Server.ClassicRealm.Hubs
             }
 
             await CompletePvpActionAsync(fightId, enc, logBefore);
+        }
+
+        /// <summary>
+        /// A dropped connection mid-PvP (v0.3): the participant is marked away for
+        /// PvpCombatService.ReconnectGrace, the others are told, and the session is kept. False if
+        /// the connection wasn't in a running PvP fight (or had already fled) - the normal
+        /// disconnect then runs.
+        /// </summary>
+        private async Task<bool> MarkPvpAwayAsync(string connId, Myria.Lib.Core.Entities.Characters.Character? player)
+        {
+            if (player is null || pvp.GetFightId(connId) is not { } fightId || pvp.GetEncounter(fightId) is not { } enc)
+                return false;
+            var me = enc.Find(player.Name);
+            if (me is null || enc.IsFinished || enc.HasFled(me)
+                || !pvp.MarkAway(connId, me.Name, presence.GetAccountUsername(connId) ?? Context.User?.Identity?.Name)) return false;
+
+            int logBefore = enc.Log.Count;
+            enc.Note("pg.fight.pvp.disconnected", me.Name, (int)PvpCombatService.ReconnectGrace.TotalSeconds);
+            logger.LogInformation("PvP: {Name} lost the connection (fight {FightId}); session kept for {Grace}",
+                me.Name, fightId, PvpCombatService.ReconnectGrace);
+            await CompletePvpActionAsync(fightId, enc, logBefore);
+            return true;
+        }
+
+        /// <summary>Called from LoadCharacter: puts a character who lost the connection mid-PvP back
+        /// into the fight (PvpStarted to them, a log line for everyone) - or, past the grace period,
+        /// settles the forfeit now.</summary>
+        private async Task RejoinPvpAsync(string name)
+        {
+            if (pvp.GetAwayFight(name) is not { } awayFight) return;
+            if (pvp.IsAwayExpired(name))
+            {
+                pvp.ClearAway(name);
+                await ForfeitPvpAsync(Context.ConnectionId, session.Get(Context.ConnectionId), notifyCaller: true, awayFight);
+                return;
+            }
+            if (pvp.Rejoin(name, Context.ConnectionId) is not { } fightId || pvp.GetEncounter(fightId) is not { } enc) return;
+
+            await Clients.Caller.SendAsync("PvpStarted", BuildPvpSnapshot(enc, enc.Log.Count));
+            int logBefore = enc.Log.Count;
+            enc.Note("pg.fight.pvp.reconnected", name);
+            logger.LogInformation("PvP: {Name} reconnected into fight {FightId}", name, fightId);
+            await CompletePvpActionAsync(fightId, enc, logBefore);
+        }
+
+        /// <summary>Forfeits everyone away from this fight past the grace period. Runs whenever a
+        /// participant acts or polls, so it happens without a timer.</summary>
+        private async Task ForfeitExpiredAwayAsync(string fightId)
+        {
+            foreach (var name in pvp.ExpiredAwayIn(fightId))
+            {
+                if (session.GetConnectionId(name) is { } conn && session.Get(conn) is { } player)
+                {
+                    // Still marked away here, so the save finds the account (GetAwayAccount).
+                    await ForfeitPvpAsync(conn, player, notifyCaller: false, fightId);   // settles, restores, saves
+                    DropOfflineSession(conn);
+                }
+                pvp.ClearAway(name);
+            }
+        }
+
+        /// <summary>Drops a session kept for a PvP reconnect - only if its connection is really gone
+        /// (it may have been reattached to a live connection by LoadCharacter meanwhile).</summary>
+        private void DropOfflineSession(string conn)
+        {
+            if (presence.GetContext(conn) is null) session.Remove(conn);
         }
 
         private static PvpSnapshot BuildPvpSnapshot(PvpEncounter enc, int logBefore)
@@ -3633,14 +3718,15 @@ namespace Myria.Server.ClassicRealm.Hubs
             foreach (var p in characters)
             {
                 var conn = presence.GetConnectionByName(p.Name);
-                var username = conn != null ? presence.GetAccountUsername(conn) : null;
+                // A PvP participant away on a lost connection has no presence entry (v0.3).
+                var username = (conn != null ? presence.GetAccountUsername(conn) : null) ?? pvp.GetAwayAccount(p.Name);
                 if (username == null) continue;
                 // Retries and logs like every other save path - a silent catch hid lost combat progress (A10 F5).
                 await SaveCharacterReliablyAsync(repo, username, p, "combat");
                 // A buff cast in the fight (or one still running) has to reach the client: the fight
                 // snapshots carry HP, not the buff list.
-                if (p.LastingBuffs.Count > 0)
-                    await NotifyCharacterUpdateFor(conn!, p, vitals: true);
+                if (p.LastingBuffs.Count > 0 && conn != null)
+                    await NotifyCharacterUpdateFor(conn, p, vitals: true);
             }
         }
 
