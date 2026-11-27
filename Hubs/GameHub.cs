@@ -414,6 +414,60 @@ namespace Myria.Server.ClassicRealm.Hubs
             return await SaveCharacterReliablyAsync(repo, username, player, "save-session");
         }
 
+        /// <summary>
+        /// Casts a skill outside a fight (v0.3) - only skills with a lasting buff (the Druid's Verdant
+        /// Vigor), on yourself or anyone standing in the same room (party or not), neither of you in a fight.
+        /// Costs the skill's mana and counts as a use. Both characters are saved and get a
+        /// CharacterUpdated push (vitals + lasting buffs; the caster also skill progress).
+        /// </summary>
+        public async Task<CastSkillResult> CastSkillOutOfCombat(string skillId, string? targetName)
+        {
+            var player = session.Get(Context.ConnectionId);
+            if (player is null) return new CastSkillResult(false, "Not in session", 0, null);
+            CastSkillResult Fail(string reason) => new(false, reason, player.CurrentMana, null);
+
+            var skill = ResolveCastableSkill(player, skillId);
+            if (skill?.LastingBuff is null) return Fail("skill.cast.notOutOfCombat");
+            if (IsInAnyFight(Context.ConnectionId)) return Fail("skill.cast.inCombat");
+
+            // Target: yourself, or anyone in this room who is not fighting (user decision: no party needed
+            // outside fights - in a fight the targets are the fight's own characters as usual).
+            string targetConn = Context.ConnectionId;
+            if (!string.IsNullOrWhiteSpace(targetName) && !string.Equals(targetName, player.Name, StringComparison.OrdinalIgnoreCase))
+            {
+                var conn = presence.GetConnectionByName(targetName);
+                var myRoom = presence.GetRoom(Context.ConnectionId);
+                if (conn is null || session.Get(conn) is null || myRoom is null || presence.GetRoom(conn) != myRoom)
+                    return Fail("skill.cast.noTarget");
+                if (IsInAnyFight(conn)) return Fail("skill.cast.inCombat");
+                targetConn = conn;
+            }
+            var target = session.Get(targetConn)!;
+
+            Myria.Lib.Core.Entities.Characters.LastingBuff? buff;
+            using (await locks.AcquireAsync(player.Name, target.Name))
+            {
+                buff = LastingBuffService.TryCast(player, skill, target, out var error);
+                if (buff is null) return Fail(error ?? "skill.cast.notOutOfCombat");
+            }
+
+            logger.LogInformation("{Caster} cast {Skill} on {Target} out of combat", player.Name, skill.Id, target.Name);
+            using (var scope = scopeFactory.CreateScope())
+            {
+                var repo = scope.ServiceProvider.GetRequiredService<ICharacterRepository>();
+                await SaveCharacterReliablyAsync(repo, Context.User!.Identity!.Name!, player, "cast");
+                if (!ReferenceEquals(target, player) && presence.GetAccountUsername(targetConn) is { } targetUser)
+                    await SaveCharacterReliablyAsync(repo, targetUser, target, "cast");
+            }
+
+            await NotifyCharacterUpdate(player, vitals: true, skillProgress: true);
+            if (!ReferenceEquals(target, player))
+                await NotifyCharacterUpdateFor(targetConn, target, vitals: true);
+
+            return new CastSkillResult(true, null, player.CurrentMana,
+                new LastingBuffSnapshot(buff.SkillId, buff.Name, buff.CasterName, buff.HpPercent, buff.MpPercent, buff.ExpiresUtc));
+        }
+
         /// <summary>Full HP/mana restore at a Healer NPC. The server holds the authoritative
         /// character for this session, so this - not any client-local mutation - is what actually
         /// counts; the client applies the returned values via SetHealth/SetMana to refresh its UI.</summary>
@@ -528,7 +582,9 @@ namespace Myria.Server.ClassicRealm.Hubs
                     player.AccessorySlot?.UpgradeLevel ?? 0, player.AccessorySlot?.CraftQuality ?? 1f) : null,
                 skillProgress ? player.SkillProgress.Select(sp => new SkillProgressSnapshot(
                     sp.SkillId, sp.UsageCount, sp.Level, sp.UnspentPoints, new List<string>(sp.PurchasedUpgradeIds))).ToList() : null,
-                pvpStats ? new PvpStatsSnapshot(player.PvpRating, player.PvpCurrency, player.PvpWins, player.PvpLosses) : null);
+                pvpStats ? new PvpStatsSnapshot(player.PvpRating, player.PvpCurrency, player.PvpWins, player.PvpLosses) : null,
+                // Lasting buffs decide MaxHp/MaxMp, so they travel with every vitals push.
+                vitals ? LastingBuffService.Snapshots(player.LastingBuffs) : null);
         }
 
         /// <summary>
@@ -3581,6 +3637,10 @@ namespace Myria.Server.ClassicRealm.Hubs
                 if (username == null) continue;
                 // Retries and logs like every other save path - a silent catch hid lost combat progress (A10 F5).
                 await SaveCharacterReliablyAsync(repo, username, p, "combat");
+                // A buff cast in the fight (or one still running) has to reach the client: the fight
+                // snapshots carry HP, not the buff list.
+                if (p.LastingBuffs.Count > 0)
+                    await NotifyCharacterUpdateFor(conn!, p, vitals: true);
             }
         }
 

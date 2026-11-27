@@ -149,6 +149,10 @@ namespace Myria.Server.ClassicRealm.Migrations
                     b.Property<DateTime>("LastSaved")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("LastingBuffsJson")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.Property<int>("Level")
                         .HasColumnType("INTEGER");
 

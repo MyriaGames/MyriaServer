@@ -74,6 +74,8 @@ namespace Myria.Server.ClassicRealm.Models.Dto
         public long PvpCurrency { get; set; }
         public int  PvpWins     { get; set; }
         public int  PvpLosses   { get; set; }
+        /// <summary>Active lasting buffs (v0.3; server-authoritative).</summary>
+        public List<Myria.Lib.Core.Models.Dto.LastingBuffSnapshot> LastingBuffs { get; set; } = new();
 
         // ── v0.3 quest rework ──
         public bool AdventurersGuildMember { get; set; }

@@ -96,6 +96,10 @@ namespace Myria.Server.ClassicRealm.Models
         public int  PvpWins     { get; set; }
         public int  PvpLosses   { get; set; }
 
+        // ── Lasting buffs (v0.3; server-authoritative): JSON array of LastingBuffSnapshot, see
+        // LastingBuffService.ToJson/FromJson. Expired entries are dropped on load and save. ──
+        public string LastingBuffsJson { get; set; } = "[]";
+
         // ── Adventurers' Guild (v0.3; server-authoritative, changed only via the hub) ──
         public bool AdventurersGuildMember { get; set; }
 

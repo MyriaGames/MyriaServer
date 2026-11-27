@@ -135,6 +135,8 @@ namespace Myria.Server.ClassicRealm.Controllers
                 PvpWins                 = c.PvpWins,
                 PvpLosses               = c.PvpLosses,
                 AdventurersGuildMember  = c.AdventurersGuildMember,
+                LastingBuffs            = Myria.Lib.Core.Services.LastingBuffService.Snapshots(
+                                              Myria.Lib.Core.Services.LastingBuffService.FromJson(c.LastingBuffsJson)),
                 DynamicQuests = c.ActiveQuests
                     .Where(q => Myria.Lib.Core.Systems.World.DynamicQuests.IsDynamicQuestId(q.QuestId))
                     .Select(q => Myria.Lib.Core.Services.Manager.QuestManager.GetQuestById(q.QuestId))
