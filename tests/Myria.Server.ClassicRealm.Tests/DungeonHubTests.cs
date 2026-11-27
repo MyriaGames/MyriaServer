@@ -31,6 +31,9 @@ public class DungeonHubTests
         var a = realm.Session.Get(alice.ConnectionId)!;
         var b = realm.Session.Get(bob.ConnectionId)!;
         a.Level = b.Level = 40;
+        // Level alone leaves them with level-1 stats; with monsters able to act before a player's
+        // first turn (shared turn timeline), crypt monsters would kill them on the spot.
+        foreach (var c in new[] { a, b }) { c.Stats.BaseHealth = 1_000_000; c.CurrentHealth = c.MaxHealth; }
         Assert.True(await realm.PlaceAsync(alice, 21));
         Assert.True(await realm.PlaceAsync(bob, 21));
         return new Realm2(realm, alice, bob, a, b);
