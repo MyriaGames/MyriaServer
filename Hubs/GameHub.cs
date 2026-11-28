@@ -1798,7 +1798,7 @@ namespace Myria.Server.ClassicRealm.Hubs
             // big pack); elsewhere a random draw limited by the room's populations.
             GroupCombatEncounter? startedFight = null;
             var monsters = dungeonRun is not null
-                ? dungeonRun.NextPack(room!, DungeonRules.PackPerFight(partyId is not null), () => startedFight is null
+                ? dungeonRun.NextPack(room!, DungeonRules.PackPerFight(players.Count), () => startedFight is null
                     || (!startedFight.IsFinished && groupCombat.GetEncounter(fightId) == startedFight))
                 : MonsterService.TryPickMonstersForGroupFight(
                     room!.Monsters, room.EncounterableMonsters,
@@ -2021,9 +2021,15 @@ namespace Myria.Server.ClassicRealm.Hubs
         private DungeonRun DungeonRunOf(string displayName, string dungeonId)
         {
             var run = dungeons.GetOrCreate(DungeonOwnerOf(displayName), dungeonId);
-            run.PartySize = party.GetPartyId(displayName) is { } partyId
-                ? Math.Max(1, party.GetMembers(partyId).Count())
-                : 1;
+            var members = party.GetPartyId(displayName) is { } partyId
+                ? party.GetMembers(partyId).ToList()
+                : new List<string> { displayName };
+            run.PartySize = Math.Max(1, members.Count);
+            // Level scaling: the online members' average level (offline ones aren't fighting).
+            var levels = members
+                .Select(m => presence.GetConnectionByName(m) is { } c ? session.Get(c)?.Level : null)
+                .OfType<int>().ToList();
+            if (levels.Count > 0) run.PartyLevel = DungeonRules.PartyLevel(levels);
             return run;
         }
 
